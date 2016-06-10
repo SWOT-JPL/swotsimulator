@@ -1,0 +1,72 @@
+Changelog for swotsimulator
+===========================
+
+
+
+This file lists the changes in each swotsimulator version
+
+2.0.0
+------
+09/25/2015
+
+- Major modifications: 
+
+        -> The code is now compatible with Python3
+
+        -> There are now 2 numbers to define random realisations in the parameter file: ncomp1d for the number of 1d realisations (all the instrument errors) and ncomp2d for the number of 2d realisations (wet-tropospheric error). This enable the user to increase the number of 1d realisations for longer wavelengths without increasing the computing time for the computation of the wet-tropospheric error.   
+ 
+        -> Nadir data are saved in a separate file for the grid and for the observation-like outputs
+
+        -> Passes are now splitted in ascending (odd numbers) and descending (even number) passes.
+
+        -> Netcdf format of outputs is improved
+
+        -> Interpolations of the model on SWOT swath have evolved so that the simulator can run faster: If the model grid is regular (options grid in parameter file), spline interpolation can be used. Regular or irregular grid can be interpolated using pyresample if it is installed or griddata (from scipy.interpolate). Note that griddata can be very slow or even run out of memory for large number of data. 
+
+- Minor modifications:  
+
+        -> Main scripts run_simulator.py and run_nadir.py have been rewritten to make the code more flexible and easily readable.
+
+        -> Improve printing of error messages and detection of potential errors
+
+        -> The nadir instrument errors were a random noise. It has been modified so that the nadir instrument errors are now following the spectrum of errors of current nadir altimeters. 
+
+        -> Orbit interpolated at high resolution if the provided orbit has a low temporal resolution (more than 0.5s)
+
+1.0.0
+------
+10/31/2014
+
+- Major modifications:
+
+	-> Implementation of SWH (Sea Wave Height) dependant KaRIN noise: New file karin_noise.nc added to data. The value of SWH is specified in the params file and is constant in time and space. 
+
+	-> Save normalized KaRIN noise every nrandkarin km, and random coefficient for other noises in file_coeff specified in params so that runs are reproducible (random coefficients are loaded from that file when it exists). 
+
+	-> Set up an option to compute the noise alone if no model file is provided (set 'file_input' to None in params)
+
+	-> Karin noise is now define on a swath from 10km to 60 km from the nadir. The parameter halfgap should be change to 10km in the params.txt file
+
+	-> Compute data at the nadir using a noise similar to the altimeter ... WARNING: the along track sampling is the same as the one in SWOT data. 
+
+	-> Possibility to compute nadir-like data for any altimeter using run_nadir.py. It runs exactly like run.py. An example of the parameter file is in example/params_example_nad.txt, the along track sampling can be set in the params file (recommended value is 6km). 
+
+- Minor modifications:
+
+	-> Number of random frequencies is now coded as a parameter and can be modified in params. 
+
+	-> Change name of variable indice by index in output file. 
+
+	-> renamed the module to swotsimulator, according to Python's PEP standard naming convention
+
+	-> Reading Netcdf4 files is now possible if netCDF4 python module is installed
+	
+- Fixed bugs:
+	-> problem around 0deg longitude due to the discontinuity 0-360 is fixed
+
+	-> Last pass missing: fixed
+
+1.0 beta 1
+----------
+09/01/2014 
+
