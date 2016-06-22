@@ -43,6 +43,15 @@ import glob, gc
 from optparse import OptionParser
 import sys
 import time as ti
+try: 
+        import params as p
+except: 
+         if os.path.isfile('params.py'):
+            print("There is a wrong entry in your params file" )
+            import params
+         else: 
+            print("Error: No params.py module found")
+            sys.exit()
 import swotsimulator
 import swotsimulator.build_swath as build_swath
 import swotsimulator.rw_data as rw_data
@@ -56,15 +65,6 @@ ntot=1
 ifile=0
 
 def run_simulator(file_param):
-    try: 
-        import params as p
-    except: 
-         if os.path.isfile('params.py'):
-            print("There is a wrong entry in your params file" )
-            import params
-         else: 
-            print("Error: No params.py module found")
-            sys.exit()
     import swotsimulator.build_swath as build_swath
     import swotsimulator.rw_data as rw_data
     import swotsimulator.build_error as build_error
@@ -113,13 +113,20 @@ def run_simulator(file_param):
         model_data.read_coordinates()
         ## Select model data in the region modelbox
         if p.grid=='regular':
-          model_data.model_index_lon=numpy.where(((modelbox[0]-1)<=model_data.vlon) & (model_data.vlon<=(modelbox[1]+1)))[0]
+          if modelbox[0]<modelbox[1]:
+            model_data.model_index_lon=numpy.where(((modelbox[0]-1)<=model_data.vlon) & (model_data.vlon<=(modelbox[1]+1)))[0]
+          else:
+            model_data.model_index_lon=numpy.where(((modelbox[0]-1)<=model_data.vlon) | (model_data.vlon<=(modelbox[1]+1)))[0]
           model_data.model_index_lat=numpy.where(((modelbox[2]-1)<=model_data.vlat) & (model_data.vlat<=(modelbox[3]+1)))[0]
           model_data.vlon=model_data.vlon[model_data.model_index_lon]
           model_data.vlat=model_data.vlat[model_data.model_index_lat]
 
         else:
-          model_data.model_index=numpy.where(((modelbox[0]-1)<=model_data.vlon) & (model_data.vlon<=(modelbox[1]+1)) & ((modelbox[2]-1)<=model_data.vlat) & (model_data.vlat<=(modelbox[3]+1)))#[0]
+          if modelbox[0]<modelbox[1]:
+            model_data.model_index=numpy.where(((modelbox[0]-1)<=model_data.vlon) & (model_data.vlon<=(modelbox[1]+1)) & ((modelbox[2]-1)<=model_data.vlat) & (model_data.vlat<=(modelbox[3]+1)))#[0]
+          else: 
+            model_data.model_index=numpy.where(((modelbox[0]-1)<=model_data.vlon) | (model_data.vlon<=(modelbox[1]+1)) & ((modelbox[2]-1)<=model_data.vlat) & (model_data.vlat<=(modelbox[3]+1)))#[0]
+
         model_data.model=model
         model_data.vloncirc=numpy.rad2deg(numpy.unwrap(model_data.vlon))
     if modelbox[1]==0: modelbox[1]=359.99
@@ -412,7 +419,6 @@ def select_modelbox(sgrid, model_data):
     lonmodel1d=model_data.vlon[model_index].ravel()
     latmodel1d=model_data.vlat[model_index].ravel()
 
-    #pdb.set_trace()
     if p.grid=='regular':
       model_data.lon1d=lon1[numpy.where(((numpy.min(sgrid.lon))<=lon1) & (lon1<=(numpy.max(sgrid.lon))))]
       model_data.lat1d=lat1[numpy.where(((numpy.min(sgrid.lat))<=lat1) & (lat1<=(numpy.max(sgrid.lat))))]
@@ -423,7 +429,6 @@ def select_modelbox(sgrid, model_data):
         model_data.vlon=model_data.vlon[model_index].ravel()
         model_data.vlat=model_data.vlat[model_index].ravel()
 
-    #pdb.set_trace()
     nx=len(lon1)
     ny=len(lat1)
     return model_index
