@@ -14,6 +14,7 @@
 # - Nov 2014: Beta version
 # - Feb 2015: Version 1.0
 # - Dec 2015: Version 2.0
+# - Jun 2016: Version 2.1
 #
 # Notes:
 # - Written for Python 2.3,  Python 3.4, tested with Python 2.7, Python 3.4
@@ -34,7 +35,7 @@
 #	      Changes are stored in CHANGES.txt
 #
 # Notes:
-# - Written and tested for Python 2.7
+# - Written and tested for Python 2.7, Python 3.4
 #
 # Copyright (c) 2014, by L. Gaultier and C. Ubelmann . For licensing, distribution 
 # conditions, contact information, and additional documentation see
@@ -42,7 +43,7 @@
 #=======================================================================
 
 
-version = '$2.0: Version compatible with python3$'
+version = '$2.1: Version compatible with python3, on github$'
 author  = 'Lucile Gaultier and Clement Ubelmann'
 date    = '$Date: 2014-11-31  $'
 url     = '<http://sourceforge.net/projects/swotsimulatorforoceanscience/>'
