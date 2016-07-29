@@ -634,7 +634,7 @@ class file_karin():
             i+=1
         if numpy.max(swh_tmp)<=swh:
             self.hsdt=hsdt[-1,:]
-	    print('WARNING: swh='+str(swh)+' is greater than the maximum value in '+self.file+', therefore swh is set to the file maximum value: swh='+str(numpy.max(swh_tmp)))
+            print('WARNING: swh='+str(swh)+' is greater than the maximum value in '+self.file+', therefore swh is set to the file maximum value: swh='+str(numpy.max(swh_tmp)))
         else:
             rswh=swh-swh_tmp[i]
             self.hsdt=hsdt[i,:]*(1-rswh)+rswh*hsdt[i+1,:]
