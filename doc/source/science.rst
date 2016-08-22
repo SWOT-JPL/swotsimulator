@@ -94,7 +94,7 @@ The KaRIN noise is random from cell to cell, defined by a Gaussian zero-centered
 
 .. _Fig5:
 
-.. figure:: ../images/Plot_SWH_legen2.png
+.. figure:: ../images/Fig5.png
    :scale: 60%
    :alt: Standard deviation of KaRIN noise
 
