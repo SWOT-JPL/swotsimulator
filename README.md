@@ -9,3 +9,9 @@ This software simulates SWOT observations of sea surface height (SSH) that can b
 Manual
 ------------
 Refer to [Full manual](https://github.com/SWOTsimulator/swotsimulator/blob/master/doc/source/science.rst) for more details.
+
+Updates
+------------
+
+* August 22, 2016
+ * updated Karin noise

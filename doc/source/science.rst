@@ -99,7 +99,7 @@ The KaRIN noise is random from cell to cell, defined by a Gaussian zero-centered
    :scale: 60%
    :alt: Standard deviation of KaRIN noise
 
-   FIG. 5: standard deviation (m) of the KaRIN noise as a function of cross-track distance (km) for a grid cell of 1~km by 1~km and SWH varying from 0~m (lowest curve) to 8~m (highest curve). 
+   FIG. 5: The example curves of the standard deviation (cm) of the KaRIN noise as a function of cross-track distance (km).
 
 .. _Fig6:
 
