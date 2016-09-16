@@ -202,12 +202,37 @@ class Sat_SWOT():
         distance crossed in a cycle, time, along track and across track 
         distances are stored.'''
 ## - Open Netcdf file in write mode
-        if netcdf4: 
-          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC') 
-        else:  
+        if netcdf4:
+          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        else:
           fid = Dataset(self.file, 'w')
+        ## - Create Global attribute
+        fid.title = 'SWOT grid'
+        fid.keywords = 'check keywords'  # Check keywords
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
         fid.description = "SWOT fixed grid"
-## - Create dimensions
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version '  # Add version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = "YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = "YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = numpy.min(lat).format(%2f)
+        fid.geospatial_lat_max = numpy.max(lat)
+        fid.geospatial_lat_units = "degrees_north" ;
+        fid.geospatial_lon_max = numpy.max(lon) ;
+        fid.geospatial_lon_min = numpy.min(lon) ;
+        fid.geospatial_lon_units = "degrees_east";
+        fid.project = "SWOT"
+        fid.date_created = "today"  # to be modified
+        fid.date_modified = "??"  # tbm
+        fid.keywords_vocabulary = "NASA"
+        fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        ## - Create dimensions
         #if (not os.path.isfile(self.file)):
         fid.createDimension('time', numpy.shape(self.lon)[0])
         #fid.createDimension('time_nadir', numpy.shape(self.lon)[0])
