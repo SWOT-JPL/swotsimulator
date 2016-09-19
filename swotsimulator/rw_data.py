@@ -232,12 +232,13 @@ class Sat_SWOT():
         fid.date_modified = "??"  # tbm
         fid.keywords_vocabulary = "NASA"
         fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        fid.cycle = str(int(self.al_cycle))
         ## - Create dimensions
         #if (not os.path.isfile(self.file)):
         fid.createDimension('time', numpy.shape(self.lon)[0])
         #fid.createDimension('time_nadir', numpy.shape(self.lon)[0])
         fid.createDimension('x_ac', numpy.shape(self.lon)[1])
-        fid.createDimension('cycle', 1)
+        #fid.createDimension('cycle', 1)
 
 ## - Create and write Variables
         vtime = fid.createVariable('time', 'f', ('time',))
@@ -247,7 +248,7 @@ class Sat_SWOT():
         #vlat_nadir = fid.createVariable('lat_nadir', 'f4', ('time_nadir',))
         vlon = fid.createVariable('lon', 'f4', ('time','x_ac'))
         vlat = fid.createVariable('lat', 'f4', ('time','x_ac'))
-        vcycle = fid.createVariable('cycle', 'f4', ('cycle',))
+        #vcycle = fid.createVariable('cycle', 'f4', ('cycle',))
         valcycle = fid.createVariable('al_cycle', 'f4', ('cycle',))
         vtimeshift = fid.createVariable('timeshift', 'f4', ('cycle',))
         vx_al = fid.createVariable('x_al', 'f4', ('time',))
