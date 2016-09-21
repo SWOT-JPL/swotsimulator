@@ -219,20 +219,20 @@ class Sat_SWOT():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = "YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_start = p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
         fid.time_coverage_end = "YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.geospatial_lat_min = numpy.min(lat).format(%2f)
-        fid.geospatial_lat_max = numpy.max(lat)
-        fid.geospatial_lat_units = "degrees_north" ;
-        fid.geospatial_lon_max = numpy.max(lon) ;
-        fid.geospatial_lon_min = numpy.min(lon) ;
-        fid.geospatial_lon_units = "degrees_east";
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(lon))
+        fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = "today"  # to be modified
+        fid.date_created = time.strftime("%Y-%m-%dT%H:%M:%SZ")
         fid.date_modified = "??"  # tbm
         fid.keywords_vocabulary = "NASA"
         fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
-        fid.cycle = str(int(self.al_cycle))
+        fid.cycle = "{0:d}".format(self.al_cycle)
         ## - Create dimensions
         #if (not os.path.isfile(self.file)):
         fid.createDimension('time', numpy.shape(self.lon)[0])
@@ -286,7 +286,7 @@ class Sat_SWOT():
         valcycle.units="km"
         valcycle.long_name=" Distance travelled during the pass"
         vtimeshift[:]=self.timeshift
-        vtimeshift.units="km"
+        vtimeshift.units="day"
         vtimeshift.long_name="Shift time to match model time"
         vx_al[:]=self.x_al
         vx_al.units="km"
