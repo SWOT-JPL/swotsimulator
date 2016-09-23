@@ -44,7 +44,7 @@
 #=======================================================================
 
 
-version = '$2.2: Version compatible with python3, on github$'
+version = '$2.21: Version compatible with python3, on github$'
 author  = 'Lucile Gaultier and Clement Ubelmann'
 date    = '$Date: 2014-11-31  $'
 url     = '<http://sourceforge.net/projects/swotsimulatorforoceanscience/>'
