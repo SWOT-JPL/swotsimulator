@@ -1,4 +1,4 @@
-#import params as p
+# import params as p
 import numpy
 import scipy
 import swotsimulator.rw_data as rw_data
@@ -12,20 +12,22 @@ from scipy.ndimage.filters import gaussian_filter
 
 
 class error():
-    '''Class error define all the possible errors that can be computed using SWOT simulator. 
+    '''Class error define all the possible errors that can be computed using
+    SWOT simulator. 
     Random realisation of errors can be initialized using init_error. 
-    If the random realisations have already been computed and stored in file file_coeff, 
-    the random realisations are read directly using load_coeff.  The correspondg errors on a swath
-    can be computed using make_error. '''
-    def __init__(self,p,
-        roll=None,
-        ssb=None,
-        wet_tropo=None,
-        phase=None,
-        baseline_dilation=None,
-        karin=None,
-        timing=None,
-        SSH=None,
+    If the random realisations have already been computed and stored in
+    file file_coeff, the random realisations are read directly using 
+    load_coeff.  The corresponding errors on a swath can be computed using
+    make_error. '''
+    def __init__(self, p,
+                roll=None,
+                ssb=None,
+                wet_tropo=None,
+                phase=None,
+                baseline_dilation=None,
+                karin=None,
+                timing=None,
+                SSH=None,
         wt=None):
         self.roll=roll
         self.ssb=ssb
