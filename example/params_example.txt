@@ -4,7 +4,7 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~")
+home = expanduser("~") + os.sep + 'JPL'
 # ------ Directory that contains orbit file:
 dir_setup=home+os.sep+'swotsimulator'+os.sep+'data'+os.sep
 # ------ Directory that contains your own inputs:

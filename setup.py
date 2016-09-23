@@ -14,7 +14,7 @@ with open(os.curdir+os.sep+'swotsimulator'+os.sep+'package_version.py') as f:
 setup(name='swotsimulator',
           version=version,
           description=description,
-	  author=author,
+          author=author,
 	  author_email=email,
 	  url=url,
 	  license = 'COPYING',
@@ -23,6 +23,7 @@ setup(name='swotsimulator',
 	  install_requires=[
 	  	"Numpy",
 		"Scipy",
+		"netCDF4",
 		],
       entry_points={                                                            
           'console_scripts': [                                                  
