@@ -11,8 +11,9 @@ dir_setup = home + os.sep + 'swotsimulator' + os.sep + 'data' + os.sep
 indatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example' + os.sep
              + 'input_fields' + os.sep)
 # ------ Directory that contains your outputs:
-outdatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example '+ os.sep
+outdatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example'+ os.sep
               + 'swot_output' + os.sep)
+print(outdatadir)
 # ------ Orbit file:
 satname = "swot292"
 filesat = dir_setup + os.sep + 'orbit292.txt'

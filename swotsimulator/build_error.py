@@ -353,7 +353,7 @@ class error():
                               * (numpy.float64(x)) + float(self.fry_wt[comp])
                               * numpy.float64(y))) % (2.*pi)
                 self.wt = (self.wt + self.A_wt[comp]
-                           * numpy.cos(phase_x_al + self.phi_wt[comp])*10**-2
+                           * numpy.cos(phase_x_al + self.phi_wt[comp])*10**-2)
                 phase_x_al_large = (2. * pi * (float(self.frx_wt[comp])
                                     * (numpy.float64(x_large))
                                     + float(self.fry_wt[comp])
@@ -719,7 +719,7 @@ class errornadir():
                                     * numpy.float64(y_large))) % (2.*pi)
                 wt_large = (wt_large + self.A_wt[comp]
                             * numpy.cos(phase_x_al_large
-                            + self.phi_wt[comp])*10**-2
+                            + self.phi_wt[comp])*10**-2)
                 phase_x_al = (2. * pi * float(self.fr_radio[comp])
                               * (numpy.float64(orb.x_al[:])
                               + float(cycle*orb.al_cycle))) % (2.*pi)
