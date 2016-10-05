@@ -52,22 +52,22 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
 
     # - Get cycle period.
     tcycle = votime[nop-1] + votime[1] - votime[0]
-
     # shift time if the user needs to shift the time of the orbit
     try:
         pshift_time = p.shift_time
-        if pshift_time:
+        print(pshift_time)
+        if pshift_time is not None:
             shift_index = numpy.where(votime >= pshift_time)[0]
-            volon = numpy.hstack([volon[shift_index[0][0]:],
-                                 volon[:shift_index[0][0]]])
-            volat = numpy.hstack([volat[shift_index[0][0]:],
-                                 volat[:shift_index[0][0]]])
+            volon = numpy.hstack([volon[shift_index[0]:],
+                                 volon[:shift_index[0]]])
+            volat = numpy.hstack([volat[shift_index[0]:],
+                                 volat[:shift_index[0]]])
     except:
         p.shift_time = None
     # shift lon if the user needs to shift the localisation of the orbit
     try:
         pshift_lon = p.shift_lon
-        if pshift_lon:
+        if pshift_lon is not None:
             volon = volon + pshift_lon
     except:
         p.shift_lon = None
