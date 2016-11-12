@@ -5,6 +5,7 @@ import matplotlib as mpl
 import swotsimulator.rw_data as rw_data
 import numpy
 import params as p
+
 filegrid = p.indatadir + 'OREGON_grd.nc'
 fileswot = p.outdatadir + 'OREGON_swot292_c01_p067.nc'
 vmin = -0.10

@@ -5,10 +5,11 @@ import matplotlib as mpl
 import swotsimulator.rw_data as rw_data
 import numpy
 import params as p
+
 filegrid = p.indatadir + 'OREGON_grd.nc'
 fileswot = p.outdatadir + 'OREGON_swot292_c01_p067.nc'
-vmin = -0.05
-vmax = 0.05
+vmin = -0.10
+vmax = 0.10
 fig = plt.figure(figsize=(30,10))
 tloc=0.11
 tfont=24
@@ -26,6 +27,8 @@ SSH = numpy.ma.array(SSH, mask=numpy.isnan(SSH))
 print(numpy.shape(x_al), numpy.shape(x_ac), numpy.shape(SSH))
 col = plt.pcolormesh(x_al[(nac/2), :], x_ac[:int(nac/2), 0],
         numpy.transpose(SSH[:,:int(nac/2)]), norm=norm)
+col = plt.pcolormesh(x_al[(nac/2), :], x_ac[int(nac/2):, 0],
+        numpy.transpose(SSH[:,int(nac/2):]), norm=norm)
 plt.xlabel('along track (km)')
 plt.ylabel('across track (km)')
 plt.colorbar()
