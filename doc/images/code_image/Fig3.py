@@ -22,7 +22,6 @@ fig, axes = plt.subplots(figsize=(36, 7.5), nrows=1, ncols=3, sharex=False,
                          sharey=True)
 #plt.clf()
 size = fig.get_size_inches()*fig.dpi # get fig size in pixels
-indice = 0
 tloc=0.09
 tfont=24
 for indice in range(numpy.shape(axes.flat)[0]):
