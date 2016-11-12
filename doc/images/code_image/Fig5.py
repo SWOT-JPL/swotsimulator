@@ -15,12 +15,12 @@ stitle = 'Karin noise standard deviation as a function of distance from nadir'
 for i in range(0, 9):
      swh = i
      karin_data.read_karin(i)
-     hsdt = karin_data.hsdt
+     hsdt = karin_data.hsdt * 10**(-2)
      x_ac = karin_data.x_ac
      plt.plot(x_ac, hsdt, label = str(int(swh)) + ' m')
      plt.legend()
 #plt.yrange(0,0.25)
-plt.ylabel('Karin std')
+plt.ylabel('Karin std (cm)')
 plt.xlabel('across track (km)')
 plt.title(stitle, y=-tloc, fontsize=tfont) #size[1])
 plt.savefig('Fig5.png')

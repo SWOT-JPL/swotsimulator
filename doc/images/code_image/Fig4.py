@@ -1,4 +1,4 @@
-''' Plotting Karin noise along track (no location on a map) '''
+''' Plotting Total noise along track (no location on a map) '''
 import matplotlib.pylab as plt
 import numpy
 import matplotlib as mpl
@@ -8,8 +8,8 @@ import params as p
 
 filegrid = p.indatadir + 'OREGON_grd.nc'
 fileswot = p.outdatadir + 'OREGON_swot292_c01_p024.nc'
-vmin = -0.01
-vmax = 0.01
+vmin = -0.05
+vmax = 0.05
 fig = plt.figure(figsize=(30,10))
 tloc=0.11
 tfont=24
@@ -18,7 +18,7 @@ data.load_swath(karin_err=[], x_ac=[], x_al=[])
 x_al, x_ac = numpy.meshgrid(data.x_al, data.x_ac)
 x_al = x_al - numpy.min(numpy.min(x_al))
 SSH = data.karin_err
-stitle = 'Karin noise along track'
+stitle = 'Total noise along swath'
 nac = numpy.shape(data.lon)[1]
 SSH[abs(SSH) > 1000] = numpy.nan
 norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
