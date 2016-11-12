@@ -15,7 +15,6 @@ fig = plt.figure(figsize=(12,9))
 tloc=0.11
 tfont=20
 stitle = 'Phase power spectrum'
-print(freq, file_instr.rollPSD)
 #plt.loglog(freq, file_instr.rollPSD[ind], label='roll')
 #plt.loglog(freq, file_instr.gyroPSD[ind], label='Gyro')
 plt.loglog(freq2, file_instr.phasePSD)
