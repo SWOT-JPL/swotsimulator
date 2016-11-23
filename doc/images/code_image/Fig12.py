@@ -7,7 +7,7 @@ import numpy
 import params as p
 
 filegrid = p.indatadir + 'OREGON_grd.nc'
-fileswot = p.outdatadir + 'OREGON_swot292_c01_p067.nc'
+fileswot = p.outdatadir + 'OREGON_swot292_c01_p024.nc'
 vmin = -0.01
 vmax = 0.01
 fig = plt.figure(figsize=(30,10))
@@ -33,4 +33,5 @@ plt.xlabel('along track (km)')
 plt.ylabel('across track (km)')
 plt.colorbar()
 plt.title(stitle, y=-tloc, fontsize=tfont) #size[1])
+plt.axis('tight')
 plt.savefig('Fig12.png')
