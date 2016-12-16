@@ -45,9 +45,11 @@ The software uses as an input the ground-tracks of the satellite orbit. The user
 +---------------------+--------------+--------------+------------+-------------+-----------+
 
 The ground-track coordinates corresponding to these orbits are given as input ASCII files of 3 columns (longitude, latitude, time) for one complete cycle sampled at every  ~5~km. The ascending node has been arbitrarily set to zero degree of longitude, but the user can shift the orbit by any value in longitude.
-Other orbit files of the same format can also be used as an input. To avoid distortions in the SWOT grid, we recommend a minimum of 10km sampling between the ground-track points of the orbit.   
 
+Orbit files have been updated with the one provided by AVISO_ on september 2015 (http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html). There are two additional orbit files available in the last version of the simulator. Input files are also ASCII with 3 columns (time, longitude, latitude). Orbits are provided at low resolution and are interpolated automatically by the simulator. 'ephem_calval_june2015_ell.txt' contains the updated fast sampling orbit and 'ephem_science_sept2015_ell.txt' the updated science orbit.
 
+Other orbit files of the same format (time, longitude, latitude) can also be used as an input. To avoid distortions in the SWOT grid, we recommend a minimum of 10km sampling between the ground-track points of the orbit.
+.. _AVISO: http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html
 The SWOT swath
 ---------------
 From the orbit nadir ground track the software generates a grid covering the SWOT swath over 1 cycle. In the across-swath direction, the grid is defined between 10~km and 60~km off nadir. The grid size is 2 kilometers in the along-track and across-track directions by default, but can be set at any other value (e.g. 500~m or 250~m). The longitude and latitude coordinates are referenced for each grid point, and the time coordinate (between 0 and t_cycle) is referenced in the along-track direction only. A scheme of the SWOT grid is presented on :ref:`Fig. 2 <Fig2>`.
