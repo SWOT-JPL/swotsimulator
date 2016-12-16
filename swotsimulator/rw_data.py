@@ -8,7 +8,8 @@ Contains model classes: \n
 Contains satellite class: Sat_SWOT \n
 Contains file instrumentation class: file_instr \n
 '''
-netcdf4=True
+netcdf4 = True
+version = '2.21'
 try:
     from netCDF4 import Dataset
 except ImportError:
@@ -202,12 +203,40 @@ class Sat_SWOT():
         distance crossed in a cycle, time, along track and across track 
         distances are stored.'''
 ## - Open Netcdf file in write mode
-        if netcdf4: 
-          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC') 
-        else:  
+        if netcdf4:
+          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        else:
           fid = Dataset(self.file, 'w')
+        ## - Create Global attribute
+        fid.title = 'SWOT swath grid simulated by SWOT simulator'
+        fid.keywords = 'check keywords'  # Check keywords
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
         fid.description = "SWOT fixed grid"
-## - Create dimensions
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version ' + version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = self.time[0]
+        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = self.time[-1]
+        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(self.lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
+        fid.geospatial_lon_units = "degrees_east"
+        fid.project = "SWOT"
+        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.keywords_vocabulary = "NASA"
+        fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        fid.cycle = "{0:d}".format(int(self.al_cycle))
+        ## - Create dimensions
         #if (not os.path.isfile(self.file)):
         fid.createDimension('time', numpy.shape(self.lon)[0])
         #fid.createDimension('time_nadir', numpy.shape(self.lon)[0])
@@ -260,7 +289,7 @@ class Sat_SWOT():
         valcycle.units="km"
         valcycle.long_name=" Distance travelled during the pass"
         vtimeshift[:]=self.timeshift
-        vtimeshift.units="km"
+        vtimeshift.units="day"
         vtimeshift.long_name="Shift time to match model time"
         vx_al[:]=self.x_al
         vx_al.units="km"
@@ -288,6 +317,34 @@ class Sat_SWOT():
         fid.description = "Ouptut from SWOT simulator"
         try: fid.corresponding_grid=self.gridfile
         except: pass
+        fid.title = 'SWOT-like data simulated by SWOT simulator'
+        fid.keywords = 'SWOT, altimetry, SSH, satellite, remote sensing'
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
+        fid.description = "SWOT fixed grid"
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version ' + version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = self.time[0]
+        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = self.time[-1]
+        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(self.lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
+        fid.geospatial_lon_units = "degrees_east"
+        fid.project = "SWOT"
+        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.keywords_vocabulary = "NASA"
+        fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        # fid.cycle = "{0:d}".format(int(self.al_cycle))
 ## - Create dimensions
         fid.createDimension('time', numpy.shape(self.lon)[0])
         #fid.createDimension('time_nadir', numpy.shape(self.lon_nadir)[0])
@@ -466,6 +523,34 @@ class Sat_nadir():
         fid.description = "Orbit computed by SWOT simulator"
         try: fid.corresponding_grid=self.gridfile
         except: pass
+        fid.title = 'Altimeter like data simulated by SWOT simulator'
+        fid.keywords = 'check keywords'  # Check keywords
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
+        fid.description = "SWOT fixed grid"
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version ' + version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = self.time[0]
+        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = self.time[-1]
+        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(self.lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
+        fid.geospatial_lon_units = "degrees_east"
+        fid.project = "SWOT"
+        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.keywords_vocabulary = "NASA"
+        fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        # fid.cycle = "{0:d}".format(int(self.al_cycle))
 ## - Create dimensions
         fid.createDimension('time', numpy.shape(self.lon)[0])
         fid.createDimension('cycle', 1)
@@ -530,8 +615,34 @@ class Sat_nadir():
           fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC') 
         else:  
           fid = Dataset(self.file, 'w' )
-        fid.description = "Orbit computed from SWOT simulator"
-
+        fid.title = 'Satellite orbit grid computed by SWOT simulator'
+        fid.keywords = 'check keywords'  # Check keywords
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
+        fid.description = "SWOT fixed grid"
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version ' + version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = self.time[0]
+        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = self.time[-1]
+        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(self.lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
+        fid.geospatial_lon_units = "degrees_east"
+        fid.project = "SWOT"
+        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.keywords_vocabulary = "NASA"
+        fid.references = "Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The Challenge of Using Future SWOT Data for Oceanic Field Reconstruction. J. Atmos. Oceanic Technol., 33, 119–126, doi:10.1175/jtech-d-15-0160.1. http://dx.doi.org/10.1175/JTECH-D-15-0160.1."
+        fid.cycle = "{0:d}".format(int(self.al_cycle))
 ## - Create dimensions
         #if (not os.path.isfile(self.file)):
         fid.createDimension('time', numpy.shape(self.lon)[0])
