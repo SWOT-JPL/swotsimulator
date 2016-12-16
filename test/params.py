@@ -12,8 +12,8 @@ indatadir=home+os.sep+'swotsimulator'+os.sep+'example'+os.sep+'input_fields'+os.
 # ------ Directory that contains your outputs:
 outdatadir = '/mnt/data/SWOT' + os.sep
 # ------ Orbit file:
-satname="swot292"
-filesat=dir_setup+os.sep+'orbit292.txt'
+satname="calval"
+filesat=dir_setup+os.sep+'ephem_calval_june2015_ell.txt'
 # ------ Name of the configuration (to build output files names) 
 config="OREGON"
             
