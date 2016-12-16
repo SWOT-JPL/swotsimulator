@@ -20,8 +20,11 @@ Manual
 ------------
 Refer to [Full manual](https://github.com/SWOTsimulator/swotsimulator/blob/master/doc/source/science.rst) for more details.
 
-Updates
-------------
+Updates impacting users
+-----------------------
+*December 17, 2016
+ * update orbit files
+WARNING: customized orbit files have to be an ASCII file containing (time, lon, lat) columns
 
 * August 22, 2016
  * updated Karin noise
