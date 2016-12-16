@@ -23,9 +23,12 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     npoints = 1
     # - Load SWOT orbit ground track
     print('Load data from orbit file')
-    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
-                                         unpack=True)
 
+    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
+                                         unpack=True)
+    if numpy.all(numpy.diff(votime) > 0) is False:
+        volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
+                                         unpack=True)
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
         x, y, z = mod_tools.spher2cart(volon, volat)

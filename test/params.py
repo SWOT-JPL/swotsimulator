@@ -4,16 +4,16 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~")
+home = expanduser("~") + '/src/'
 # ------ Directory that contains orbit file:
 dir_setup=home+os.sep+'swotsimulator'+os.sep+'data'+os.sep
 # ------ Directory that contains your own inputs:
 indatadir=home+os.sep+'swotsimulator'+os.sep+'example'+os.sep+'input_fields'+os.sep
 # ------ Directory that contains your outputs:
-outdatadir=home+os.sep+'swotsimulator'+os.sep+'example'+os.sep+'swot_output'+os.sep
+outdatadir = '/mnt/data/SWOT' + os.sep
 # ------ Orbit file:
-satname="swot292"
-filesat=dir_setup+os.sep+'orbit292.txt'
+satname="calval"
+filesat=dir_setup+os.sep+'ephem_calval_june2015_ell.txt'
 # ------ Name of the configuration (to build output files names) 
 config="OREGON"
             
@@ -42,7 +42,7 @@ delta_ac=2.
 shift_lon=None
 # ------ Shift time of the satellite pass (in day):
 #        Default value is None (no shift)
-shift_time=None 
+shift_time=None
 
 # -----------------------#
 # Model input parameters
@@ -84,7 +84,7 @@ file_output=outdatadir+os.sep+config+'_'+satname
 #         pyresample is not installed:
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
-interpolation='nearest' #'linear' #'nearest' 
+interpolation='linear'
 # -----------------------# 
 # SWOT error parameters 
 # -----------------------# 
@@ -116,7 +116,7 @@ ncomp2d=2000
 # ------ Cut off frequency:
 #	 (Use lambda_cut=40000km for cross-calibration)
 lambda_cut=20000
-lambda_max=20000 #*50
+lambda_max=20000
 # ------ Roll error (True to compute it):
 roll=True 
 # ------ Phase error (True to compute it):
@@ -134,7 +134,7 @@ wet_tropo=True
 #        Gaussian footprint of sigma km	 
 sigma=8. 
 # ------ Number of beam used to correct wet_tropo signal (1, 2 or 'both'):
-nbeam=2
+nbeam='both'
 # ------ Beam position if there are 2 beams (in km from nadir):
 beam_pos_l=-35.
 beam_pos_r=35.
