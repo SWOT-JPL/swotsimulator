@@ -21,8 +21,7 @@ else:
   print(modelbox)
 fig = plt.figure
 plt.clf()
-plt.show()
-plt.ion()
+#plt.ion()
 if isBasemap is True:
     m = Basemap(llcrnrlon = modelbox[0], \
             llcrnrlat = modelbox[2], \
@@ -41,7 +40,7 @@ for coordfile in listfile:
     data = rw_data.Sat_SWOT(file = coordfile)
     data.load_swath(SSH_obs = []) 
     nac = numpy.shape(data.lon)[1]
-    data.lon[numpy.where(data.lon>180)] = data.lon[numpy.where(data.lon>180)]-360
+    #data.lon[numpy.where(data.lon>180)] = data.lon[numpy.where(data.lon>180)]-360
     if isBasemap is True: x,y = m(data.lon[:,:],data.lat[:,:])
     else: x = data.lon ; y = data.lat
     norm = mpl.colors.Normalize(vmin = -0.1, vmax = 0.1)
@@ -54,3 +53,4 @@ for coordfile in listfile:
 plt.colorbar()
 plt.title('SWOT like data for config ' +p.config)
 plt.savefig(p.config+'_swath_SSH_obs.png')
+plt.show()

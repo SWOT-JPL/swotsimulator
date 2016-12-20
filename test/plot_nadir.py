@@ -21,8 +21,7 @@ else:
   print(modelbox)
 fig = plt.figure
 plt.clf()
-plt.show()
-plt.ion()
+#plt.ion()
 if isBasemap is True:
     m = Basemap(llcrnrlon = modelbox[0], \
             llcrnrlat = modelbox[2], \
@@ -46,3 +45,4 @@ for coordfile in listfile:
     norm = mpl.colors.Normalize(-0.15, 0.15)
     C = plt.scatter(data.lon[:],data.lat[:], c = data.SSH_obs, edgecolors = 'None', norm = norm) 
 plt.savefig(p.outdatadir+'sat_pass.png')
+plt.show()

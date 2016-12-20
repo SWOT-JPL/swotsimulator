@@ -108,7 +108,8 @@ def run_simulator(file_param):
     # - Read list of user model files """
     if p.file_input:
         list_file = [line.strip() for line in open(p.file_input)]
-
+    else:
+        list_file = None
     # - Read model input coordinates '''
     # if no modelbox is specified (modelbox=None), the domain of the input
     # data is taken as a modelbox
