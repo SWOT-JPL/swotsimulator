@@ -4,13 +4,13 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~") + '/src/'
+home = expanduser("~") 
 # ------ Directory that contains orbit file:
 dir_setup = home+os.sep+'swotsimulator'+os.sep+'data'+os.sep
 # ------ Directory that contains your own inputs:
 indatadir = home+os.sep+'swotsimulator'+os.sep+'example'+os.sep+'input_fields'+os.sep
 # ------ Directory that contains your outputs:
-outdatadir = '/mnt/data/SWOT' + os.sep
+outdatadir = '/mnt/data_b/SWOT' + os.sep
 # ------ Orbit file:
 satname = "science"
 filesat = dir_setup+os.sep+'ephem_science_sept2015_ell.txt'
