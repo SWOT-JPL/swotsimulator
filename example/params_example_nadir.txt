@@ -14,7 +14,7 @@ indatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example' + os.sep
 outdatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example' + os.sep
               + 'swot_output' + os.sep)
 # ------ Orbit file:
-filesat = [dir_setup + os.sep + 'orbjason2.txt']
+filesat = [dir_setup + os.sep + 'ephem_science_sept2015_ell.txt']
 # , dir_setup+os.sep+'orbjason.txt', dir_setup+os.sep+'orbaltika.txt' ]
 # ------ Name of the configuration (to build output files names) 
 config="OREGON"
