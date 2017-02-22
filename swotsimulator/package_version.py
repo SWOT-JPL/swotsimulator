@@ -18,7 +18,7 @@
 # - July 2016: Version 2.2 
 #
 # Notes:
-# - Written for Python 2.3,  Python 3.4, tested with Python 2.7, Python 3.4
+# - Written for Python 2.7,  Python 3.4, tested with Python 2.7, Python 3.4
 #
 # Copyright (c)
 # Copyright (c) 2002-2014, California Institute of Technology.
