@@ -8,7 +8,7 @@ logger = logging.getLogger()
 handler = logging.StreamHandler()
 handler.setLevel(logging.DEBUG)
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.WARN)
 
 if  (len(sys.argv) < 2):
     file_param = os.getcwd() + os.sep + 'example' + os.sep + 'params_example_nadir.txt'

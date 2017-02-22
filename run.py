@@ -2,6 +2,14 @@ import sys
 import os
 import shutil
 
+import logging                                                                  
+                                                                                
+logger = logging.getLogger()                                                    
+handler = logging.StreamHandler()                                               
+handler.setLevel(logging.DEBUG)                                                 
+logger.addHandler(handler)                                                      
+logger.setLevel(logging.WARN)  
+
 if  (len(sys.argv) < 2):
     file_param = os.getcwd() + os.sep + 'example' + os.sep + 'params_example.txt'
     print("no params file specified, default is " + file_param)
