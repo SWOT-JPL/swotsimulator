@@ -22,7 +22,7 @@ import swotsimulator.const as const
 import numpy
 import sys, os
 import time as ti
-import logger
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -488,7 +488,7 @@ class Sat_SWOT():
 
 class Sat_nadir():
     def __init__(self,
-                ifile=None,
+                file=None,
                 lon=None,
                 lat=None,
                 time=None,
@@ -496,7 +496,7 @@ class Sat_nadir():
                 al_cycle=None,
                 x_al=None,
                 timeshift=None):
-        self.file = ifile
+        self.file = file
         self.lon = lon
         self.lat = lat
         self.time = time
@@ -740,8 +740,8 @@ class file_instr():
     USAGE: file_instr(file=file name) \n
     Mandatory argument is the file name. \n'''
     def __init__(self,
-                 ifile=None,):
-        self.file=ifile
+                 file=None,):
+        self.file = file
 
     def read_var(self, **kwargs):
         '''Read variables in instrumentation file. \n
@@ -769,7 +769,7 @@ class file_karin():
     Mandatory argument is the file name. \n'''
     def __init__(self,
                  file=None,):
-        self.file=file
+        self.file = file
 
     def read_karin(self, swh):
         '''Read and interpolate karin noise. \n
@@ -822,7 +822,7 @@ class NEMO():
     values var='sossheig', lon='nav_lon', lat='nav_lat', depth='depth',
     time='time. \n'''
     def __init__(self,
-                ifile=None,
+                file=None,
                 var='sossheig',
                 lon='nav_lon',
                 lat='nav_lat',
@@ -833,7 +833,7 @@ class NEMO():
         self.nlon = lon
         self.nlat = lat
         self.ntime = time
-        self.nfile = ifile
+        self.nfile = file
         self.ndepth = depth
         try:
             self.model_nan = p.model_nan
@@ -893,7 +893,7 @@ class ROMS():
     If units is False (coordinates in km), specify left
     low corner of the domain (lon0, lat0) in params file.'''
     def __init__(self,
-                ifile=None,
+                file=None,
                 var='rho',
                 depth='depth',
                 time='time',
@@ -904,7 +904,7 @@ class ROMS():
         self.nlon = lon
         self.nlat = lat
         self.ntime = time
-        self.nfile = ifile
+        self.nfile = file
         self.ndepth = depth
         try:
             self.model_nan=p.model_nan
@@ -958,7 +958,7 @@ class NETCDF_MODEL():
     are specified in params file. \n
     '''
     def __init__(self,
-                ifile=None,
+                file=None,
                 var=p.var,
                 lon=p.lon,
                 lat=p.lat,
@@ -968,7 +968,7 @@ class NETCDF_MODEL():
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
-        self.nfile = ifile
+        self.nfile = file
         self.depth = depth
         self.time = time
         try:
@@ -1022,7 +1022,7 @@ class CLS_MODEL():
     are specified in params file. \n
     '''
     def __init__(self,
-                ifile=None,
+                file=None,
                 var=p.var,
                 lon=p.lon,
                 lat=p.lat,
@@ -1032,7 +1032,7 @@ class CLS_MODEL():
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
-        self.nfile = ifile
+        self.nfile = file
         self.depth = depth
         self.time = time
         try:
@@ -1091,7 +1091,7 @@ class MITgcm():
     are specified in params file. \n
     '''
     def __init__(self,
-                ifile=None,
+                file=None,
                 var='Eta',
                 lon='XC',
                 lat='YC',
@@ -1101,7 +1101,7 @@ class MITgcm():
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
-        self.nfile = ifile
+        self.nfile = file
         self.depth = depth
         self.time = time
         self.model_nan = p.model_nan = 0

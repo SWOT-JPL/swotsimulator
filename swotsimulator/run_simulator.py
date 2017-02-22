@@ -44,14 +44,16 @@ import numpy
 import glob
 import sys
 import logging
+# Define logger level for debug purposes
+logger = logging.getLogger(__name__)
 try:
     import params as p
 except:
     if os.path.isfile('params.py'):
-        print("There is a wrong entry in your params file")
+        logger.error("There is a wrong entry in your params file")
         import params
     else:
-        print("Error: No params.py module found")
+        logger.error("Error: No params.py module found")
         sys.exit()
 import swotsimulator
 import swotsimulator.build_swath as build_swath
@@ -60,8 +62,6 @@ import swotsimulator.build_error as build_error
 import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 
-# Define logger level for debug purposes
-logger = logging.getLogger(__name__)
 
 # - Define global variables for progress bars
 istep = 0
@@ -127,7 +127,7 @@ def run_simulator(file_param):
         if p.file_input:
             modelbox = model_data.calc_box()
         else:
-            print('modelbox should be provided if no model file is provided')
+            logger.info('modelbox should be provided if no model file is provided')
             sys.exit()
     if p.file_input:
         model_data.read_coordinates()
@@ -162,11 +162,11 @@ def run_simulator(file_param):
         modelbox[1] = 359.99
     # - Make SWOT grid if necessary """
     if p.makesgrid:
-        logger.warn('\n Force creation of SWOT grid')
+        logger.warning('\n Force creation of SWOT grid')
         orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
         build_swath.orbit2swath(modelbox, p, orb)
-        logger.info("\n SWOT Grids and nadir tracks have been written in "
-              + p.outdatadir)
+        logger.info("\n SWOT Grids and nadir tracks have been written in "\
+                    "{}".format(p.outdatadir))
         logger.info("-----------------------------------------------")
 
     # - Initialize random coefficients that are used to compute
@@ -179,8 +179,9 @@ def run_simulator(file_param):
     #   load all SWOT grid files (one for each pass)
     listsgridfile = sorted(glob.glob(p.filesgrid + '_p*.nc'))
     if not listsgridfile:
-        logger.warn('\n There is no SWOT grid file in ' + p.outdatadir
-              + ', run simulator with option makesgrid set to true in your params file')
+        logger.error('\n There is no SWOT grid file in {}, run simulator with'\
+                    'option makesgrid set to true in your params'\
+                    'file'.format(p.outdatadir))
         sys.exit()
     #   Model time step
     modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
@@ -245,16 +246,16 @@ def run_nadir(file_param):
         #    basedir=os.path.dirname(swotsimulator.__file__)
         shutil.copyfile(file_param, 'params.py')
     else:
-        print("Error: No such file: '%s'" % file_param)
+        logger.error("Error: No such file: {}".format(file_param))
         sys.exit()
     try:
         import params as p
     except:
         if os.path.isfile('params.py'):
-            print("There is a wrong entry in your params file")
+            logger.error("There is a wrong entry in your params file")
             import params
         else:
-            print("Error: No params.py module found")
+            logger.error("Error: No params.py module found")
             sys.exit()
     # import swotsimulator.build_swath as build_swath
     # import swotsimulator.rw_data as rw_data
@@ -325,7 +326,7 @@ def run_nadir(file_param):
         if p.file_input is not None:
             modelbox = model_data.calc_box()
         else:
-            logger.info('modelbox should be provided if no model file is provided')
+            logger.error('modelbox should be provided if no model file is provided')
             sys.exit()
     logger.debug(p.file_input)
     if p.file_input is not None:
@@ -369,7 +370,7 @@ def run_nadir(file_param):
         ntmp, nfilesat = os.path.split(filesat[istring:-4])
         # Make satellite orbit grid
         if p.makesgrid is True:
-            logger.warn('\n Force creation of satellite grid')
+            logger.warning('\n Force creation of satellite grid')
             ngrid = build_swath.makeorbit(modelbox, p, orbitfile=filesat)
             ngrid.file = p.filesgrid + nfilesat + '_grid.nc'
             ngrid.write_orb()
