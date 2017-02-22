@@ -134,18 +134,27 @@ def run_simulator(file_param):
         # Select model data in the region modelbox
         if p.grid == 'regular':
             if modelbox[0] < modelbox[1]:
-                model_data.model_index_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon) & (model_data.vlon <= (modelbox[1]+1)))[0]
+                model_data.model_index_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                                         & (model_data.vlon <= (modelbox[1]+1)))[0]
             else:
-                model_data.model_index_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon) | (model_data.vlon <= (modelbox[1]+1)))[0]
-            model_data.model_index_lat = numpy.where(((modelbox[2]-1) <= model_data.vlat) & (model_data.vlat <= (modelbox[3]+1)))[0]
+                model_data.model_index_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                                         | (model_data.vlon <= (modelbox[1]+1)))[0]
+            model_data.model_index_lat = numpy.where(((modelbox[2]-1) <= model_data.vlat)
+                                                     & (model_data.vlat <= (modelbox[3]+1)))[0]
             model_data.vlon = model_data.vlon[model_data.model_index_lon]
             model_data.vlat = model_data.vlat[model_data.model_index_lat]
 
         else:
             if modelbox[0] < modelbox[1]:
-                model_data.model_index = numpy.where(((modelbox[0]-1) <= model_data.vlon) & (model_data.vlon <= (modelbox[1]+1)) & ((modelbox[2]-1) <= model_data.vlat) & (model_data.vlat <= (modelbox[3]+1)))
+                model_data.model_index = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                                     & (model_data.vlon <= (modelbox[1]+1))
+                                                     & ((modelbox[2]-1) <= model_data.vlat)
+                                                     & (model_data.vlat <= (modelbox[3]+1)))
             else:
-                model_data.model_index = numpy.where(((modelbox[0]-1) <= model_data.vlon) | (model_data.vlon <= (modelbox[1]+1)) & ((modelbox[2]-1) <= model_data.vlat) & (model_data.vlat <= (modelbox[3]+1)))
+                model_data.model_index = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                                     | (model_data.vlon <= (modelbox[1]+1))
+                                                     & ((modelbox[2]-1) <= model_data.vlat)
+                                                     & (model_data.vlat <= (modelbox[3]+1)))
 
         model_data.model = model
         model_data.vloncirc = numpy.rad2deg(numpy.unwrap(model_data.vlon))
@@ -153,12 +162,12 @@ def run_simulator(file_param):
         modelbox[1] = 359.99
     # - Make SWOT grid if necessary """
     if p.makesgrid:
-        print('\n Force creation of SWOT grid')
+        logger.warn('\n Force creation of SWOT grid')
         orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
         build_swath.orbit2swath(modelbox, p, orb)
-        print("\n SWOT Grids and nadir tracks have been written in "
+        logger.info("\n SWOT Grids and nadir tracks have been written in "
               + p.outdatadir)
-        print("-----------------------------------------------")
+        logger.info("-----------------------------------------------")
 
     # - Initialize random coefficients that are used to compute
     #   random errors following the specified spectrum
@@ -166,11 +175,11 @@ def run_simulator(file_param):
 
     # - Compute interpolated SSH and errors for each pass, at each
     #   cycle
-    print('Compute interpolated SSH and errors:')
+    logger.info('Compute interpolated SSH and errors:')
     #   load all SWOT grid files (one for each pass)
     listsgridfile = sorted(glob.glob(p.filesgrid + '_p*.nc'))
     if not listsgridfile:
-        print('\n There is no SWOT grid file in ' + p.outdatadir
+        logger.warn('\n There is no SWOT grid file in ' + p.outdatadir
               + ', run simulator with option makesgrid set to true in your params file')
         sys.exit()
     #   Model time step
@@ -227,8 +236,8 @@ def run_simulator(file_param):
                                              '')
     # - Write Selected parameters in a txt file
     rw_data.write_params(p, p.outdatadir + os.sep + 'swot_simulator.output')
-    print("\n Simulated swot files have been written in " + p.outdatadir)
-    print("----------------------------------------------------------")
+    logger.info("\n Simulated swot files have been written in " + p.outdatadir)
+    logger.info("----------------------------------------------------------")
 
 
 def run_nadir(file_param):
@@ -342,7 +351,7 @@ def run_nadir(file_param):
 
     # - Compute interpolated SSH and errors for each pass, at each
     #   cycle
-    print('Compute interpolated SSH and errors:')
+    logger.info('Compute interpolated SSH and errors:')
     #   Model time step
     modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
     #   Remove the grid from the list of model files
@@ -384,7 +393,10 @@ def run_nadir(file_param):
             # - Generate SWOT like and nadir-like data:
         #   Compute number of cycles needed to cover all nstep model timesteps
         if p.file_input is not None:
-            model_index = numpy.where(((numpy.min(ngrid.lon)) <= model_data.vlon) & (model_data.vlon <= (numpy.max(ngrid.lon))) & ((numpy.min(ngrid.lat)) <= model_data.vlat) & (model_data.vlat <= (numpy.max(ngrid.lat))))
+            model_index = numpy.where(((numpy.min(ngrid.lon)) <= model_data.vlon)
+                                      & (model_data.vlon <= (numpy.max(ngrid.lon)))
+                                      & ((numpy.min(ngrid.lat)) <= model_data.vlat)
+                                      & (model_data.vlat <= (numpy.max(ngrid.lat))))
         rcycle = (p.timestep * p.nstep)/float(ngrid.cycle)
         ncycle = int(rcycle)
         #   Loop on all cycles
@@ -420,8 +432,8 @@ def run_nadir(file_param):
                                            '')
     # - Write Selected parameters in a txt file
     rw_data.write_params(p, p.outdatadir + os.sep + 'nadir_simulator.output')
-    print("\n Simulated orbit files have been written in " + p.outdatadir)
-    print("----------------------------------------------------------")
+    logger.info("\nSimulated orbit files have been written in " + p.outdatadir)
+    logger.info("----------------------------------------------------------")
 
 
 def load_error(p):
@@ -440,7 +452,7 @@ def load_error(p):
         nhalfswath=60.
     if p.file_coeff:
         if os.path.isfile(p.file_coeff) and (not p.makesgrid):
-            print('\n WARNING: Existing random coefficient file used')
+            logger.warn('\n WARNING: Existing random coefficient file used')
             err.load_coeff(p)
         else:
             err.init_error(p, 2*nhalfswath)
@@ -448,7 +460,7 @@ def load_error(p):
         if p.nadir:
             if os.path.isfile(p.file_coeff[:-3] + '_nadir.nc') \
                     and (not p.makesgrid):
-                print('WARNING: Existing random nadir coefficient file used')
+                logger.warn('WARNING: Existing random nadir coefficient file used')
                 errnad.load_coeff(p)
             else:
                 errnad.init_error(p)
@@ -539,8 +551,9 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
     # import swotsimulator.build_error as build_error
     # import swotsimulator.mod_tools as mod_tools
     # import swotsimulator.const as const
-    '''Create SWOT and nadir errors err and errnad, interpolate model SSH model_data on swath and nadir track,
-    compute SWOT-like and nadir-like data for cycle, SWOT grid sgrid and ngrid. '''
+    '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
+    _data on swath and nadir track, compute SWOT-like and nadir-like data
+    for cycle, SWOT grid sgrid and ngrid. '''
     # - Progress bar variables are global
     global istep
     global ntot
@@ -579,24 +592,25 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
     time = sgrid.time + date1
     # Look for satellite data that are beween step-p.timesetp/2 end setp+p.step/2
     if p.file_input:
-        index_filemodel = numpy.where(((time[-1]-sgrid.timeshift) >= (modeltime-p.timestep/2.)) & ((time[0]-sgrid.timeshift) < (modeltime+p.timestep/2.)) )  # [0]
+        index_filemodel = numpy.where(((time[-1]-sgrid.timeshift) >= (modeltime-p.timestep/2.))
+                                      & ((time[0]-sgrid.timeshift) < (modeltime+p.timestep/2.)) )  # [0]
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
             progress = mod_tools.update_progress(float(istep)/float(ntot
-                                                 * ntotfile), 'pass: '
-                                                 + str(sgrid.ipass),
-                                                 'model file: '
-                                                 + list_file[ifile]
-                                                 + ', cycle:'+str(cycle+1))
+                                                 * ntotfile),
+                                                 'pass: {}'.format(sgrid.ipass),
+                                                 'model file: {}, cycle: {}'.format(list_file[ifile], cycle+1))
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
                 # number of file to be processed used in the progress bar
                 ntot = ntot + numpy.shape(index_filemodel)[1]-1
                 # if numpy.shape(index)[1]>1:
                 # Select part of the track that corresponds to the time of the model (+-timestep/2)
-                ind_time = numpy.where(((time-sgrid.timeshift) >= (modeltime[ifile]-p.timestep/2.)) & ((time-sgrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
+                ind_time = numpy.where(((time-sgrid.timeshift) >= (modeltime[ifile]-p.timestep/2.))
+                                       & ((time-sgrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
                 if p.nadir:
-                    ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.)) & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
+                    ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.))
+                                                 & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
                 # Load data from this model file
                 model_step = eval('rw_data.' + model_data.model
                                   + '(file=p.indatadir+os.sep+list_file[ifile], var=p.var)')
@@ -721,17 +735,21 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
     time = ngrid.time + date1
     # Look for satellite data that are beween step-p.timesetp/2 end setp+p.step/2
     if p.file_input is not None:
-        index_filemodel = numpy.where(((time[-1]-ngrid.timeshift) >= (modeltime-p.timestep/2.)) & ((time[0]-ngrid.timeshift) < (modeltime+p.timestep/2.)))  # [0]
+        index_filemodel = numpy.where(((time[-1]-ngrid.timeshift) >= (modeltime-p.timestep/2.))
+                                      & ((time[0]-ngrid.timeshift) < (modeltime+p.timestep/2.)))  # [0]
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
             if progress_bar:
-                progress = mod_tools.update_progress(float(istep)/float(ntotfile*ntot), 'satellite: ' + str(ngrid.ipass), 'model file: ' + list_file[ifile] + ', cycle:' + str(cycle+1))
+                progress = mod_tools.update_progress(float(istep)/float(ntotfile*ntot),
+                                                     'orbit: {}'.format(ngrid.ipass),
+                                                     'model file: {}, cycle: {}'.format(list_file[ifile], cycle+1))
             else:
                 progress = None
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
                 ntot = ntot + numpy.shape(index_filemodel)[1] - 1
-                ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.)) & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)))
+                ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.))
+                                             & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)))
                 model_step = eval('rw_data.' + model_data.model
                                   + '(file=p.indatadir+os.sep+list_file[ifile], var=p.var)')
                 if p.grid == 'regular':
@@ -786,16 +804,13 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
     else:
         if progress_bar:
             progress = mod_tools.update_progress(float(istep)/float(ntotfile
-                                                 * ntot), 'pass: '
-                                                 + str(ngrid.ipass),
-                                                 'model file: '
-                                                 + list_file[ifile]
-                                                 + ', cycle:' + str(cycle+1))
+                                                 * ntot), 'orbit: {}'.format(ngrid.ipass),
+                                                 'model file: {}, cycle: {}'.format(list_file[ifile],cycle+1))
         else:
             progress = None
         istep += 1
     errnad.make_error(ngrid, cycle, SSH_true_nadir, p)  # , ind[0])
-    errnad.SSH = errnad.nadir + errnad.wet_tropo1nadir
+    errnad.SSH = SSH_true_nadir + errnad.nadir + errnad.wet_tropo1nadir
     # del SSH_model, model_step, ind_nadir_time
     return SSH_true_nadir, vindice, time, progress
 
