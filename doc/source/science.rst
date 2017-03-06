@@ -45,8 +45,12 @@ The software uses as an input the ground-tracks of the satellite orbit. The user
 +---------------------+--------------+--------------+------------+-------------+-----------+
 
 The ground-track coordinates corresponding to these orbits are given as input ASCII files of 3 columns (longitude, latitude, time) for one complete cycle sampled at every  ~5~km. The ascending node has been arbitrarily set to zero degree of longitude, but the user can shift the orbit by any value in longitude.
-Other orbit files of the same format can also be used as an input. To avoid distortions in the SWOT grid, we recommend a minimum of 10km sampling between the ground-track points of the orbit.   
 
+Orbit files have been updated with the one provided by AVISO_ on september 2015 (http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html). There are two additional orbit files available in the last version of the simulator. Input files are also ASCII with 3 columns (time, longitude, latitude). Orbits are provided at low resolution and are interpolated automatically by the simulator. 'ephem_calval_june2015_ell.txt' contains the updated fast sampling orbit and 'ephem_science_sept2015_ell.txt' the updated science orbit.
+
+Other orbit files of the same format (time, longitude, latitude) can also be used as an input. To avoid distortions in the SWOT grid, we recommend a minimum of 10km sampling between the ground-track points of the orbit.
+
+.. _AVISO: http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html
 
 The SWOT swath
 ---------------

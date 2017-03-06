@@ -15,8 +15,8 @@ outdatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example'+ os.sep
               + 'swot_output' + os.sep)
 print(outdatadir)
 # ------ Orbit file:
-satname = "swot292"
-filesat = dir_setup + os.sep + 'orbit292.txt'
+satname = "science"
+filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
 # ------ Name of the configuration (to build output files names) 
 config = "OREGON"
             

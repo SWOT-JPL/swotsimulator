@@ -21,8 +21,7 @@ else:
   print(modelbox)
 fig = plt.figure
 plt.clf()
-plt.show()
-plt.ion()
+#plt.ion()
 if isBasemap is True:
     m = Basemap(llcrnrlon = modelbox[0], \
             llcrnrlat = modelbox[2], \
@@ -53,3 +52,4 @@ for coordfile in listfile:
 plt.colorbar()
 plt.title('SWOT like data for config ' +p.config)
 plt.savefig(p.config+'_swath_SSH_model.png')
+plt.show()

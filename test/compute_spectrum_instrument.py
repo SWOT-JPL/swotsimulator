@@ -38,7 +38,7 @@ nr = 0
 distance_min = 400
 f0 = numpy.linspace(1/distance_min*dx, 1/2-1/distance_min*dx,num = int(distance_min/dx/2.))
 for coordfile in listfile:
-    print(coordfile)
+#    print(coordfile)
     data = rw_data.Sat_SWOT(file=coordfile)
     data.load_swath(roll_err = [], phase_err = [], bd_err = [], timing_err=[], x_ac = [])
 

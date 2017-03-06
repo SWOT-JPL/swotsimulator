@@ -23,19 +23,18 @@ for coordfile in listfile:
       if nal*dx>=distance_min:
 
         tap = 0.04
-        ff, PSD_obs = myspectools.psd1d(hh=data.SSH_obs[:,iac],dx=dx, detrend=True, tap=tap)
-        ff, PSD_model = myspectools.psd1d(hh=data.SSH_model[:,iac],dx=dx, detrend=True, tap=tap)
+        ff, PSD_obs = myspectools.psd1d(hh=data.SSH_obs[10:-10,iac],dx=dx, detrend=True, tap=tap)
+        ff, PSD_model = myspectools.psd1d(hh=data.SSH_model[10:-10,iac],dx=dx, detrend=True, tap=tap)
 
-        try: 
+        try:
 
           SS_obs = SS_obs + numpy.interp(f0, ff, PSD_obs)
           SS_model = SS_model + numpy.interp(f0, ff, PSD_model)
         except:
-      
           SS_obs = numpy.interp(f0, ff, PSD_obs)
           SS_model = numpy.interp(f0,ff, PSD_model)
         nr+=1
-  
+
 SS_obs/=nr
 SS_model/=nr
 
@@ -43,6 +42,7 @@ ff = f0
 dff = ff[1]-ff[0]
 
 plt.close()
+plt.figure()
 plt.loglog(ff,SS_obs, color='k', label='SSH_obs'); plt.grid()
 plt.loglog(ff,SS_model, color='red',lw=2, label='SSH_model')
 #plt.axis([5e-3,0.25,1e-4,1e3])

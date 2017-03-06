@@ -4,6 +4,7 @@ test_files.remove('run_all.py')
 test_files.remove('myspectools.py')
 test_files.remove('compute_spectrum_geophys.py')
 test_files.remove('plot_nadir.py')
+test_files.remove('params.py')
 '''
 if py_path is None:
     py_path = '.'
