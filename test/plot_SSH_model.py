@@ -41,14 +41,18 @@ for coordfile in listfile:
     data.load_swath(SSH_model = []) 
     nac = numpy.shape(data.lon)[1]
     data.lon[numpy.where(data.lon>180)] = data.lon[numpy.where(data.lon>180)]-360
-    if isBasemap is True: x,y = m(data.lon[:,:],data.lat[:,:])
-    else: x = data.lon ; y = data.lat
+    if isBasemap is True: 
+        x,y = m(data.lon[:,:],data.lat[:,:])
+    else: 
+        x = data.lon ; y = data.lat
     norm = mpl.colors.Normalize(vmin = -0.1, vmax = 0.1)
     SSH = data.SSH_model
     SSH[SSH==0] = numpy.nan
-    SSH = numpy.ma.array(SSH, mask = numpy.isnan(SSH))
-    plt.pcolormesh(x[:,:int(nac/2)],y[:,:int(nac/2)],SSH[:,:int(nac/2)]); plt.clim(-0.3,0.3)
-    plt.pcolormesh(x[:,int(nac/2):],y[:,int(nac/2):],SSH[:,int(nac/2):]); plt.clim(-0.3,0.3)
+    SSH[abs(SSH) < -9999.] = numpy.nan
+    mask = numpy.isnan(SSH) #| SSH.mask
+    SSH = numpy.ma.array(SSH, mask = mask)
+    plt.pcolormesh(x[:,:int(nac/2)],y[:,:int(nac/2)],SSH[:,:int(nac/2)]); plt.clim(-0.15,0.15)
+    plt.pcolormesh(x[:,int(nac/2):],y[:,int(nac/2):],SSH[:,int(nac/2):]); plt.clim(-0.15,0.15)
 plt.colorbar()
 plt.title('SWOT like data for config ' +p.config)
 plt.savefig(p.config+'_swath_SSH_model.png')

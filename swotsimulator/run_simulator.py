@@ -196,9 +196,11 @@ def run_simulator(file_param):
         #   Load SWOT grid files (Swath and nadir)
         sgrid = load_sgrid(sgridfile, p)
         sgrid.gridfile = sgridfile
-        if p.nadir:
+        if p.nadir is True:
             ngrid = load_ngrid(sgridfile, p)
             ngrid.gridfile = sgridfile
+        else:
+            ngrid = None
     #   Select model data around the swath to reduce interpolation cost in
     #   griddata
     # - Generate SWOT like and nadir-like data:
@@ -218,19 +220,22 @@ def run_simulator(file_param):
             if (~numpy.isnan(vindice)).any() or not p.file_input:
                 save_SWOT(cycle, sgrid, err, p, time=time, vindice=vindice,
                           SSH_true=SSH_true)
-                if p.nadir:
+                if p.nadir is True:
                     save_Nadir(cycle, ngrid, errnad, err, p, time=time,
                                vindice_nadir=vindice_nadir,
                                SSH_true_nadir=SSH_true_nadir)
             del time
             # if p.file_input: del index
         sgrid.lon = (sgrid.lon + 360) % 360
-        ngrid.lon = (ngrid.lon + 360) % 360
+        if p.nadir is True:
+            ngrid.lon = (ngrid.lon + 360) % 360
         if p.file_input:
             model_data.vlon = (model_data.vlon + 360) % 360
         modelbox[0] = (modelbox[0] + 360) % 360
         modelbox[1] = (modelbox[1] + 360) % 360
-        del sgrid, ngrid
+        del sgrid
+        if p.nadir is True:
+            del ngrid
     if progress != 1:
         progress = mod_tools.update_progress(1,
                                              'All passes have been processed',
@@ -445,8 +450,10 @@ def load_error(p):
     '''
     # import swotsimulator.build_error as build_error
     err = build_error.error(p)
-    if p.nadir:
+    if p.nadir is True:
         errnad = build_error.errornadir(p)
+    else:
+        errnad = None
     try:
         nhalfswath = int((p.halfswath-p.halfgap)/p.delta_ac) + 1
     except AttributeError:
@@ -458,7 +465,7 @@ def load_error(p):
         else:
             err.init_error(p, 2*nhalfswath)
             err.save_coeff(p, 2*nhalfswath)
-        if p.nadir:
+        if p.nadir is True:
             if os.path.isfile(p.file_coeff[:-3] + '_nadir.nc') \
                     and (not p.makesgrid):
                 logger.warn('WARNING: Existing random nadir coefficient file used')
@@ -468,7 +475,7 @@ def load_error(p):
                 errnad.save_coeff(p)
     else:
         err.init_error(p, 2*nhalfswath)
-        if p.nadir:
+        if p.nadir is True:
             errnad.init_error(p)
     return err, errnad
 
@@ -580,13 +587,17 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                          numpy.shape(sgrid.lon)[1]))
     SSH_true = numpy.zeros((numpy.shape(sgrid.lon)[0],
                            numpy.shape(sgrid.lon)[1]))  # , p.nstep))
-    if p.nadir:
-         err.wet_tropo1nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
-         err.wet_tropo2nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
-         err.wtnadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
-         errnad.nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
-         SSH_true_nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
-         vindice_nadir = numpy.zeros(numpy.shape(ngrid.lon)) * numpy.nan
+    # Initialize nadir variable in case the simulator is run with nadir option
+    # at False
+    SSH_true_nadir = 0
+    vindice_nadir = 0
+    if p.nadir is True:
+        err.wet_tropo1nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
+        err.wet_tropo2nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
+        err.wtnadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
+        errnad.nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
+        vindice_nadir = numpy.zeros(numpy.shape(ngrid.lon)) * numpy.nan
+        SSH_true_nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
     date1 = cycle * sgrid.cycle
     vindice = numpy.zeros(numpy.shape(SSH_true)) * numpy.nan
     # Definition of the time in the model
@@ -609,7 +620,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                 # Select part of the track that corresponds to the time of the model (+-timestep/2)
                 ind_time = numpy.where(((time-sgrid.timeshift) >= (modeltime[ifile]-p.timestep/2.))
                                        & ((time-sgrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
-                if p.nadir:
+                if p.nadir is True:
                     ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.))
                                                  & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)) )
                 # Load data from this model file
@@ -636,9 +647,9 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     # Flatten satellite grid and select part of the track
                     # corresponding to the model time
                     lonswot = sgrid.lon[ind_time[0], :].flatten()
-                    lonnadir = ngrid.lon[ind_nadir_time[0]].flatten()
+                    #lonnadir = ngrid.lon[ind_nadir_time[0]].flatten()
                     latswot = sgrid.lat[ind_time[0], :].flatten()
-                    latnadir = ngrid.lat[ind_nadir_time[0]].flatten()
+                    #latnadir = ngrid.lat[ind_nadir_time[0]].flatten()
                     Teval = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, numpy.isnan(SSH_model), kx=1, ky=1, s=0).ev(sgrid.lat[ind_time[0], :].ravel(), sgrid.lon[ind_time[0], :].ravel())
                     SSH_model_mask = + SSH_model
                     SSH_model_mask[numpy.isnan(SSH_model_mask)] = 0.
@@ -647,7 +658,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
                     SSH_true[ind_time[0], :] = SSH_true_ind_time.reshape(nal,
                                                                          nac)
-                    if p.nadir:
+                    if p.nadir is True:
                         Teval = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, numpy.isnan(SSH_model), kx=1, ky=1, s=0).ev(ngrid.lon[ind_nadir_time[0]].ravel(), ngrid.lat[ind_nadir_time[0]].ravel())
                         SSH_model_mask = + SSH_model
                         SSH_model_mask[numpy.isnan(SSH_model_mask)] = 0.
@@ -672,7 +683,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                             SSH_true[ind_time[0], :] = pr.kd_tree.resample_nearest(swath_def, SSH_model, grid_def, radius_of_influence=max(p.delta_al, p.delta_ac)*10**3, epsilon=100)
                         else:
                             SSH_true[ind_time[0], :] = pr.kd_tree.resample_gauss(swath_def, SSH_model, grid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
-                        if p.nadir:
+                        if p.nadir is True:
                             ngrid.lon = pr.utils.wrap_longitudes(ngrid.lon)
                             ngrid_def = pr.geometry.SwathDefinition(lons=ngrid.lon, lats=ngrid.lat)
                             if p.interpolation == 'nearest':
@@ -681,7 +692,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                 SSH_true_nadir[ind_nadir_time[0]] = pr.kd_tree.resample_gauss(swath_def, SSH_model, ngrid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
                     except:
                         SSH_true[ind_time[0], :] = interpolate.griddata((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (sgrid.lon[ind_time[0], :], sgrid.lat[ind_time[0], :]), method=p.interpolation)
-                        if p.nadir:
+                        if p.nadir is True:
                             SSH_true_nadir[ind_nadir_time[0]] = interpolate.griddata((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (ngrid.lon[ind_nadir_time[0]], ngrid.lat[ind_nadir_time[0]]), method=p.interpolation)
                         if p.interpolation == 'nearest':
                             if modelbox[0] > modelbox[1]:
@@ -689,16 +700,18 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                          & (sgrid.lon > modelbox[1]))
                                          | (sgrid.lat < modelbox[2])
                                          | (sgrid.lat > modelbox[3]))] = numpy.nan
-                                if p.nadir:
+                                if p.nadir is True:
                                     SSH_true_nadir[numpy.where(((ngrid.lon < modelbox[0]) & (ngrid.lon > modelbox[1])) | (ngrid.lat < modelbox[2]) | (ngrid.lat > modelbox[3]))] = numpy.nan
                             else:
                                 SSH_true[numpy.where((sgrid.lon < modelbox[0]) | (sgrid.lon > modelbox[1]) | (sgrid.lat < modelbox[2]) | (sgrid.lat > modelbox[3]))] = numpy.nan
-                                if p.nadir:
+                                if p.nadir is True:
                                     SSH_true_nadir[numpy.where((ngrid.lon < modelbox[0]) | (ngrid.lon > modelbox[1]) | (ngrid.lat < modelbox[2]) | (ngrid.lat > modelbox[3]))] = numpy.nan
                 vindice[ind_time[0], :] = ifile
-                if p.nadir:
+                if p.nadir is True:
                     vindice_nadir[ind_nadir_time[0]] = ifile
-                del ind_time, SSH_model, model_step, ind_nadir_time
+                    del ind_time, SSH_model, model_step, ind_nadir_time
+                else: 
+                    del ind_time, SSH_model, model_step
             istep += 1
     else:
         istep += 1
@@ -708,7 +721,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                              + ', cycle:' + str(cycle+1))
     err.make_error(sgrid, cycle, SSH_true, p)
     err.make_SSH_error(SSH_true, p)
-    if p.nadir:
+    if p.nadir is True:
         errnad.make_error(ngrid, cycle, SSH_true_nadir, p)
         if p.nbeam == 1:
             errnad.SSH = SSH_true_nadir + errnad.nadir + err.wet_tropo1nadir
