@@ -40,7 +40,7 @@ for coordfile in listfile:
     print(coordfile)
     data = rw_data.Sat_SWOT(file=coordfile)
     data.load_swath()
-    #data.lon_nadir[numpy.where(data.lon_nadir>180)] = data.lon_nadir[numpy.where(data.lon_nadir>180)]-360
+    data.lon_nadir[numpy.where(data.lon_nadir>180)] = data.lon_nadir[numpy.where(data.lon_nadir>180)]-360
     if isBasemap is True: x,y = m(data.lon_nadir,data.lat_nadir)
     else: x = data.lon_nadir ; y = data.lat_nadir
     C = plt.plot(x, y, '.')
