@@ -8,11 +8,24 @@ This file lists the changes in each swotsimulator version
 
 2.3
 -----
+03/15/2017
+- Fix bug in interpolation
+03/01/2017
+- Fix bug when running the simulator without nadir altimeter
+- Improve simulator with PEP8 convention and logger debug message
+- User proof and clean code
+
+02/22/2017
+- Fix bug running the simulator to simulate along track altimeters alone
+
 12/19/2016
 - Updating Orbit File with those from http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html. Two new files have been gitted: ephem_science_sept2015_ell.txt for the science orbit and ephem_calval_june2015_ell. for the 1-day (for calval purpose) orbit.
 
 2.x.x
 -----
+11/20/2016
+- Add plotting script in the documentation to automatically update figure with outputs from the last version of the simulator. 
+
 08/20/2016
 - Bug fixed: 
         -> Spatial lag (params key ... ) was not implemented properly
