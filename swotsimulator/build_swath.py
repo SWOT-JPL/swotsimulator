@@ -31,30 +31,31 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
               'updated')
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
                                          unpack=True)
+        votime *= const.secinday
     else:
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
                                          unpack=True)
-        # - If orbit is at low resolution, interpolate at 0.5 s resolution
-        if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
-            x, y, z = mod_tools.spher2cart(volon, volat)
-            time_hr = numpy.arange(0., votime[-1], 0.5)
-            f = interpolate.interp1d(votime, x)
-            x_hr = f(time_hr)
-            f = interpolate.interp1d(votime, y)
-            y_hr = f(time_hr)
-            f = interpolate.interp1d(votime, z)
-            z_hr = f(time_hr)
-            lon_hr = numpy.zeros(len(x_hr)) + numpy.nan
-            lat_hr = numpy.zeros(len(x_hr)) + numpy.nan
-            for ii in range(len(x_hr)):
-                lon_hr[ii], lat_hr[ii] = mod_tools.cart2spher(x_hr[ii],
-                                                              y_hr[ii],
-                                                              z_hr[ii])
-            time_hr = time_hr / const.secinday
-            ind = numpy.where((time_hr < const.tcycle))
-            volon = lon_hr[ind]
-            volat = lat_hr[ind]
-            votime = time_hr[ind]
+    # - If orbit is at low resolution, interpolate at 0.5 s resolution
+    if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
+        x, y, z = mod_tools.spher2cart(volon, volat)
+        time_hr = numpy.arange(0., votime[-1], 0.5)
+        f = interpolate.interp1d(votime, x)
+        x_hr = f(time_hr)
+        f = interpolate.interp1d(votime, y)
+        y_hr = f(time_hr)
+        f = interpolate.interp1d(votime, z)
+        z_hr = f(time_hr)
+        lon_hr = numpy.zeros(len(x_hr)) + numpy.nan
+        lat_hr = numpy.zeros(len(x_hr)) + numpy.nan
+        for ii in range(len(x_hr)):
+            lon_hr[ii], lat_hr[ii] = mod_tools.cart2spher(x_hr[ii],
+                                                          y_hr[ii],
+                                                          z_hr[ii])
+        time_hr = time_hr / const.secinday
+        ind = numpy.where((time_hr < const.tcycle))
+        volon = lon_hr[ind]
+        volat = lat_hr[ind]
+        votime = time_hr[ind]
 
     # - Get number of points in orbit
     nop = numpy.shape(votime)[0]
