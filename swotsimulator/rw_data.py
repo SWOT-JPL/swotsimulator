@@ -37,19 +37,16 @@ def read_params(params_file):
     """ Read parameters from parameters file and store it in p.\n
     This program is not used in swot_simulator."""
     import imp
-    f = open(params_file)
-    #global p
-    p = imp.load_source('p', '',f)
-    f.close()
+    with open(params_file, 'r') as f:
+        p = imp.load_source('p', '',f)
     return p
 
 def write_params(params, pfile):
     """ Write parameters that have been selected to run swot_simulator. """
-    f = open(pfile, 'w')
-    for key in dir(params):
-        if not key[0:2] == '__':
-            f.write('{} = {}\n'.format(key, params.__dict__[key]))
-    f.close()
+    with open(pfile, 'w') as f
+        for key in dir(params):
+            if not key[0:2] == '__':
+                f.write('{} = {}\n'.format(key, params.__dict__[key]))
 
 def read_coordinates(ifile,  nlon, nlat, twoD=True):
     ''' General routine to read coordinates in a netcdf file. \n
@@ -114,7 +111,8 @@ def read_var(ifile, var, index=None, time=0, depth=0, model_nan=None):
 ## - Check dimension of variable
     try : vartmp = fid.variables[var]
     except:
-        sys.exit('Variable {} not found in file {}'.format(var, ifile))
+        logger.error('Variable {} not found in file {}'.format(var, ifile))
+        sys.exit(1)
 ## - Read variable
     if index is None:
         if len(vartmp.shape) == 1:
@@ -136,34 +134,39 @@ def read_var(ifile, var, index=None, time=0, depth=0, model_nan=None):
                 T = numpy.array(fid.variables[var][time, :, :, :]).squeeze()
             else:
                 T = numpy.array(fid.variables[var][time,depth, :, :]).squeeze()
+        else:
+            logger.error('wrong dimension in variables {}'.format(var))
+            sys.exit(1)
     else :
-            if len(vartmp.shape) == 1:
-                Ttmp = numpy.array(fid.variables[var][:]).squeeze()
-                T = Ttmp[index] #numpy.array(fid.variables[var][index]).squeeze()
-            elif len(vartmp.shape) == 2 :
-                Ttmp = numpy.array(fid.variables[var][:, :]).squeeze()
-                T = Ttmp[index]
-            elif len(vartmp.shape) == 3 :
-                if time is None:
-                    U = numpy.array(fid.variables[var][:, :, :]).squeeze()
-                    T = U[:, index]
+        if len(vartmp.shape) == 1:
+            Ttmp = numpy.array(fid.variables[var][:]).squeeze()
+            T = Ttmp[index] #numpy.array(fid.variables[var][index]).squeeze()
+        elif len(vartmp.shape) == 2 :
+            Ttmp = numpy.array(fid.variables[var][:, :]).squeeze()
+            T = Ttmp[index]
+        elif len(vartmp.shape) == 3 :
+            if time is None:
+                U = numpy.array(fid.variables[var][:, :, :]).squeeze()
+                T = U[:, index]
+            else:
+                U = numpy.array(fid.variables[var][time, :, :]).squeeze()
+                T = U[index]
+        elif len(vartmp.shape) == 4 :
+            if time is None:
+                if depth is None:
+                    U = numpy.array(fid.variables[var][:, :, :, :]).squeeze()
+                    T = U[:, :, index]
                 else:
-                    U = numpy.array(fid.variables[var][time, :, :]).squeeze()
-                    T = U[index]
-            elif len(vartmp.shape) == 4 :
-                if time is None:
-                    if depth is None:
-                        U = numpy.array(fid.variables[var][:, :, :, :]).squeeze()
-                        T = U[:, :, index]
-                    else:
-                        U = numpy.array(fid.variables[var][:, depth, :, :]).squeeze()
-                        T = U[:, index]
-                elif depth is None:
-                    U = numpy.array(fid.variables[var][time, :, :, :]).squeeze()
+                    U = numpy.array(fid.variables[var][:, depth, :, :]).squeeze()
                     T = U[:, index]
-                else:
-                    U = numpy.array(fid.variables[var][time,depth, :, :]).squeeze()
-                    T = U[index]
+            elif depth is None:
+                U = numpy.array(fid.variables[var][time, :, :, :]).squeeze()
+                T = U[:, index]
+            else:
+                U = numpy.array(fid.variables[var][time,depth, :, :]).squeeze()
+                T = U[index]
+        else:
+            logger.error('wrong dimension in variables {}'.format(var))
 
             #print 'Unsupported number of dimensions'
             #sys.exit()
@@ -320,12 +323,14 @@ class Sat_SWOT():
         '''
 ## - Open netcdf file in write mode
         if netcdf4:
-          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+            fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
         else:
-          fid = Dataset(self.file, 'w')
+            fid = Dataset(self.file, 'w')
         fid.description = "Ouptut from SWOT simulator"
-        try: fid.corresponding_grid=self.gridfile
-        except: pass
+        try:
+            fid.corresponding_grid=self.gridfile
+        except:
+            pass
         fid.title = 'SWOT-like data simulated by SWOT simulator'
         fid.keywords = 'SWOT, altimetry, SSH, satellite, remote sensing'
         fid.Conventions = "CF-1.6"
@@ -408,7 +413,6 @@ class Sat_SWOT():
               "phase_err":"m", "timing_err": "m", "bd_err":"m",
               "karin_err":"m", "nadir_err":"m"}
         for key, value in kwargs.items():
-            #if not value is None:
             if value.any():
                 if len(value.shape) == 1 :
                     var = fid.createVariable(str(key), 'f4',
@@ -434,9 +438,6 @@ class Sat_SWOT():
                     var.long_name = longname[str(key)]
                 except:
                     var.long_name=str(key)
-                #try:    var.missing_value = p.model_nan
-                #except: var.missing_value = 0.
-                #fid.setncattr('missing_value','-9999.f')
 
         fid.close()
         return None
@@ -465,6 +466,10 @@ class Sat_SWOT():
                 listvar[stringvar] = numpy.array(fid.variables[stringvar][:]).squeeze()
             elif len(var.shape) == 2 :
                 listvar[stringvar] = numpy.array(fid.variables[stringvar][:, :]).squeeze()
+            else:
+                logger.error('Wrong number of dimension for variable'\
+                             ' {}, should be less than 2'.format(var))
+                sys.exit(1)
             #listvar[stringvar][listvar[stringvar]==var.fill_value] = numpy.nan
             exec('self.'+stringvar+' = listvar[stringvar]') #listvar[stringvar]=var
 
@@ -477,6 +482,10 @@ class Sat_SWOT():
                 value = numpy.array(fid.variables[key][:, :]).squeeze()
             elif len(var.shape) == 3 :
                 value = numpy.array(fid.variables[key][:, :, :]).squeeze()
+            else:
+                logger.error('Wrong number of dimension for variable'\
+                             ' {}, should be less than 3'.format(var))
+                sys.exit(1)
             #value[value == var.fill_value] = numpy.nan
             exec('self.'+key+' = value')
         try:
@@ -515,7 +524,7 @@ class Sat_nadir():
             fid = Dataset(self.file, 'r')
         except IOError:
             logger.info('There was an error opening the file {}'.format(self.file))
-            sys.exit()
+            sys.exit(1)
         #fid = Dataset(self.file, 'r')
         stime = []; slon = []; slat = []; tcycle = []; x_al = []; x_ac = []
         listvar={'time':stime, 'lon': slon, 'lat' : slat}
@@ -527,6 +536,10 @@ class Sat_nadir():
                 listvar[stringvar] = numpy.array(fid.variables[stringvar][:]).squeeze()
             elif len(var.shape) == 2 :
                 listvar[stringvar] = numpy.array(fid.variables[stringvar][:, :]).squeeze()
+            else:
+                logger.error('Wrong number of dimension for variable'\
+                             ' {}, should be less than 2'.format(var))
+                sys.exit(1)
             exec('self.'+stringvar+' = listvar[stringvar]') #listvar[stringvar]=var
 
 ## - Read variables in arguments
@@ -538,6 +551,10 @@ class Sat_nadir():
                 value = numpy.array(fid.variables[key][:, :]).squeeze()
             elif len(var.shape) == 3 :
                 value = numpy.array(fid.variables[key][:, :, :]).squeeze()
+            else:
+                logger.error('Wrong number of dimension for variable'\
+                             ' {}, should be less than 3'.format(var))
+                sys.exit(1)
             exec('self.'+key+' = value')
         fid.close()
         return None
@@ -630,6 +647,10 @@ class Sat_nadir():
                 if len(value.shape) == 1 :
                     var = fid.createVariable(str(key), 'f4', ('time',))
                     var[:] = value
+                else:
+                    logger.error('Wrong number of dimension for variable'\
+                                 ' {}, should be less than 1'.format(var))
+                    sys.exit(1)
                     #if len(value.shape) == 2 :
                     #var = fid.createVariable(str(key), 'f4', ('x_al'))
                     #var[:,:] = value
@@ -666,9 +687,9 @@ class Sat_nadir():
         distances are stored.'''
 ## - Open Netcdf file in write mode
         if netcdf4:
-          fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+            fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
         else:
-          fid = Dataset(self.file, 'w' )
+            fid = Dataset(self.file, 'w' )
         fid.title = 'Satellite orbit grid computed by SWOT simulator'
         fid.keywords = 'check keywords'  # Check keywords
         fid.Conventions = "CF-1.6"
@@ -758,7 +779,7 @@ class file_instr():
                 value = numpy.array(fid.variables[key][:]).squeeze()
             else:
                 logger.info('Wrong dimension in instrumentation file')
-                sys.exit()
+                sys.exit(1)
             exec('self.'+key+' = value')
         fid.close()
         return None
@@ -779,25 +800,25 @@ class file_karin():
             fid = Dataset(self.file, 'r')
         except IOError:
             logger.info('There was an error opening the file {}'.format(self.file))
-            sys.exit()
+            sys.exit(1)
         var = fid.variables['height_sdt']
         if len(var.shape) == 2:
             hsdt = numpy.array(fid.variables['height_sdt'][:, :]).squeeze()
         else:
             logger.info('Wrong dimension in height_sdt in Karin noise file')
-            sys.exit()
+            sys.exit(1)
         var = fid.variables['cross_track']
         if len(var.shape) == 1:
             self.x_ac = numpy.array(fid.variables['cross_track'][:]).squeeze()
         else:
             logger.info('Wrong dimension in x_ac variable in Karin noise file')
-            sys.exit()
+            sys.exit(1)
         var = fid.variables['SWH']
         if len(var.shape) == 1:
             swh_tmp = numpy.array(fid.variables['SWH'][:]).squeeze()
         else:
             logger.info('Wrong dimension in SWH variable in Karin noise file')
-            sys.exit()
+            sys.exit(1)
         i = numpy.argmin(abs(swh_tmp - swh))
         if swh_tmp[i] > swh:
             i += 1
@@ -838,7 +859,8 @@ class NEMO():
         try:
             self.model_nan = p.model_nan
         except:
-            self.model_nan = 0. ; p.model_nan = 0.
+            self.model_nan = 0.
+            p.model_nan = 0.
 
     def read_var(self, index=None):
         '''Read variables from NEMO file \n
@@ -909,7 +931,8 @@ class ROMS():
         try:
             self.model_nan=p.model_nan
         except:
-            self.model_nan=0.; p.model_nan=0.
+            self.model_nan=0.
+            p.model_nan=0.
 
     def read_var(self, index=None):
         '''Read variables from ROMS file\n
@@ -917,7 +940,8 @@ class ROMS():
         try:
             SSH_factor=p.SSH_factor
         except:
-            SSH_factor=1. ; p.SSH_factor=1.
+            SSH_factor=1.
+            p.SSH_factor=1.
         self.vvar = read_var(self.nfile, self.nvar, index=index, time=0,
                              depth=0, model_nan=self.model_nan) * SSH_factor
         return None
@@ -927,10 +951,10 @@ class ROMS():
         '''Read coordinates from ROMS file \n
         Argument is index=index to load part of the variable.'''
         if p.grid=='regular':
-          lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat,
+            lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat,
                                       twoD=False)
         else:
-          lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat)
+            lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat)
         self.vlat = lat
         self.vlon = (lon + 360) % 360
         return None
@@ -1038,7 +1062,8 @@ class CLS_MODEL():
         try:
             self.model_nan = p.model_nan
         except:
-            self.model_nan = 0. ; p.model_nan = 0.
+            self.model_nan = 0.
+            p.model_nan = 0.
 
     def read_var(self, index=None):
         '''Read variables from netcdf file \n
