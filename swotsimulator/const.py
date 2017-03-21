@@ -11,6 +11,8 @@ Rearth = 6378. * 10**3
 deg2km = 111.11
 # - Seconds in a day
 secinday = 86400.
+# - Light speed (m/s)
+C = 2.998*10**8
 
 
 # ###################################
@@ -22,9 +24,8 @@ sat_elev = 891*10**3
 B = 10
 # (in Hz)
 Fka = 35.75 * 10**9
-
-# - Light speed (m/s)
-C = 2.998*10**8
+# Number of days of one SWOT cycle
+tcycle = 20.86455
 
 # ###################################
 # # OTHER PARAMETERS               ##

@@ -321,7 +321,7 @@ def run_nadir(file_param):
     ##############################################
     # Select the spatial and temporal domains
     ##############################################
-    
+
     # - Read model input coordinates '''
     # if no modelbox is specified (modelbox=None), the domain of the input data
     # is taken as a modelbox
@@ -747,7 +747,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                 if p.nadir is True:
                     vindice_nadir[ind_nadir_time[0]] = ifile
                     del ind_time, SSH_model, model_step, ind_nadir_time
-                else: 
+                else:
                     del ind_time, SSH_model, model_step
             istep += 1
     else:
