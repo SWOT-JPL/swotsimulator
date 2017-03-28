@@ -29,6 +29,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
               'updated')
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
                                          unpack=True)
+        votime *= const.secinday
     else:
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
                                          unpack=True)
@@ -45,10 +46,11 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         lon_hr = numpy.zeros(len(x_hr)) + numpy.nan
         lat_hr = numpy.zeros(len(x_hr)) + numpy.nan
         for ii in range(len(x_hr)):
-            lon_hr[ii], lat_hr[ii] = mod_tools.cart2spher(x_hr[ii], y_hr[ii],
+            lon_hr[ii], lat_hr[ii] = mod_tools.cart2spher(x_hr[ii],
+                                                          y_hr[ii],
                                                           z_hr[ii])
-        time_hr = time_hr / 86400.
-        ind = numpy.where((time_hr < 20.86455))
+        time_hr = time_hr / const.secinday
+        ind = numpy.where((time_hr < const.tcycle))
         volon = lon_hr[ind]
         volat = lat_hr[ind]
         votime = time_hr[ind]
