@@ -27,7 +27,3 @@ Useful tools: mod_tools
 .. automodule :: swotsimulator.mod_tools
    :members:
 
-Compute the nadir alone: run_nadir
----------------------------------------
-.. automodule :: swotsimulator.run_nadir
-   :members:

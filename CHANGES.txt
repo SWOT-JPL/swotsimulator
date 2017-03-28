@@ -11,7 +11,7 @@ This file lists the changes in each swotsimulator version
 12/19/2016
 - Updating Orbit File with those from http://www.aviso.altimetry.fr/en/missions/future-missions/swot/orbit.html. Two new files have been gitted: ephem_science_sept2015_ell.txt for the science orbit and ephem_calval_june2015_ell. for the 1-day (for calval purpose) orbit.
 
-2.x.x
+2.2.1
 -----
 08/20/2016
 - Bug fixed: 

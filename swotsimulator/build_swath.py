@@ -8,18 +8,16 @@ import os
 
 
 def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
-    '''Computes the swath of SWOT satellites on a subdomain.
+    '''Computes the orbit nadir on a subdomain.
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
     added in the parameters file. \n
-    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Swath
-    parameters (half gap distance p.halfgap, half swath distance p.halfswath,
-    along track
-    resolution p.delta_al, across track resolution p.delta_ac). \n
-    Outputs are netcdf files containing SWOT grid (along track distance x_al,
-    across track distance from nadir x_ac, longitude lon and latitude lat,
+    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Along track 
+    sampling, along track resolution). \n
+    Outputs are Sat_Nadir object containing Nadir track (along track distance
+    x_al, longitude lon and latitude lat,
     number of days in a cycle cycle, distance crossed in a cycle cycle_al,
-    time'''
+    time, time shfit and time of pass passtime'''
     npoints = 1
     # - Load SWOT orbit ground track
     print('Load data from orbit file')
@@ -258,6 +256,19 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
 
 
 def orbit2swath(modelbox, p, orb):
+    '''Computes the swath of SWOT satellites on a subdomain from an orbit.
+    The path of the satellite is given by the orbit file and the subdomain
+    corresponds to the one in the model. Note that a subdomain can be manually
+    added in the parameters file. \n
+    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Swath
+    parameters (half gap distance p.halfgap, half swath distance p.halfswath,
+    along track
+    resolution p.delta_al, across track resolution p.delta_ac). \n
+    Outputs are netcdf files containing SWOT grid (along track distance x_al,
+    across track distance from nadir x_ac, longitude lon and latitude lat,
+    number of days in a cycle cycle, distance crossed in a cycle cycle_al,
+    time'''
+    ''' Compute orbit from Swath '''
     # - Load altimeter orbit
     npoints = 1
     x_al = orb.x_al
