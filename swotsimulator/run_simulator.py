@@ -157,6 +157,8 @@ def run_simulator(file_param):
                                                      & ((modelbox[2]-1) <= model_data.vlat)
                                                      & (model_data.vlat <= (modelbox[3]+1)))
 
+            model_data.vlon = model_data.vlon[model_data.model_index]
+            model_data.vlat = model_data.vlat[model_data.model_index]
         model_data.model = model
         model_data.vloncirc = numpy.rad2deg(numpy.unwrap(model_data.vlon))
     if modelbox[1] == 0:
@@ -185,13 +187,14 @@ def run_simulator(file_param):
                     'file'.format(p.outdatadir))
         sys.exit()
     #   Model time step
-    modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
+    modeltime = numpy.arange(0, p.nstep*p.timestep + 1, p.timestep)
     #   Remove the grid from the list of model files
     if p.file_input:
         list_file.remove(list_file[0])
     #   Initialize progress bar variables
     istep = 0
     ntot = 1
+
     # - Loop on SWOT grid files
     for sgridfile in listsgridfile:
         #   Load SWOT grid files (Swath and nadir)
@@ -374,7 +377,7 @@ def run_nadir(file_param):
     #   cycle
     logger.info('Compute interpolated SSH and errors:')
     #   Model time step
-    modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
+    modeltime = numpy.arange(0, p.nstep*p.timestep + 1, p.timestep)
     #   Remove the grid from the list of model files
     if p.file_input:
         list_file.remove(list_file[0])
@@ -393,13 +396,16 @@ def run_nadir(file_param):
         if p.makesgrid is True:
             logger.warning('\n Force creation of satellite grid')
             ngrid = build_swath.makeorbit(modelbox, p, orbitfile=filesat)
-            ngrid.file = '{}{}_grid.nc'.format(p.filesgrid, nfilesat)
+            ngrid.file = '{}{}_grid.nc'.format((p.filesgrid).strip(),
+                                               nfilesat.strip())
             ngrid.write_orb()
             ngrid.ipass = nfilesat
-            ngrid.gridfile = '{}{}_grid.nc'.format(p.filesgrid, nfilesat)
+            ngrid.gridfile = '{}{}_grid.nc'.format((p.filesgrid).strip(),
+                                                   nfilesat.strip())
         else:
             # To be replaced by load_ngrid
-            ngrid.gridfile = '{}{}_grid.nc'.format(p.filesgrid, nfilesat)
+            ngrid.gridfile = '{}{}_grid.nc'.format((p.filesgrid).strip(),
+                                                   nfilesat.strip())
             ngrid = rw_data.Sat_nadir(file=ngrid.gridfile)
             ngrid.ipass = nfilesat
             cycle = 0
@@ -524,8 +530,8 @@ def load_sgrid(sgridfile, p):
 def load_ngrid(sgridfile, p):
     ipass = int(sgridfile[-6: -3])
     # Load Nadir track file
-    ngrid = rw_data.Sat_nadir(file='{}nadir_p{:3d}.nc'.format(p.filesgrid,
-                              ipass))
+    ngrid = rw_data.Sat_nadir(file='{:s}nadir_p{:03d}.nc'.format(
+                                   (p.filesgrid).strip(), ipass))
     cycle = 0
     x_al = []
     al_cycle = 0
@@ -674,8 +680,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     Teval = interpolate.RectBivariateSpline(model_data.vlat,
                                      model_data.vlon, numpy.isnan(SSH_model),
                                      kx=1, ky=1,
-                                     s=0).ev(sgrid.lon[ind_time[0], :].ravel(),
-                                     sgrid.lat[ind_time[0], :].ravel())
+                                     s=0).ev(sgrid.lat[ind_time[0], :].ravel(),
+                                     sgrid.lon[ind_time[0], :].ravel())
                     SSH_model_mask = + SSH_model
                     SSH_model_mask[numpy.isnan(SSH_model_mask)] = 0.
                     SSH_true_ind_time = interpolate.RectBivariateSpline(

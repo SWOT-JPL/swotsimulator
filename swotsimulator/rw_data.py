@@ -43,7 +43,7 @@ def read_params(params_file):
 
 def write_params(params, pfile):
     """ Write parameters that have been selected to run swot_simulator. """
-    with open(pfile, 'w') as f
+    with open(pfile, 'w') as f:
         for key in dir(params):
             if not key[0:2] == '__':
                 f.write('{} = {}\n'.format(key, params.__dict__[key]))
