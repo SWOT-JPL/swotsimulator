@@ -187,10 +187,13 @@ def run_simulator(file_param):
                     'file'.format(p.outdatadir))
         sys.exit()
     #   Model time step
-    modeltime = numpy.arange(0, p.nstep*p.timestep + 1, p.timestep)
+    modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
     #   Remove the grid from the list of model files
     if p.file_input:
         list_file.remove(list_file[0])
+        if len(modeltime) > len(list_file):
+            logger.error('There is not enough model files in the list of files')
+            sys.exit(1)
     #   Initialize progress bar variables
     istep = 0
     ntot = 1
@@ -318,6 +321,9 @@ def run_nadir(file_param):
     # - Read list of user model files """
     if p.file_input is not None:
         list_file = [line.strip() for line in open(p.file_input)]
+        if len(modeltime) > len(list_file):
+            logger.error('There is not enough model files in the list of files')
+            sys.exit(1)
     else:
         list_file = None
 
@@ -377,7 +383,7 @@ def run_nadir(file_param):
     #   cycle
     logger.info('Compute interpolated SSH and errors:')
     #   Model time step
-    modeltime = numpy.arange(0, p.nstep*p.timestep + 1, p.timestep)
+    modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
     #   Remove the grid from the list of model files
     if p.file_input:
         list_file.remove(list_file[0])
@@ -632,7 +638,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
     # Look for satellite data that are beween step-p.timesetp/2 end setp+p.step/2
     if p.file_input:
         index_filemodel = numpy.where(((time[-1]-sgrid.timeshift) >= (modeltime-p.timestep/2.))
-                                      & ((time[0]-sgrid.timeshift) < (modeltime+p.timestep/2.)) )  # [0]
+                                      & ((time[0]-sgrid.timeshift) < (modeltime+p.timestep/2.)) )
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
             progress = mod_tools.update_progress(float(istep)/float(ntot
