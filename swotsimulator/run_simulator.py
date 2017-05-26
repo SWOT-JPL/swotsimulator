@@ -78,8 +78,10 @@ def run_simulator(file_param):
         p.shift_lon = None
     try:
         p.shift_time = p.shift_time
+        print(p.shift_time)
     except:
         p.shift_time = None
+        print(p.shift_time)
     try:
         model = p.model
     except:
