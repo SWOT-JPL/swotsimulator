@@ -6,7 +6,7 @@ from math import pi
 import swotsimulator.const as const
 import params as p
 import swotsimulator.rw_data as rw_data
-
+import sys
 
 ## -- Load instrumental error -- ## 
 file_instr = p.file_inst_error
@@ -35,10 +35,13 @@ dx = p.delta_al #km
 listfile = glob.glob(p.file_output+'_c*'+'_p*.nc')
 
 nr = 0
-distance_min = 400
+distance_min = 800
 f0 = numpy.linspace(1/distance_min*dx, 1/2-1/distance_min*dx,num = int(distance_min/dx/2.))
+first = True
+if not listfile:
+    sys.exit('No file found '+ p.file_output+'_c*'+'_p*.nc')
 for coordfile in listfile:
-#    print(coordfile)
+    print(coordfile)
     data = rw_data.Sat_SWOT(file=coordfile)
     data.load_swath(roll_err = [], phase_err = [], bd_err = [], timing_err=[], x_ac = [])
 
@@ -58,19 +61,20 @@ for coordfile in listfile:
           timing_err = data.timing_err[:,-1]
           fft, PSD_timing = myspectools.psd1d(hh=timing_err,dx=dx, detrend=True, tap=tap)
 
-      try: 
+      if first is False: 
 
         SS_roll = SS_roll+numpy.interp(f0, ffr, PSD_roll)
         SS_phase = SS_phase+numpy.interp(f0, ffp, PSD_phase)
         SS_bd = SS_bd+numpy.interp(f0, ffb, PSD_bd)
         SS_timing = SS_timing+numpy.interp(f0, fft, PSD_timing)
-      except:
+      else:
       
         SS_roll = numpy.interp(f0, ffr, PSD_roll)
         SS_phase = numpy.interp(f0,ffp, PSD_phase)
         SS_bd = numpy.interp(f0, ffb, PSD_bd)
         SS_timing = numpy.interp(f0, fft, PSD_timing)
       nr+=1
+      first = False
   
 SS_roll/=nr
 SS_phase/=nr
