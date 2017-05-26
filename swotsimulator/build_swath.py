@@ -5,7 +5,10 @@ import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
 import os
+import logging
 
+# Define logger level for debug purposes
+logger = logging.getLogger(__name__)
 
 def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     '''Computes the orbit nadir on a subdomain.
@@ -20,12 +23,12 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     time, time shfit and time of pass passtime'''
     npoints = 1
     # - Load SWOT orbit ground track
-    print('Load data from orbit file')
+    logger.info('Load data from orbit file')
     bnorbit= os.path.basename(orbitfile)
     if (bnorbit == 'orbit292.txt' or bnorbit == 'swot014_fastsampling.txt'
        or bnorbit == 'swot292_science.txt'
        or bnorbit == 'swot293_contingency.txt'):
-        print('WARNING: An old orbit file is used, orbit files have been ',
+        logger.warn('WARNING: An old orbit file is used, orbit files have been ',
               'updated')
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
                                          unpack=True)
@@ -63,7 +66,6 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # shift time if the user needs to shift the time of the orbit
     try:
         pshift_time = p.shift_time
-        print(pshift_time)
         if pshift_time is not None:
             shift_index = numpy.where(votime >= pshift_time)[0]
             volon = numpy.hstack([volon[shift_index[0]:],
@@ -95,7 +97,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     votime = numpy.hstack([votime[decal:], votime[:decal]])
     votime = (votime - votime[0]) % tcycle
     if votime[numpy.where(votime < 0)]:
-        print('WARNING: there are negative times in your orbit')
+        logger.warn('WARNING: there are negative times in your orbit')
     del ind
     # Compute the initial time of each pass
     dlat = numpy.roll(volat, 1) - volat
@@ -140,7 +142,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     distance = numpy.zeros((nop))
     # Compute and store distances and coordinates that are in the defined
     # subdomain
-    print('Compute SWOT nadir coordinate in the new domain')
+    logger.info('Compute SWOT nadir coordinate in the new domain')
     for i in range(0, nop - 1):
         mod_tools.update_progress(float(i) / float(nop-1), None, None)
         if abs(volon[i + 1] - volon[i]) > 1:
@@ -253,7 +255,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     orb.cycle = tcycle
     orb.al_cycle = distance[-1]
     orb.passtime = numpy.sort(passtime)
-    orb.timeshift = timeshift
+    orb.timeshift = p.timeshift
     return orb
 
 
@@ -290,7 +292,7 @@ def orbit2swath(modelbox, p, orb):
         x_ac[i + nhalfswath] = i * p.delta_ac + p.halfgap
 
     # - Computation of SWOT grid and storage by passes
-    print('\n Compute SWOT grid')
+    logger.info('\n Compute SWOT grid')
     # Detect first pass that is in the subdomain
     ipass0 = 0
     strpass = []
@@ -371,12 +373,14 @@ def orbit2swath(modelbox, p, orb):
             # (sgrid.lon[-1,j]-sgrid.lon[0,j])/npoints)
             # sgrid.lat[:,j]=numpy.arange(sgrid.lat[0,j], sgrid.lat[-1,j],
             # (sgrid.lat[-1,j]-sgrid.lat[0,j])/npoints)
+            # Save Sgrid object
             sgrid.timeshift = orb.timeshift
             ngrid.timeshift = orb.timeshift
             ngrid.lon = (lon[ind] + 360) % 360
             ngrid.lat = lat[ind]
             sgrid.lon_nadir = (lon[ind] + 360) % 360
             sgrid.lat_nadir = lat[ind]
+            # Remove grid file if it exists and save it
             if os.path.exists(filesgrid):
                 os.remove(filesgrid)
             sgrid.write_swath()

@@ -8,7 +8,10 @@ from math import pi, sqrt
 from scipy.io import netcdf as nc
 import sys
 from scipy.ndimage.filters import gaussian_filter
+#import logging
 
+# Define logging level for debug purposes
+#logger = logging.getLevel(__name__)
 
 class error():
     '''Class error define all the possible errors that can be computed using
@@ -37,21 +40,12 @@ class error():
         self.timing = timing
         self.SSH_error = SSH
         self.wt = wt
-        try:
-            self.ncomp1d = p.ncomp1d
-        except:
-            self.ncomp1d = 2000
-            p.ncomp1d = 2000
-        try:
-            self.ncomp2d = p.ncomp2d
-        except:
-            self.ncomp2d = 2000
-            p.ncomp2d = 2000
-        try:
-            self.nrand = p.nrandkarin
-        except:
-            self.nrand = 1000
-            p.nrandkarin = 1000
+        self.ncomp1d = getattr(p, 'ncomp1d', 2000)
+        p.ncomp1d = self.ncomp1d
+        self.ncomp2d = getattr(p, 'ncomp2d', 2000)
+        p.ncomp2d = self.ncomp2d
+        self.nrand = getattr(p, 'nrandkarin', 1000)
+        p.nrandkarin = self.nrand
 
     def init_error(self, p, nac):
         '''Initialization of errors: Random realisation of errors are
@@ -63,7 +57,7 @@ class error():
         realisations for the geophysical errors (2d spectrum)
         and nrandkarin*x_ac km of random number for KaRIN noise.'''
         # # Run reprodictible: generate or load nrand random numbers:
-        if p.karin:
+        if p.karin==True:
             self.A_karin_l = numpy.random.normal(0.0, numpy.float64(1),
                                                  (self.nrand, nac))
             self.A_karin_r = numpy.random.normal(0.0, numpy.float64(1),
@@ -81,7 +75,7 @@ class error():
                               & (file_instr.spatial_frequency > 1.
                             / p.lambda_max))[0]
             freq = file_instr.spatial_frequency[ind]
-            if p.roll:
+            if p.roll==True:
                 # - Read and compute roll power spectrum, wavelength longer
                 #   than p.lambda_cut are supposed to be corrected
                 PSroll = []
@@ -93,7 +87,7 @@ class error():
                 # - Compute random coefficients using the power spectrum
                 self.A_roll, self.phi_roll, self.fr_roll = \
                      mod_tools.gen_coeff_signal1d(freq, PSTroll, self.ncomp1d)
-            if p.phase:
+            if p.phase==True:
                 # - Read Phase power spectrum, wavelength longer than
                 #   p.lambda_cut are supposed to be corrected
                 phasePSD = []
@@ -107,7 +101,7 @@ class error():
                      mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
                 self.A_phase_r, self.phi_phase_r, self.fr_phase_r = \
                      mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
-            if p.baseline_dilation:
+            if p.baseline_dilation==True:
                 # - Read baseline dilation power spectrum, wavelength longer
                 #   than p.lambda_cut are supposed to be corrected
                 dilationPSD = []
@@ -118,7 +112,7 @@ class error():
                 # - Compute random coefficients using the power spectrum
                 self.A_bd, self.phi_bd, self.fr_bd = \
                      mod_tools.gen_coeff_signal1d(freq, PSbd, self.ncomp1d)
-            if p.timing:
+            if p.timing==True:
                 # - Read timing power spectrum, wavelength longer than
                 #   p.lambda_cut are supposed to be corrected
                 timingPSD = []
@@ -129,7 +123,7 @@ class error():
                 # - Compute random coefficients using the power spectrum
                 self.A_tim, self.phi_tim, self.fr_tim = \
                      mod_tools.gen_coeff_signal1d(freq, PStim, self.ncomp1d)
-            if p.wet_tropo:
+            if p.wet_tropo==True:
                 # - Define power spectrum of error in path delay
                 #   due to wet tropo
                 f = numpy.arange(1./3000., 1./float(2.*p.delta_al), 1./3000.)
@@ -173,7 +167,7 @@ class error():
         except:
             print('There was an error opening the file ' + p.file_coeff)
             sys.exit()
-        if p.karin:
+        if p.karin is True:
             self.A_karin_l = numpy.array(fid.variables['A_karin_l'][:, :]).squeeze()
             self.A_karin_r = numpy.array(fid.variables['A_karin_r'][:, :]).squeeze()
             if numpy.shape(self.A_karin_l)[0] != self.nrand:
@@ -181,7 +175,7 @@ class error():
                          + ' dimensions are different from nrandkarin='
                          + str(self.nrand) + '\n remove ' + p.file_coeff
                          + ' or adjust nrandkarin number in the parameter file')
-        if p.roll:
+        if p.roll is True:
             self.A_roll = numpy.array(fid.variables['A_roll'][:]).squeeze()
             if numpy.shape(self.A_roll)[0] != self.ncomp1d:
                 sys.exit(p.file_coeff
@@ -190,28 +184,29 @@ class error():
                          + ' or adjust ncomp1d number in the parameter file')
             self.phi_roll = numpy.array(fid.variables['phi_roll'][:]).squeeze()
             self.fr_roll = numpy.array(fid.variables['fr_roll'][:]).squeeze()
-        if p.phase:
+        if p.phase is True:
             self.A_phase_l = numpy.array(fid.variables['A_phase_l'][:]).squeeze()
             self.phi_phase_l = numpy.array(fid.variables['phi_phase_l'][:]).squeeze()
             self.fr_phase_l = numpy.array(fid.variables['fr_phase_l'][:]).squeeze()
             self.A_phase_r = numpy.array(fid.variables['A_phase_r'][:]).squeeze()
             self.phi_phase_r = numpy.array(fid.variables['phi_phase_r'][:]).squeeze()
             self.fr_phase_r = numpy.array(fid.variables['fr_phase_r'][:]).squeeze()
-        if p.baseline_dilation:
+        if p.baseline_dilation is True:
             self.A_bd = numpy.array(fid.variables['A_bd'][:]).squeeze()
             self.phi_bd = numpy.array(fid.variables['phi_bd'][:]).squeeze()
             self.fr_bd = numpy.array(fid.variables['fr_bd'][:]).squeeze()
-        if p.timing:
+        if p.timing is True:
             self.A_tim = numpy.array(fid.variables['A_tim'][:]).squeeze()
             self.phi_tim = numpy.array(fid.variables['phi_tim'][:]).squeeze()
             self.fr_tim = numpy.array(fid.variables['fr_tim'][:]).squeeze()
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             self.A_wt = numpy.array(fid.variables['A_wt'][:]).squeeze()
             if numpy.shape(self.A_wt)[0] != self.ncomp2d:
-                sys.exit(p.file_coeff
-                         + ' dimensions are different from ncomp2d='
-                         + str(self.ncomp2d) + '\n remove ' + p.file_coeff
-                         + ' or adjust ncomp2d number in the parameter file')
+                logger.error('{} dimensions are different from ncomp2d= {}\n'\
+                             'remove {}  or adjust ncomp2d number in the '\
+                             'parameter file'.format(
+                             p.file_coeff, self.ncomp2d, p.file_coeff))
+                sys.exit(1)
             self.phi_wt = numpy.array(fid.variables['phi_wt'][:]).squeeze()
             self.frx_wt = numpy.array(fid.variables['frx_wt'][:]).squeeze()
             self.fry_wt = numpy.array(fid.variables['fry_wt'][:]).squeeze()
@@ -234,7 +229,7 @@ class error():
         # - Errors array are the same size as the swath size
         nal, nac = numpy.shape(SSH_true)
         # ind_al=numpy.arange(0,nal)
-        if p.karin:
+        if p.karin is True:
             x_ac_k = abs(sgrid.x_ac) * 10**3
             # x_ac_k=sgrid.x_ac
             # - Formula of karin noise as a function of x_ac (smile shape)
@@ -249,10 +244,8 @@ class error():
                   / p.delta_al) % self.nrand).astype('int')
             for j in range(0, nac):
                 self.karin[:, j] = (sigma_karin[j]) * self.A_karin_r[Ai, j]
-                # *self.A_karin_r[j]
-                # self.karin[:,j]=numpy.random.normal(
-                # 0.0, numpy.float64(sigma_karin[j]), nal)
-        if p.phase:
+
+        if p.phase is True:
             # - Compute left and right phase angles using random
             #   coefficients previously initialized
             theta_l = numpy.zeros((nal))
@@ -280,7 +273,7 @@ class error():
                                           / const.Rearth) * theta_r[:] * 2*pi
                                           / 360.).T*numpy.mat(sgrid.x_ac[int(nac/2):]*10**3))
             del theta_l, theta_r
-        if p.roll:
+        if p.roll is True:
             # - Compute roll angle using random coefficients previously
             #   initialized with the power spectrum
             theta = numpy.zeros((nal))
@@ -295,7 +288,7 @@ class error():
                                * theta[:]*pi/180./3600.).T
                                * numpy.mat(sgrid.x_ac*10**3))
             del theta
-        if p.baseline_dilation:
+        if p.baseline_dilation is True:
             # - Compute baseline dilation using random coefficients previously
             #   initialized with the power spectrum
             dil = numpy.zeros((nal))
@@ -313,7 +306,7 @@ class error():
                                             / (const.sat_elev*const.B)).T
                                             * numpy.mat((sgrid.x_ac*10**3)**2))
             del dil
-        if p.timing:
+        if p.timing is True:
             # - Compute timing delay using random coefficients previously
             #   initialized with the power spectrum
             tim = numpy.zeros((nal))
@@ -327,7 +320,7 @@ class error():
             # - Compute the correspond timing error on the swath in m
             self.timing[:, :] = (numpy.mat(const.C/2*(tim[:]*10**-12)).T
                                  * numpy.mat(numpy.ones(nac)))
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             # - Initialization of radiometer error in right and left beam
             err_radio_r = numpy.zeros((nal))
             err_radio_l = numpy.zeros((nal))
@@ -407,7 +400,7 @@ class error():
                 for i in range(0, nal):
                     diff_h1[i, :] = self.wt[i, :] - beam[i]
                 self.wet_tropo1[:, :] = diff_h1[:, :]  # en 2d
-                if p.nadir:
+                if p.nadir is True:
                     self.wet_tropo1nadir = wt_large[:, int(naclarge/2.)] - beam[:]
                 # self.wet_tropo1[:, (nac-1)/2]=0 #numpy.nan
              # - Compute Residual path delay error after a 2-beams radiometer
@@ -451,14 +444,14 @@ class error():
                 if p.nadir:
                     self.wet_tropo2nadir = diff_h2nadir  # en 1d
                 # self.wet_tropo2[:, (nac-1)/2]=0 #numpy.nan
-            if p.nadir:
+            if p.nadir is True:
                 self.wtnadir = wt_large[:, int(naclarge/2.)]
             if (not p.nbeam ==1 ) and (not p.nbeam == 2) \
                and (not p.nbeam == 'both'):
                 print("\n nbeam = " + str(p.nbeam) + "\n")
                 print("wrong number of beam, nbeam should be either 1 or 2 or 'both'")
                 exit(1)
-        if p.ssb:
+        if p.ssb is True:
             print("No SSB error implemented yet")
         return None
 
@@ -470,22 +463,22 @@ class error():
         observed SSH. '''
         numpy.seterr(invalid='ignore')
         self.SSH = SSH_true
-        if p.karin:
+        if p.karin is True:
             self.SSH = self.SSH + self.karin
-        if p.timing:
+        if p.timing is True:
             self.SSH = self.SSH + self.timing
-        if p.roll:
+        if p.roll is True:
             self.SSH = self.SSH + self.roll
-        if p.baseline_dilation:
+        if p.baseline_dilation is True:
             self.SSH = self.SSH + self.baseline_dilation
-        if p.phase:
+        if p.phase is True:
             self.SSH = self.SSH + self.phase
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             if p.nbeam == 1 or p.nbeam == 'both':
                 self.SSH = self.SSH + self.wet_tropo1
             else:
                 self.SSH = self.SSH + self.wet_tropo2
-        if p.file_input:
+        if p.file_input is not None:
             self.SSH[numpy.where(SSH_true == p.model_nan)] = p.model_nan
 
     def save_coeff(self, p, nac):
@@ -507,19 +500,19 @@ class error():
         fid.createDimension('nkarin', self.nrand)
         fid.createDimension('x_ac', nac)
 ## - Create and write Variables
-        if p.karin:
+        if p.karin is True:
             var = fid.createVariable('A_karin_l', 'f4', ('nkarin', 'x_ac'))
             var[:, :] = self.A_karin_l
             var = fid.createVariable('A_karin_r', 'f4', ('nkarin', 'x_ac'))
             var[:, :] = self.A_karin_r
-        if p.roll:
+        if p.roll is True:
             var = fid.createVariable('A_roll', 'f4', ('nrand1d', ))
             var[:] = self.A_roll
             var = fid.createVariable('phi_roll', 'f4', ('nrand1d', ))
             var[:] = self.phi_roll
             var = fid.createVariable('fr_roll', 'f4', ('nrand1d', ))
             var[:] = self.fr_roll
-        if p.phase:
+        if p.phase is True:
             var = fid.createVariable('A_phase_r', 'f4', ('nrand1d', ))
             var[:] = self.A_phase_r
             var = fid.createVariable('phi_phase_r', 'f4', ('nrand1d', ))
@@ -532,21 +525,21 @@ class error():
             var[:] = self.phi_phase_l
             var = fid.createVariable('fr_phase_l', 'f4', ('nrand1d', ))
             var[:] = self.fr_phase_l
-        if p.baseline_dilation:
+        if p.baseline_dilation is True:
             var = fid.createVariable('A_bd', 'f4', ('nrand1d', ))
             var[:] = self.A_bd
             var = fid.createVariable('phi_bd', 'f4', ('nrand1d', ))
             var[:] = self.phi_bd
             var = fid.createVariable('fr_bd', 'f4', ('nrand1d', ))
             var[:] = self.fr_bd
-        if p.timing:
+        if p.timing is True:
             var = fid.createVariable('A_tim', 'f4', ('nrand1d', ))
             var[:] = self.A_tim
             var = fid.createVariable('phi_tim', 'f4', ('nrand1d', ))
             var[:] = self.phi_tim
             var = fid.createVariable('fr_tim', 'f4', ('nrand1d', ))
             var[:] = self.fr_tim
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             var = fid.createVariable('A_wt', 'f4', ('nrand2d', ))
             var[:] = self.A_wt
             var = fid.createVariable('phi_wt', 'f4', ('nrand2d', ))
@@ -584,21 +577,12 @@ class errornadir():
         self.nadir = nadir
         self.wet_tropo1 = wet_tropo1
         self.wt = wt
-        try:
-            self.nrand = p.nrandkarin
-        except:
-            self.nrand = 1000
-            p.nrandkarin = 1000
-        try:
-            self.ncomp2d = p.ncomp2d
-        except:
-            self.ncomp2d = 2000
-            p.ncomp2d = 2000
-        try:
-            self.ncomp1d = p.ncomp1d
-        except:
-            self.ncomp1d = 2000
-            p.ncomp1d = 2000
+        self.nrand = getattr(p, 'nrandkarin', 1000)
+        p.nrandkarin = self.nrand
+        self.ncomp2d = getattr(p, 'ncomp2d', 2000)
+        p.ncomp2d = self.ncomp2d
+        self.ncomp1d = getattr(p, 'ncomp1d', 2000)
+        p.ncomp1d = self.ncomp1d
 
     def init_error(self, p):
         '''Initialization of errors: Random realisation of errors are computed
@@ -610,11 +594,8 @@ class errornadir():
         spectrum error.'''
         # Run reprodictible: generate or load nrand random numbers:
         # - Compute random coefficients in 1D for the nadir error
-        try:
-            wnoise = p.wnoise
-        except:
-            wnoise = 100
-            p.wnoise = 100
+        wnoise = getattr(p, 'wnoise', 100)
+        p.wnoise = wnoise
         # - Define the sepctrum of the nadir instrument error
         # self.A=numpy.random.normal(0.0,sqrt(p.wnoise)
         # /numpy.float64(sqrt(2*p.delta_al)), (self.nrand))*0.01
@@ -626,7 +607,7 @@ class errornadir():
         PSD = PSD * 10**(-4)
         self.A, self.phi, self.f = mod_tools.gen_coeff_signal1d(f, PSD,
                                                                 self.ncomp1d)
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             # - Define power spectrum of error in path delay due to wet tropo
             f = numpy.arange(1./3000., 1./float(2.*p.delta_al), 1./3000.)
             # - Global mean wet tropo power spectrum in cm**2/(cycle/km)
@@ -660,13 +641,12 @@ class errornadir():
         try:
             fid = nc.netcdf_file(p.file_coeff[:-3] + '_nadir.nc', 'r')
         except:
-            print('There was an error opening the file nadir'
-                  + p.file_coeff[:-3] + '_nadir.nc')
-            sys.exit()
+            logger.error('There was an error opening the file nadir {}_nadir.nc'.format(p.file_coeff[:-3]))
+            sys.exit(1)
         self.A = numpy.array(fid.variables['A'][:]).squeeze()
         self.f = numpy.array(fid.variables['f'][:]).squeeze()
         self.phi = numpy.array(fid.variables['phi'][:]).squeeze()
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             self.A_wt = numpy.array(fid.variables['A_wt'][:]).squeeze()
             if numpy.shape(self.A_wt)[0] != self.ncomp2d:
               sys.exit(p.file_coeff + ' dimensions are different from ncomp2d='
@@ -783,7 +763,7 @@ class errornadir():
         # var[:] = self.phi
         # var = fid.createVariable('fr', 'f4', ('ninstr',))
         # var[:] = self.fr
-        if p.wet_tropo:
+        if p.wet_tropo is True:
             var = fid.createVariable('A_wt', 'f4', ('nrand2d', ))
             var[:] = self.A_wt
             var = fid.createVariable('phi_wt', 'f4', ('nrand2d', ))

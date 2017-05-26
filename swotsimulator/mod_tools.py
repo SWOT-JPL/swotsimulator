@@ -93,14 +93,28 @@ def spher2cart(lon, lat):
     return x, y, z
 
 
+def cart2sphervect(x, y, z):
+    ''' Convert cartesian coordinates to spherical coordinates. \n
+    Inputs are cartiesian coordinates x, y, z. \n
+    Return lon, lat. '''
+    norm = numpy.sqrt(x*x + y*y + z*z)
+    lat = numpy.arcsin(z/norm) * 180./math.pi
+    lon = numpy.arctan(y/x) % (2*math.pi)
+    if (x < 0).any():
+        lon[x < 0] = (numpy.arctan(y [x < 0]/x[x < 0]) % (2*math.pi)
+                      + x[x < 0] / x[x < 0]*math.pi)
+    lon = lon * 180/math.pi
+    return lon % 360, lat
+
 def cart2spher(x, y, z):
     ''' Convert cartesian coordinates to spherical coordinates. \n
     Inputs are cartiesian coordinates x, y, z. \n
     Return lon, lat. '''
     norm = numpy.sqrt(x*x + y*y + z*z)
     lat = numpy.arcsin(z/norm) * 180./math.pi
-    if x < 0:
-        lon = numpy.arctan(y/x) % (2*math.pi) + max((x < 0)-(x > 0), 0)*math.pi
+    if (x < 0):
+        lon = (numpy.arctan(y/x) % (2*math.pi)
+                      + max((x < 0) - (x > 0), 0)*math.pi)
         # + max(-sign(x),0)*math.pi
     else:
         lon = numpy.arctan(y/x) % (2*math.pi)

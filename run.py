@@ -2,13 +2,12 @@ import sys
 import os
 import shutil
 
-import logging                                                                  
-                                                                                
-logger = logging.getLogger()                                                    
-handler = logging.StreamHandler()                                               
-handler.setLevel(logging.INFO)                                                 
-logger.addHandler(handler)                                                      
-logger.setLevel(logging.INFO)  
+import logging
+logger = logging.getLogger()
+handler = logging.StreamHandler()
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
+logger.setLevel(logging.INFO)
 
 if  (len(sys.argv) < 2):
     file_param = os.getcwd() + os.sep + 'example' + os.sep + 'params_example.txt'
