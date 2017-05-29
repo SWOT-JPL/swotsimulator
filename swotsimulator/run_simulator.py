@@ -74,6 +74,9 @@ def run_simulator(file_param):
     # - Initialize some parameters values
     p.shift_lon = getattr(p, 'shift_lon', None)
     p.shift_time = getattr(p, 'p.shift_time', None)
+    p.timeshift = getattr(p, 'p.timeshift', 0)
+    if p.shift_time is None:
+        p.timeshift = 0
     model = getattr(p, 'model', 'NETCDF_MODEL')
     p.model = model
     p.model_nan = getattr(p, 'model_nan', 0)
