@@ -1,5 +1,4 @@
-'''
-Module to read and write data
+''' Module to read and write data
 Contains functions to read variables and coordinates from a netcdf files. \n
 Contains model classes: \n
                        -ROMS \n
@@ -24,13 +23,7 @@ import sys, os
 import time as ti
 import logging
 logger = logging.getLogger(__name__)
-try:
-    from netCDF4 import Dataset
-except ImportError:
-    logger.warn('WARNING: package netCDF4 missing, scipy.io.netcdf is used'\
-                'instead of netCDF4')
-    from scipy.io.netcdf import netcdf_file as Dataset
-    netcdf4=False
+
 try: import params as p
 except:
     logger.error('params.py not found')
@@ -259,7 +252,7 @@ class Sat_SWOT():
         fid.createDimension('cycle', 1)
 
 ## - Create and write Variables
-        vtime = fid.createVariable('time', 'f', ('time',))
+        vtime = fid.createVariable('time', 'f8', ('time',))
         vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time',))
         vlat_nadir = fid.createVariable('lat_nadir', 'f4', ('time',))
         #vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time_nadir',))
@@ -372,7 +365,7 @@ class Sat_SWOT():
         fid.createDimension('x_ac', numpy.shape(self.lon)[1])
 
 ## - Create and write variables
-        vtime = fid.createVariable('time', 'f', ('time',))
+        vtime = fid.createVariable('time', 'f8', ('time',))
         #vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time_nadir',))
         #vlat_nadir = fid.createVariable('lat_nadir', 'f4', ('time_nadir',))
         vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time',))
@@ -586,7 +579,7 @@ class Sat_nadir():
             fid = Dataset(self.file, 'w')
         fid.description = "Orbit computed by SWOT simulator"
         try: 
-            fid.corresponding_grid=self.gridfile
+            fid.corresponding_grid = self.gridfile
         except:
             pass
         fid.title = 'Altimeter like data simulated by SWOT simulator'
@@ -626,7 +619,7 @@ class Sat_nadir():
         fid.createDimension('cycle', 1)
 
 ## - Create and write variables
-        vtime = fid.createVariable('time', 'f', ('time',))
+        vtime = fid.createVariable('time', 'f8', ('time',))
         vlon = fid.createVariable('lon', 'f4', ('time',))
         vlat = fid.createVariable('lat', 'f4', ('time',))
         vxal = fid.createVariable('x_al', 'f4', ('time',))
@@ -737,7 +730,7 @@ class Sat_nadir():
         fid.createDimension('cycle', 1)
 
 ## - Create and write Variables
-        vtime = fid.createVariable('time', 'f', ('time',))
+        vtime = fid.createVariable('time', 'f8', ('time',))
         vlon = fid.createVariable('lon', 'f4', ('time',))
         vlat = fid.createVariable('lat', 'f4', ('time',))
         vcycle = fid.createVariable('cycle', 'f4', ('cycle',))
@@ -851,7 +844,7 @@ class NEMO():
     Argument file is mandatory, other arguments have default
     values var='sossheig', lon='nav_lon', lat='nav_lat', depth='depth',
     time='time. \n'''
-    def __init__(self,p,
+    def __init__(self, p,
                 file=None,
                 var='sossheig',
                 lon='nav_lon',
