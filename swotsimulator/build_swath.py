@@ -25,17 +25,29 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # - Load SWOT orbit ground track
     logger.info('Load data from orbit file')
     bnorbit= os.path.basename(orbitfile)
-    if (bnorbit == 'orbit292.txt' or bnorbit == 'swot014_fastsampling.txt'
-       or bnorbit == 'swot292_science.txt'
-       or bnorbit == 'swot293_contingency.txt'):
-        logger.warn('WARNING: An old orbit file is used, orbit files have been ',
-              'updated')
-        volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
+    #if (bnorbit == 'orbit292.txt' or bnorbit == 'swot014_fastsampling.txt'
+    #   or bnorbit == 'swot292_science.txt'
+    #   or bnorbit == 'swot293_contingency.txt'):
+    #    logger.warn('WARNING: An old orbit file is used, orbit files have been ',
+    #          'updated')
+    #    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
+    #                                     unpack=True)
+    #    votime *= const.secinday
+    #else:
+    #    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
+    #                                     unpack=True)
+
+    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
                                          unpack=True)
-        votime *= const.secinday
-    else:
-        volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
-                                         unpack=True)
+    if (volon > 360).any() or (numpy.abs(volat) > 90).any():
+        volon_sav = + volon
+        volon = votime
+        votime = volat
+        volat = volon_sav
+    if (volon > 360).any() or (numpy.abs(volat) > 90).any():
+        logger.error('Error in orbit file or wrong order of column \n'\
+                'Columns should be in the following order (time, lon, lat)')
+        sys.exit(1)
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
         x, y, z = mod_tools.spher2cart(volon, volat)
