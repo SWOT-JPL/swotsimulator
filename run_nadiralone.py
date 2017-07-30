@@ -3,7 +3,6 @@ import os
 import shutil
 
 import logging
-
 logger = logging.getLogger()
 handler = logging.StreamHandler()
 handler.setLevel(logging.INFO)
@@ -15,9 +14,6 @@ if  (len(sys.argv) < 2):
     print("no params file specified, default is " + file_param)
 else:
     file_param = str(sys.argv[1])
-
-print(file_param)
-
 if os.path.isfile(file_param):
     #    basedir=os.path.dirname(swotsimulator.__file__)
     shutil.copyfile(file_param, 'params.py')

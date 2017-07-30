@@ -37,13 +37,17 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     #    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
     #                                     unpack=True)
 
-    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
+    if p.order_orbit_col is None:
+        volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
                                          unpack=True)
-    if (volon > 360).any() or (numpy.abs(volat) > 90).any():
-        volon_sav = + volon
-        volon = votime
-        votime = volat
-        volat = volon_sav
+
+    else:
+        volon, volat, votime = numpy.loadtxt(orbitfile,
+                               usecols=(p.order_orbit_col[0],
+                               p.order_orbit_col[1], p.order_orbit_col[2]),
+                               unpack=True)
+        votime *= const.secinday
+    #    votime *= const.secinday
     if (volon > 360).any() or (numpy.abs(volat) > 90).any():
         logger.error('Error in orbit file or wrong order of column \n'\
                 'Columns should be in the following order (time, lon, lat)')
