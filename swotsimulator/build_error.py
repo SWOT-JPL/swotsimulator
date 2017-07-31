@@ -65,6 +65,8 @@ class error():
         # - If one instrumental error needs to be computed, load frequencies
         #   and spectrum from the instrumental netcdf file:
         if p.phase or p.roll or p.baseline_dilation or p.timing:
+            if p.lambda_cut is None:
+                p.lambda_cut = 20000
             file_instr = rw_data.file_instr(file=p.file_inst_error)
             spatial_frequency = []
             file_instr.read_var(spatial_frequency=spatial_frequency)

@@ -6,14 +6,18 @@ from os.path import expanduser
 import os
 home = expanduser("~")
 # ------ Directory that contains orbit file:
-dir_setup = home + os.sep + 'swotsimulator' + os.sep + 'data' + os.sep
+dir_setup = os.path.join(home, 'swotsimulator', 'data')
 # ------ Directory that contains your own inputs:
-indatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example' + os.sep
-             + 'input_fields' + os.sep)
+indatadir = os.path.join(home, 'swotsimulator', 'example',
+                         'input_fields')
 # ------ Directory that contains your outputs:
-outdatadir = (home + os.sep + 'swotsimulator' + os.sep + 'example' + os.sep
-              + 'swot_output' + os.sep)
+outdatadir = os.path.join(home, 'swotsimulator', 'example',
+                          'swot_output')
 # ------ Orbit file:
+# Order of columns (lon, lat, time) in the orbit file
+# (default is (1, 2, 0) with order_orbit_col = None)
+order_orbit_col = None
+# Name of the orbit file
 filesat = [dir_setup + os.sep + 'ephem_science_sept2015_ell.txt']
 # , dir_setup+os.sep+'orbjason.txt', dir_setup+os.sep+'orbaltika.txt' ]
 # ------ Name of the configuration (to build output files names) 
