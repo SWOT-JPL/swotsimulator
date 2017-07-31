@@ -83,7 +83,7 @@ def run_simulator(file_param):
     p.SSH_factor = getattr(p, 'SSH_factor', 1.)
     p.nadir = getattr(p, 'nadir', True)
     p.grid = getattr(p, 'grid', 'regular')
-    p.order_orbit_col = get(p, 'order_orbit_col', None)
+    p.order_orbit_col = getattr(p, 'order_orbit_col', None)
 
     # - Progress bar variables are global
     global istep
@@ -272,7 +272,7 @@ def run_nadir(file_param):
     p.SSH_factor = getattr(p, 'SSH_factor', 1.)
     p.nadir = getattr(p, 'nadir', True)
     p.grid = getattr(p, 'grid', 'regular')
-    p.order_orbit_col = get(p, 'order_orbit_col', None)
+    p.order_orbit_col = getattr(p, 'order_orbit_col', None)
     p.karin = False
     p.phase = False
     p.roll = False
