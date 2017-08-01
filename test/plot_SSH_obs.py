@@ -1,4 +1,4 @@
-import matplotlib.pylab as plt
+from matplotlib import pyplot
 isBasemap=True
 try: from mpl_toolkits.basemap import Basemap
 except: isBasemap=False
@@ -19,41 +19,54 @@ elif p.config=="OREGON":
 else: 
   modelbox = [float(x) for x in input("specify your modelbox with format lower_lon, upper_lon, lower_lat, upper_lat: ").split(',')]
   print(modelbox)
-fig = plt.figure
-plt.clf()
-#plt.ion()
+fig = pyplot.figure()
+pyplot.clf()
+#pyplot.ion()
 if isBasemap is True:
-    m = Basemap(llcrnrlon = modelbox[0], \
-            llcrnrlat = modelbox[2], \
-            urcrnrlon = modelbox[1], \
-            urcrnrlat = modelbox[3], \
-            resolution = 'h', \
-            projection = proj, \
-            lon_0 = (modelbox[1]-modelbox[0])/2, \
-            lat_0 = (modelbox[3]-modelbox[2])/2)
+    m = Basemap(llcrnrlon=modelbox[0], \
+            llcrnrlat=modelbox[2], \
+            urcrnrlon=modelbox[1], \
+            urcrnrlat=modelbox[3], \
+            resolution='h', \
+            projection=proj, \
+            lon_0=(modelbox[1] - modelbox[0])/2, \
+            lat_0=(modelbox[3] - modelbox[2])/2)
     m.drawcoastlines()
-    m.fillcontinents(color = '#FFE4B5', lake_color = 'aqua')
-    m.drawmeridians(numpy.arange(int(modelbox[0]),int(modelbox[1])+0.1,(modelbox[1]-modelbox[0])/7.),labels = [0,0,0,2])
-    m.drawparallels(numpy.arange(int(modelbox[2]),int(modelbox[3])+0.1,(modelbox[3]-modelbox[2])/7.),labels = [2,0,0,0])
+    m.fillcontinents(color='#FFE4B5', lake_color='aqua')
+    m.drawmeridians(numpy.arange(int(modelbox[0]),
+                    int(modelbox[1]) + 0.1, (modelbox[1] - modelbox[0])/7.),
+                    labels=[0, 0, 0, 2])
+    m.drawparallels(numpy.arange(int(modelbox[2]),
+                    int(modelbox[3]) + 0.1, (modelbox[3] - modelbox[2])/7.),
+                    labels=[2, 0, 0, 0])
 for coordfile in listfile:
     print(coordfile)
-    data = rw_data.Sat_SWOT(file = coordfile)
-    data.load_swath(SSH_obs = []) 
+    data = rw_data.Sat_SWOT(file=coordfile)
+    data.load_swath(SSH_obs=[])
     nac = numpy.shape(data.lon)[1]
-    data.lon[numpy.where(data.lon>180)] = data.lon[numpy.where(data.lon>180)]-360
-    if isBasemap is True: 
-        x,y = m(data.lon[:,:],data.lat[:,:])
-    else: 
-        x = data.lon ; y = data.lat
-    norm = mpl.colors.Normalize(vmin = -0.1, vmax = 0.1)
+    if modelbox[0] < 0:
+        data.lon[numpy.where(data.lon > 180)] = (data.lon[numpy.where(
+                                            data.lon > 180)] - 360)
+    if isBasemap is True:
+        x,y = m(data.lon[:, :], data.lat[:, :])
+    else:
+        x = data.lon
+        y = data.lat
+    norm = mpl.colors.Normalize(vmin=-0.1, vmax=0.1)
     SSH = data.SSH_obs
-    SSH[SSH==0] = numpy.nan
-    SSH[abs(SSH) < -9999.] = numpy.nan
-    mask = numpy.isnan(SSH) #| SSH.mask
-    SSH = numpy.ma.array(SSH, mask = mask)
-    plt.pcolormesh(x[:,:int(nac/2)],y[:,:int(nac/2)],SSH[:,:int(nac/2)]); plt.clim(-0.15,0.15)
-    plt.pcolormesh(x[:,int(nac/2):],y[:,int(nac/2):],SSH[:,int(nac/2):]); plt.clim(-0.15,0.15)
-plt.colorbar()
-plt.title('SWOT like data for config ' +p.config)
-plt.savefig(p.config+'_swath_SSH_obs.png')
-plt.show()
+    mask = ((SSH==0) | (abs(SSH) > 9999.))
+    SSH = numpy.ma.array(SSH, mask=mask)
+    _min = -1.0
+    _max = 1.0 #numpy.max(SSH)
+    if _max < _min:
+        continue
+    pyplot.pcolormesh(x[:, :int(nac/2)], y[:, :int(nac/2)],
+                      SSH[:, :int(nac/2)], cmap='jet')
+    pyplot.clim(_min, _max)
+    pyplot.pcolormesh(x[:, int(nac/2):], y[:, int(nac/2):],
+                      SSH[:, int(nac/2):], cmap='jet')
+    pyplot.clim(_min, _max)
+pyplot.colorbar()
+pyplot.title('SWOT like data for config {}'.format(p.config))
+pyplot.savefig('{}_swath_SSH_obs.png'.format(p.config))
+pyplot.show()

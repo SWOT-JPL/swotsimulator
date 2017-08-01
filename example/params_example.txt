@@ -11,7 +11,7 @@ dir_setup = os.path.join(home, 'swotsimulator', 'data')
 indatadir = os.path.join(home, 'swotsimulator', 'example',
                          'input_fields')
 # ------ Directory that contains your outputs:
-outdatadir = os.path.join((home, 'swotsimulator', 'example',
+outdatadir = os.path.join(home, 'swotsimulator', 'example',
                            'swot_output')
 # ------ Orbit file:
 # Order of columns (lon, lat, time) in the orbit file
@@ -20,12 +20,12 @@ order_orbit_col = None
 # Name of the orbit file
 satname = "science"
 filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
-# ------ Name of the configuration (to build output files names) 
+# ------ Name of the configuration (to build output files names)
 config = "OREGON"
-            
-# -----------------------# 
-# SWOT swath parameters 
-# -----------------------# 
+
+# -----------------------#
+# SWOT swath parameters
+# -----------------------#
 # ------ Satellite grid file root name:
 # 	 (Final file name is root_name_[numberofpass].nc)
 filesgrid = outdatadir + os.sep + config + '_' + satname + '_grid'
@@ -34,8 +34,8 @@ makesgrid = True
 # ------ Give a subdomain if only part of the model is needed:
 #	 (modelbox=[lon_min, lon_max, lat_min, lat_max])
 # 	 (If modelbox is None, the whole domain of the model is considered)
-modelbox = None  # [230.144,234.598,42.27,47.8283] 
-# ------ Distance between the nadir and the end of the swath (in km): 
+modelbox = None  # [230.144,234.598,42.27,47.8283]
+# ------ Distance between the nadir and the end of the swath (in km):
 halfswath = 60.
 # ------ Distance between the nadir and the beginning of the swath (in km):
 halfgap = 10.
@@ -43,7 +43,7 @@ halfgap = 10.
 delta_al = 2.
 # ------ Across track resolution (in km):
 delta_ac = 2.
-# ------ Shift longitude of the orbit file if no pass is in the domain 
+# ------ Shift longitude of the orbit file if no pass is in the domain
 #        (in degree): Default value is None (no shift)
 shift_lon = None
 # ------ Shift time of the satellite pass (in day):
@@ -55,16 +55,16 @@ shift_time = None
 # -----------------------#
 # ------ List of model files:
 #	 (The first file contains the grid and is not considered as model data)
-#        To generate the noise alone, file_input = None 
+#        To generate the noise alone, file_input = None
 #        and specify region in modelbox
 file_input = indatadir + os.sep + 'list_of_file.txt'
-# ------ Type of model data: 
+# ------ Type of model data:
 #	 (Optional, default is NETCDF_MODEL and reads netcdf3 and netcdf4 files)
 #	 (Other options are ROMS, NEMO and CLS to read Nemo, roms or CLS)
 model = 'NETCDF_MODEL'
-# ------ Type of grid: 
-#        'regular' or 'irregular', if 'regular' only 1d coordinates 
-#        are extracted from model       
+# ------ Type of grid:
+#        'regular' or 'irregular', if 'regular' only 1d coordinates
+#        are extracted from model
 grid = 'irregular'
 # ------ Specify SSH variable:
 var = 'H'
@@ -82,21 +82,21 @@ nstep = 50.
 # ------ Not a number value:
 model_nan = 0.
 
-# -----------------------# 
-# SWOT output files  
-# -----------------------# 
+# -----------------------#
+# SWOT output files
+# -----------------------#
 # ------ Output file root name:
 #	 (Final file name is root_name_c[cycle]_p[pass].nc
 file_output = outdatadir + os.sep + config + '_' + satname
-# ------ Interpolation of the SSH from the model (if grid is irregular and 
+# ------ Interpolation of the SSH from the model (if grid is irregular and
 #         pyresample is not installed:
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
 interpolation = 'linear'
-# -----------------------# 
-# SWOT error parameters 
-# -----------------------# 
-# ------ File containing random coefficients to compute and save 
+# -----------------------#
+# SWOT error parameters
+# -----------------------#
+# ------ File containing random coefficients to compute and save
 #	 random error coefficients so that runs are reproducible:
 #        If file_coeff is specified and does not exist, file is created
 #	 If you don't want runs to be reproducible, file_coeff is set to None
@@ -118,7 +118,7 @@ nrandkarin = 1000
 nadir = True
 # ------ File containing spectrum of instrument error:
 file_inst_error = dir_setup + os.sep + "global_sim_instrument_error.nc"
-# ------ Number of random realisations for instrumental and geophysical error 
+# ------ Number of random realisations for instrumental and geophysical error
 #        (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d
 #        is used for 2D spectrum (wet troposphere computation):
 ncomp1d = 2000
@@ -137,11 +137,11 @@ baseline_dilation = True
 timing = True
 
 ## -- Geophysical error
-## ---------------------- 
+## ----------------------
 # ------ Wet tropo error (True to compute it):
 wet_tropo = True
 # ------ Beam print size (in km):
-#        Gaussian footprint of sigma km	 
+#        Gaussian footprint of sigma km
 sigma = 8.
 # ------ Number of beam used to correct wet_tropo signal (1, 2 or 'both'):
 nbeam = 2

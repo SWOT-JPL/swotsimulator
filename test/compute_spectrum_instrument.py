@@ -11,9 +11,9 @@ import sys
 ## -- Load instrumental error -- ## 
 file_instr = p.file_inst_error
 fid_instr = rw_data.file_instr(file=p.file_inst_error)
-fid_instr.read_var(spatial_frequency = [], rollPSD = [], gyroPSD = [],\
+fid_instr.read_var(spatial_frequency = [], rollPSD = [], gyroPSD = [],
                    phasePSD = [], dilationPSD = [], timingPSD = [])
-spatial_frequency = fid_instr.spatial_frequency 
+spatial_frequency = fid_instr.spatial_frequency
 rollPSD = fid_instr.rollPSD
 gyroPSD = fid_instr.gyroPSD
 phasePSD = fid_instr.phasePSD
@@ -21,12 +21,16 @@ dilationPSD = fid_instr.dilationPSD
 timingPSD = fid_instr.timingPSD
 
 ## Roll in microrad**2
-PSroll = (rollPSD+gyroPSD)*(1+const.sat_elev/const.Rearth)**2*(1./3600*pi/180*1e6)**2 
+PSroll = ((rollPSD + gyroPSD) * (1 + const.sat_elev / const.Rearth)**2
+         *(1. / 3600 * pi / 180 * 1e6)**2)
 ## Phase in micrarad**2
-PSphase = phasePSD*(pi/180*1e6)**2 *((1/(const.Fka*2*pi/const.C*const.B)*(1+const.sat_elev/const.Rearth)))**2 # microrad**2
+PSphase = (phasePSD * (pi / 180 * 1e6)**2 * ((1 / (const.Fka * 2 * pi /
+           const.C * const.B) * (1 + const.sat_elev / const.Rearth)))**2)
+           # microrad**2
 ## Baseline dilation in m**-2
-PSbd = dilationPSD*((10**-6)*(1+const.sat_elev/const.Rearth)/(const.sat_elev*const.B)*1e6)**2  #Timing in psec**2
-PStiming = timingPSD*(const.C/2*10**-12)**2
+PSbd = (dilationPSD * ((10**-6) * (1 + const.sat_elev / const.Rearth)
+        / (const.sat_elev * const.B) * 1e6)**2)  #Timing in psec**2
+PStiming = timingPSD * (const.C / 2 * 10**-12)**2
 
 
 dirname = p.outdatadir
@@ -35,59 +39,62 @@ dx = p.delta_al #km
 listfile = glob.glob(p.file_output+'_c*'+'_p*.nc')
 
 nr = 0
-distance_min = 800
-f0 = numpy.linspace(1/distance_min*dx, 1/2-1/distance_min*dx,num = int(distance_min/dx/2.))
+distance_min = 400
+f0 = numpy.linspace(1/distance_min*dx, 1/2 - 1/distance_min*dx,
+                    num=int(distance_min/dx/2.))
 first = True
 if not listfile:
-    sys.exit('No file found '+ p.file_output+'_c*'+'_p*.nc')
+    sys.exit('No file found {}_c*_p*.nc'.format(p.file_output))
 for coordfile in listfile:
     print(coordfile)
     data = rw_data.Sat_SWOT(file=coordfile)
-    data.load_swath(roll_err = [], phase_err = [], bd_err = [], timing_err=[], x_ac = [])
+    data.load_swath(roll_err=[], phase_err=[], bd_err=[], timing_err=[],
+                    x_ac=[])
 
     nal, nac = numpy.shape(data.roll_err)
     if nal*dx>=distance_min:
       tap = 0.04
-      if p.roll:     
-          roll_err = data.roll_err[:,0]/(data.x_ac[0]*1000)*1.e6
-          ffr, PSD_roll = myspectools.psd1d(hh=roll_err,dx=dx, detrend=True, tap=tap)
-      if p.phase: 
-          phase_err = data.phase_err[:,0]/(data.x_ac[0]*1000)*1.e6
-          ffp, PSD_phase = myspectools.psd1d(hh=phase_err,dx=dx, detrend=True, tap=tap)
-      if p.baseline_dilation: 
-          bd_err = data.bd_err[:,-1]/((data.x_ac[-1])**2)
-          ffb, PSD_bd = myspectools.psd1d(bd_err,dx=dx, detrend=True, tap=tap)
-      if p.timing: 
+      if p.roll:
+          roll_err = data.roll_err[:, 0] / (data.x_ac[0] * 1000) * 1.e6
+          ffr, PSD_roll = myspectools.psd1d(hh=roll_err,dx=dx, detrend=True,
+                                            tap=tap)
+      if p.phase:
+          phase_err = data.phase_err[:, 0] / (data.x_ac[0] * 1000) * 1.e6
+          ffp, PSD_phase = myspectools.psd1d(hh=phase_err,dx=dx, detrend=True,
+                                             tap=tap)
+      if p.baseline_dilation:
+          bd_err = data.bd_err[:, -1] / ((data.x_ac[-1])**2)
+          ffb, PSD_bd = myspectools.psd1d(bd_err, dx=dx, detrend=True, tap=tap)
+      if p.timing:
           timing_err = data.timing_err[:,-1]
-          fft, PSD_timing = myspectools.psd1d(hh=timing_err,dx=dx, detrend=True, tap=tap)
+          fft, PSD_timing = myspectools.psd1d(hh=timing_err, dx=dx,
+                                              detrend=True, tap=tap)
 
-      if first is False: 
-
-        SS_roll = SS_roll+numpy.interp(f0, ffr, PSD_roll)
-        SS_phase = SS_phase+numpy.interp(f0, ffp, PSD_phase)
-        SS_bd = SS_bd+numpy.interp(f0, ffb, PSD_bd)
-        SS_timing = SS_timing+numpy.interp(f0, fft, PSD_timing)
+      if first is False:
+          SS_roll = SS_roll+numpy.interp(f0, ffr, PSD_roll)
+          SS_phase = SS_phase+numpy.interp(f0, ffp, PSD_phase)
+          SS_bd = SS_bd+numpy.interp(f0, ffb, PSD_bd)
+          SS_timing = SS_timing+numpy.interp(f0, fft, PSD_timing)
       else:
-      
-        SS_roll = numpy.interp(f0, ffr, PSD_roll)
-        SS_phase = numpy.interp(f0,ffp, PSD_phase)
-        SS_bd = numpy.interp(f0, ffb, PSD_bd)
-        SS_timing = numpy.interp(f0, fft, PSD_timing)
+          SS_roll = numpy.interp(f0, ffr, PSD_roll)
+          SS_phase = numpy.interp(f0,ffp, PSD_phase)
+          SS_bd = numpy.interp(f0, ffb, PSD_bd)
+          SS_timing = numpy.interp(f0, fft, PSD_timing)
       nr+=1
       first = False
-  
+
 SS_roll/=nr
 SS_phase/=nr
 SS_bd/=nr
 SS_timing/=nr
 
 ## -- Convert spectrum to take into account all values along the swath:   
-MSH_roll = SS_roll*(1e-6*37.870*1e3)**2
-PSHroll = PSroll*(1e-6*37.870*1e3)**2
-MSH_phase = SS_phase*(1e-6*37.870*1e3)**2
-PSHphase = PSphase*(1e-6*37.870*1e3)**2
-MSH_bd = SS_bd*(42.017**2)**2
-PSHbd = PSbd*(42.017**2)**2
+MSH_roll = SS_roll * (1e-6*37.870*1e3)**2
+PSHroll = PSroll * (1e-6*37.870*1e3)**2
+MSH_phase = SS_phase * (1e-6*37.870*1e3)**2
+PSHphase = PSphase * (1e-6*37.870*1e3)**2
+MSH_bd = SS_bd * (42.017**2)**2
+PSHbd = PSbd * (42.017**2)**2
 MSH_timing = SS_timing
 PSHtiming = PStiming
 
@@ -157,24 +164,25 @@ plt.show()
 '''
 
 plt.close()
-plt.loglog(ff,MSH_roll*1e4, color='grey'); plt.grid()
-plt.loglog(ff,MSH_phase*1e4, color='grey'); plt.grid()
-plt.loglog(ff,MSH_bd*1e4, color='grey'); plt.grid()
-plt.loglog(ff,MSH_timing*1e4, color='grey'); plt.grid()
-plt.loglog(ff,MSH_tot*1e4, color='k'); plt.grid()
-plt.loglog(spatial_frequency,PSHtot*1e4, color='red',lw=2, label='total error')
-plt.loglog(spatial_frequency,PSHroll*1e4, color='purple',lw=2, label='roll error')
-plt.loglog(spatial_frequency,PSHphase*1e4, color='blue',lw=2, label='phase error')
-plt.loglog(spatial_frequency,PSHbd*1e4, color='green',lw=2, label='baseline error')
-plt.loglog(spatial_frequency,PSHtiming*1e4, color='brown',lw=2, label='timing error')
+plt.loglog(ff, MSH_roll*1e4, color='grey')
+plt.loglog(ff, MSH_phase*1e4, color='grey')
+plt.loglog(ff, MSH_bd*1e4, color='grey')
+plt.loglog(ff, MSH_timing*1e4, color='grey')
+plt.loglog(ff, MSH_tot*1e4, color='k')
+plt.grid()
+plt.loglog(spatial_frequency, PSHtot*1e4, color='red',lw=2, label='total error')
+plt.loglog(spatial_frequency, PSHroll*1e4, color='purple',lw=2, label='roll error')
+plt.loglog(spatial_frequency, PSHphase*1e4, color='blue',lw=2, label='phase error')
+plt.loglog(spatial_frequency, PSHbd*1e4, color='green',lw=2, label='baseline error')
+plt.loglog(spatial_frequency, PSHtiming*1e4, color='brown',lw=2, label='timing error')
 plt.axvline(1./40000, color='k', linestyle='--')
 plt.axvline(7.4e-5, color='k', linestyle='--')
 plt.axvline(0.00027, color='k', linestyle='--')
-plt.axis([5e-3,0.25,1e-3,1e2])
+plt.axis([5e-3, 0.25, 1e-3, 1e2])
 plt.xlabel(u'cy/km')
 plt.ylabel(u'cm2/(cy/km)')
 plt.legend()
 plt.title('Total Error spectra')
-plt.savefig('allssh_spectra.png')
+plt.savefig('{}_allssh_spectra.png'.format(p.config))
 plt.show()
 

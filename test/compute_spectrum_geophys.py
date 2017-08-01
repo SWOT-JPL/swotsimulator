@@ -149,6 +149,6 @@ plt.xlabel(u'cy/km')
 plt.ylabel(u'cm2/(cy/km)')
 plt.legend()
 plt.title('Total Error spectra')
-plt.savefig('allssh_spectra.png')
+plt.savefig('{}_allssh_spectra.png'.format(p.config))
 plt.show()
 
