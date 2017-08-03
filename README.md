@@ -8,7 +8,7 @@ This software simulates SWOT observations of sea surface height (SSH) that can b
 
 Data in the example directory
 -------------------------------
-WARNING: we had to remove the example data from the input_field directory as we can't (and don't want to) git data that are too large. This data are available under this link: http://swot.jpl.nasa.gov/science/resources/ 
+WARNING: we had to remove the example data from the input_field directory as we can't (and don't want to) git data that are too large. This data are available under this link: https://swot.jpl.nasa.gov/files/SWOTsimulator/swotsimulator_largedata.zip
 Before running the example:
   - click on swotsimulator_largedata.zip to download the data,
   - unzip the downloaded zipped document
