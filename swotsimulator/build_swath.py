@@ -6,6 +6,7 @@ import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
 import os
 import logging
+import sys
 
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
