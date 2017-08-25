@@ -34,6 +34,48 @@ def gen_coeff_signal1d(f, PS, nc):
     return A, phi, fr
 
 
+def gen_rcoeff_signal1d(f, PS, lambda_min, lambda_max, npseudoper, repeat):
+    '''Generate nc random coefficient from a spectrum PS
+    with frequencies f. \n
+    Return Amplitude, phase and frequency of nc realisations'''
+
+    logffl = numpy.arange(numpy.log10(1. / lambda_max),
+                          numpy.log10(1. / lambda_min + 1. / lambda_max),
+                          numpy.log10(1 + 1. / npseudoper))
+    ffl = 10**(logffl)
+    logf = numpy.log10(f)
+    logPS = numpy.log10(PS)
+    logPSl = numpy.interp(logffl,logf,logPS)
+    PSl = 10**(logPSl)
+    A = numpy.sqrt(2 * PSl * (ffl / npseudoper))
+    phi = [None] * len(ffl)
+    for k in range(len(ffl)):
+      phi[k] = 2 * math.pi * numpy.random.random((
+                           (2 * repeat * ffl[k] / npseudoper + 3).astype(int)))
+    return A, phi
+
+
+def gen_signal1d(xx, A, phi, lambda_min, lambda_max, npseudoper):
+    '''Generate 1d random noise signal from coefficent computed using
+     gen_rcoeff_signal1d. \n
+    Return The random noise signal'''
+    S = xx * 0.
+    logffl = numpy.arange(numpy.log10(1. / lambda_max),
+                          numpy.log10(1. / lambda_min + 1. / lambda_max),
+                          numpy.log10(1 + 1. / npseudoper))
+    ffl = 10**(logffl)
+    for k in range(len(ffl)):
+      ka=2 * (xx * ffl[k] / npseudoper).astype(int) + 1
+      Cka = numpy.abs(numpy.sin(2 * math.pi * xx * ffl[k] / npseudoper / 2.))
+      kb = (2 * ((xx + npseudoper / 2. / ffl[k]) * ffl[k]
+            / npseudoper).astype(int))
+      Ckb = numpy.abs(numpy.sin(2 * math.pi * (xx + npseudoper / 2 / ffl[k])
+                      * ffl[k] / npseudoper / 2))
+      S = (S + A[k] * numpy.cos(2 * math.pi * ffl[k] * xx + phi[k][ka]) * Cka
+             + A[k] * numpy.cos(2 * math.pi * ffl[k] * xx + phi[k][kb]) * Ckb)
+    return S
+
+
 def gen_coeff_signal2d(f, PS, nc):
     '''Generate nc random coefficient from a spectrum PS
     with frequencies f. \n
@@ -61,6 +103,7 @@ def gen_coeff_signal2d(f, PS, nc):
     phi = 2*math.pi*numpy.random.random(nc)
 
     return A, phi, frx, fry
+
 
 
 def rotationmat3D(theta, axis):
