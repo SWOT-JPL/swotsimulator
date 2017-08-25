@@ -48,10 +48,10 @@ def gen_rcoeff_signal1d(f, PS, lambda_min, lambda_max, npseudoper, repeat):
     logPSl = numpy.interp(logffl,logf,logPS)
     PSl = 10**(logPSl)
     A = numpy.sqrt(2 * PSl * (ffl / npseudoper))
-    phi = [None] * len(ffl)
+    phi = numpy.full(numpy.shape(ffl), None)
     for k in range(len(ffl)):
-      phi[k] = 2 * math.pi * numpy.random.random((
-                           (2 * repeat * ffl[k] / npseudoper + 3).astype(int)))
+      phi[k] = 2 * math.pi * numpy.random.random(int(2 * repeat * ffl[k]
+                                                / npseudoper + 3))
     return A, phi
 
 
@@ -59,13 +59,13 @@ def gen_signal1d(xx, A, phi, lambda_min, lambda_max, npseudoper):
     '''Generate 1d random noise signal from coefficent computed using
      gen_rcoeff_signal1d. \n
     Return The random noise signal'''
-    S = xx * 0.
+    S = numpy.full(numpy.shape(xx), 0.)
     logffl = numpy.arange(numpy.log10(1. / lambda_max),
                           numpy.log10(1. / lambda_min + 1. / lambda_max),
                           numpy.log10(1 + 1. / npseudoper))
     ffl = 10**(logffl)
     for k in range(len(ffl)):
-      ka=2 * (xx * ffl[k] / npseudoper).astype(int) + 1
+      ka = (2 * (xx * ffl[k] / npseudoper) + 1).astype(int)
       Cka = numpy.abs(numpy.sin(2 * math.pi * xx * ffl[k] / npseudoper / 2.))
       kb = (2 * ((xx + npseudoper / 2. / ffl[k]) * ffl[k]
             / npseudoper).astype(int))

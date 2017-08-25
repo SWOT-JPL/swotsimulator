@@ -87,8 +87,13 @@ class error():
                 PSTroll[numpy.where(freq < 1./p.lambda_cut)] = \
                        PSTroll[numpy.min(numpy.where(freq >= 1./p.lambda_cut))]
                 # - Compute random coefficients using the power spectrum
-                self.A_roll, self.phi_roll, self.fr_roll = \
-                     mod_tools.gen_coeff_signal1d(freq, PSTroll, self.ncomp1d)
+                if p.savesignal is True:
+                    self.A_roll, self.phi_roll = mod_tools.gen_rcoeff_signal1d(
+                                     freq, PSTroll, 2*p.delta_al, p.lambda_max,
+                                     p.npseudoper, p.len_repeat)
+                else:
+                    self.A_roll, self.phi_roll, self.fr_roll = \
+                      mod_tools.gen_coeff_signal1d(freq, PSTroll, self.ncomp1d)
             if p.phase==True:
                 # - Read Phase power spectrum, wavelength longer than
                 #   p.lambda_cut are supposed to be corrected
@@ -99,10 +104,18 @@ class error():
                      PSphase[numpy.min(numpy.where(freq >= 1./p.lambda_cut))]
                 # - Compute left and right random coefficients using
                 #   the power spectrum
-                self.A_phase_l, self.phi_phase_l, self.fr_phase_l = \
-                     mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
-                self.A_phase_r, self.phi_phase_r, self.fr_phase_r = \
-                     mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
+                if p.savesignal is True:
+                    self.A_phase_l, self.phi_phase_l = \
+                      mod_tools.gen_rcoeff_signal1d(freq, PSphase,
+                      2*p.delta_al, p.lambda_max, p.npseudoper, p.len_repeat)
+                    self.A_phase_r, self.phi_phase_r = \
+                      mod_tools.gen_rcoeff_signal1d(freq, PSphase,
+                      2*p.delta_al, p.lambda_max, p.npseudoper, p.len_repeat)
+                else:
+                    self.A_phase_l, self.phi_phase_l, self.fr_phase_l = \
+                      mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
+                    self.A_phase_r, self.phi_phase_r, self.fr_phase_r = \
+                      mod_tools.gen_coeff_signal1d(freq, PSphase, self.ncomp1d)
             if p.baseline_dilation==True:
                 # - Read baseline dilation power spectrum, wavelength longer
                 #   than p.lambda_cut are supposed to be corrected
@@ -112,8 +125,13 @@ class error():
                 PSbd[numpy.where(freq < 1./p.lambda_cut)] = \
                      PSbd[numpy.min(numpy.where(freq >= 1./p.lambda_cut))]
                 # - Compute random coefficients using the power spectrum
-                self.A_bd, self.phi_bd, self.fr_bd = \
-                     mod_tools.gen_coeff_signal1d(freq, PSbd, self.ncomp1d)
+                if p.savesignal is True:
+                    self.A_bd, self.phi_bd = mod_tools.gen_rcoeff_signal1d(
+                        freq, PSbd, 2*p.delta_al, p.lambda_max, p.npseudoper,
+                        p.len_repeat)
+                else:
+                    self.A_bd, self.phi_bd, self.fr_bd = \
+                         mod_tools.gen_coeff_signal1d(freq, PSbd, self.ncomp1d)
             if p.timing==True:
                 # - Read timing power spectrum, wavelength longer than
                 #   p.lambda_cut are supposed to be corrected
@@ -123,8 +141,13 @@ class error():
                 PStim[numpy.where(freq < 1./p.lambda_cut)] = \
                       PStim[numpy.min(numpy.where(freq >= 1./p.lambda_cut))]
                 # - Compute random coefficients using the power spectrum
-                self.A_tim, self.phi_tim, self.fr_tim = \
-                     mod_tools.gen_coeff_signal1d(freq, PStim, self.ncomp1d)
+                if p.savesignal is True:
+                    self.A_tim, self.phi_tim = mod_tools.gen_rcoeff_signal1d(
+                         freq, PStim, 2*p.delta_al, p.lambda_max, p.npseudoper,
+                         p.len_repeat)
+                else:
+                    self.A_tim, self.phi_tim, self.fr_tim = \
+                        mod_tools.gen_coeff_signal1d(freq, PStim, self.ncomp1d)
             if p.wet_tropo==True:
                 # - Define power spectrum of error in path delay
                 #   due to wet tropo
@@ -249,58 +272,80 @@ class error():
 
         if p.phase is True:
             # - Compute left and right phase angles using random
-            #   coefficients previously initialized
-            theta_l = numpy.zeros((nal))
-            theta_r = numpy.zeros((nal))
-            for comp in range(0, self.ncomp1d):
-                phase_x_al = (2.*pi*float(self.fr_phase_l[comp])
-                              * (numpy.float64(sgrid.x_al[:]) +
-                              + float(cycle * sgrid.al_cycle))) % (2.*pi)
-                theta_l[:] = (theta_l[:] + 2*self.A_phase_l[comp]
-                              *numpy.cos(phase_x_al[:]+self.phi_phase_l[comp]))
-            for comp in range(0, self.ncomp1d):
-                phase_x_al = (2.*pi*float(self.fr_phase_r[comp])
-                              * (numpy.float64(sgrid.x_al[:])
-                              + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                theta_r[:] = (theta_r[:] + 2*self.A_phase_r[comp]
-                              * numpy.cos(phase_x_al[:]
-                              + self.phi_phase_r[comp]))
+            #   coefficients or signals previously initialized
+            if p.savesignal is True:
+                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                      * sgrid.al_cycle))%(p.len_repeat)
+                theta_l = mod_tools.gen_signal1d(xx, self.A_phase_l,
+                                                self.phi_phase_l, 2*p.delta_al,
+                                                p.lambda_max, p.npseudoper)
+                theta_r = mod_tools.gen_signal1d(xx, self.A_phase_r,
+                                                self.phi_phase_r, 2*p.delta_al,
+                                                p.lambda_max, p.npseudoper)
+            else:
+                theta_l = numpy.zeros((nal))
+                theta_r = numpy.zeros((nal))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2.*pi*float(self.fr_phase_l[comp])
+                                  * (numpy.float64(sgrid.x_al[:]) +
+                                  + float(cycle * sgrid.al_cycle))) % (2.*pi)
+                    theta_l[:] = (theta_l[:] + 2*self.A_phase_l[comp]
+                                  *numpy.cos(phase_x_al[:]+self.phi_phase_l[comp]))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2.*pi*float(self.fr_phase_r[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                    theta_r[:] = (theta_r[:] + 2*self.A_phase_r[comp]
+                                  * numpy.cos(phase_x_al[:]
+                                  + self.phi_phase_r[comp]))
             # - Compute the associated phase error on the swath in m
             self.phase[:, : int(nac/2)] = (numpy.mat(1/(const.Fka*2*pi/const.C
-                                           * const.B) * (1 + const.sat_elev
-                                           / const.Rearth) * theta_l[:] * 2*pi
-                                           / 360.).T*numpy.mat(sgrid.x_ac[:int(nac/2)]*10**3))
+                            * const.B) * (1 + const.sat_elev
+                            / const.Rearth) * theta_l[:] * 2*pi
+                            / 360.).T*numpy.mat(sgrid.x_ac[:int(nac/2)]*10**3))
             self.phase[:, int(nac/2):] = (numpy.mat(1/(const.Fka*2*pi/const.C
-                                          * const.B) * (1 + const.sat_elev
-                                          / const.Rearth) * theta_r[:] * 2*pi
-                                          / 360.).T*numpy.mat(sgrid.x_ac[int(nac/2):]*10**3))
+                            * const.B) * (1 + const.sat_elev
+                            / const.Rearth) * theta_r[:] * 2*pi
+                            / 360.).T*numpy.mat(sgrid.x_ac[int(nac/2):]*10**3))
             del theta_l, theta_r
         if p.roll is True:
-            # - Compute roll angle using random coefficients previously
-            #   initialized with the power spectrum
-            theta = numpy.zeros((nal))
-            for comp in range(0, self.ncomp1d):
-                phase_x_al = (2. * pi * float(self.fr_roll[comp])
-                              * (numpy.float64(sgrid.x_al[:])
-                              + float(cycle * sgrid.al_cycle))) % (2.*pi)
-                theta[:] = theta[:] + 2 * self.A_roll[comp] * \
-                          numpy.cos(phase_x_al[:] + self.phi_roll[comp])
+            # - Compute roll angle using random coefficients or signals
+            # previously initialized with the power spectrum
+            if p.savesignal is True:
+                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                     * sgrid.al_cycle))%(p.len_repeat)
+                theta = mod_tools.gen_signal1d(xx, self.A_roll, self.phi_roll,
+                                      2*p.delta_al, p.lambda_max, p.npseudoper)
+            else:
+                theta = numpy.zeros((nal))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2. * pi * float(self.fr_roll[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle * sgrid.al_cycle))) % (2.*pi)
+                    theta[:] = theta[:] + 2 * self.A_roll[comp] * \
+                              numpy.cos(phase_x_al[:] + self.phi_roll[comp])
             # - Compute the associated roll  error on the swath in m
             self.roll[:, :] = (numpy.mat((1 + const.sat_elev/const.Rearth)
                                * theta[:]*pi/180./3600.).T
                                * numpy.mat(sgrid.x_ac*10**3))
             del theta
         if p.baseline_dilation is True:
-            # - Compute baseline dilation using random coefficients previously
-            #   initialized with the power spectrum
-            dil = numpy.zeros((nal))
-            # self.baseline_dilation=numpy.empty((nal,nac))
-            for comp in range(0, self.ncomp1d):
-                phase_x_al = (2. * pi * float(self.fr_bd[comp])
-                              * (numpy.float64(sgrid.x_al[:])
-                              + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                dil[:] = (dil[:] + 2*self.A_bd[comp]*numpy.cos(phase_x_al[:]
-                          + self.phi_bd[comp]))
+            # - Compute baseline dilation using random coefficients or signals
+            # previously initialized with the power spectrum
+            if p.savesignal is True:
+                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                      *sgrid.al_cycle))%(p.len_repeat)
+                dil = mod_tools.gen_signal1d(xx, self.A_bd, self.phi_bd,
+                                        2*p.delta_al,p.lambda_max,p.npseudoper)
+            else:
+                dil = numpy.zeros((nal))
+                # self.baseline_dilation=numpy.empty((nal,nac))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2. * pi * float(self.fr_bd[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                    dil[:] = (dil[:] + 2*self.A_bd[comp]*numpy.cos(phase_x_al[:]
+                              + self.phi_bd[comp]))
             # - Compute the associated baseline dilation  error
             #   on the swath in m
             self.baseline_dilation[:, :] = (numpy.mat((1 + const.sat_elev
@@ -311,14 +356,20 @@ class error():
         if p.timing is True:
             # - Compute timing delay using random coefficients previously
             #   initialized with the power spectrum
-            tim = numpy.zeros((nal))
-            # self.timing=numpy.empty((nal,nac))
-            for comp in range(0, self.ncomp1d):
-                phase_x_al = (2. * pi * float(self.fr_tim[comp])
-                              * (numpy.float64(sgrid.x_al[:])
-                              + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                tim[:] = (tim[:] + 2 * self.A_tim[comp]
-                          * numpy.cos(phase_x_al[:] + self.phi_tim[comp]))
+            if p.savesignal is True:
+                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                                    * sgrid.al_cycle))%(p.len_repeat)
+                tim = mod_tools.gen_signal1d(xx, self.A_tim, self.phi_tim,
+                                      2*p.delta_al, p.lambda_max, p.npseudoper)
+            else:
+                tim = numpy.zeros((nal))
+                # self.timing=numpy.empty((nal,nac))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2. * pi * float(self.fr_tim[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                    tim[:] = (tim[:] + 2 * self.A_tim[comp]
+                              * numpy.cos(phase_x_al[:] + self.phi_tim[comp]))
             # - Compute the correspond timing error on the swath in m
             self.timing[:, :] = (numpy.mat(const.C/2*(tim[:]*10**-12)).T
                                  * numpy.mat(numpy.ones(nac)))
@@ -607,7 +658,12 @@ class errornadir():
         PSD[indf] = 10**4
         # Convert spectrum in m2/cy
         PSD = PSD * 10**(-4)
-        self.A, self.phi, self.f = mod_tools.gen_coeff_signal1d(f, PSD,
+        if p.savesignal is True:
+            self.A, self.phi = mod_tools.gen_rcoeff_signal1d(f, PSD,
+                                        2*p.delta_al, p.lambda_max,
+                                        p.npseudoper,p.len_repeat)
+        else:
+            self.A, self.phi, self.f = mod_tools.gen_coeff_signal1d(f, PSD,
                                                                 self.ncomp1d)
         if p.wet_tropo is True:
             # - Define power spectrum of error in path delay due to wet tropo
@@ -663,17 +719,26 @@ class errornadir():
         fid.close()
         return None
 
-    def make_error(self, orb, cycle, SSH_true,p):
+    def make_error(self, orb, cycle, SSH_true, p):
+        ''' Build errors corresponding to each selected noise
+        among the effect of the wet_tropo, and the instrumental error
+        '''
         nal = numpy.shape(SSH_true)[0]
-        errnadir = numpy.zeros((nal))
         # - Compute random noise of 10**2 cm**2/(km/cycle)
         # - Compute the correspond error on the nadir in m
-        for comp in range(0, self.ncomp1d):
-            phase_x_al = (2. * pi * float(self.f[comp])
-                          *(numpy.float64(orb.x_al[:])
-                          + float(cycle*orb.al_cycle))) % (2.*pi)
-            errnadir[:] = (errnadir[:] + 2*self.A[comp]
-                           *numpy.cos(phase_x_al[:]+self.phi[comp]))
+        if p.savesignal is True:
+            xx=(numpy.float64(orb.x_al[:]) + float(cycle
+                * orb.al_cycle))%(p.len_repeat)
+            errnadir = mod_tools.gen_signal1d(xx, self.A, self.phi,
+                                      2*p.delta_al, p.lambda_max, p.npseudoper)
+        else:
+            errnadir = numpy.zeros((nal))
+            for comp in range(0, self.ncomp1d):
+                phase_x_al = (2. * pi * float(self.f[comp])
+                              *(numpy.float64(orb.x_al[:])
+                              + float(cycle*orb.al_cycle))) % (2.*pi)
+                errnadir[:] = (errnadir[:] + 2*self.A[comp]
+                               *numpy.cos(phase_x_al[:]+self.phi[comp]))
         # - Compute the correspond timing error on the swath in m
         self.nadir = errnadir[:]
         if p.wet_tropo:
