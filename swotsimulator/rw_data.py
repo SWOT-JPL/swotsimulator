@@ -169,7 +169,10 @@ def read_var(ifile, var, index=None, time=0, depth=0, model_nan=None):
     fid.close()
 ## - Mask value that are NaN
     if not model_nan is None:
-        T[numpy.where(T==model_nan)]=numpy.nan
+        T[numpy.where(T==model_nan)] = numpy.nan
+    T = numpy.ma.masked_invalid(T)
+    T[T.mask] = numpy.nan
+
     return T
 
 class Sat_SWOT():
