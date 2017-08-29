@@ -48,11 +48,10 @@ def gen_rcoeff_signal1d(f, PS, lambda_min, lambda_max, npseudoper, repeat):
     logPSl = numpy.interp(logffl,logf,logPS)
     PSl = 10**(logPSl)
     A = numpy.sqrt(2 * PSl * (ffl / npseudoper))
-    phi = numpy.full(numpy.shape(ffl), None)
-    phi = [None] * len(ffl)
+    phi = []
     for k in range(len(ffl)):
-      phi[k] = 2 * math.pi * numpy.random.random(int(2 * repeat * ffl[k]
-                                                / npseudoper + 3))
+      phi.append(2 * math.pi * numpy.random.random(int(2 * repeat * ffl[k]
+                                                / npseudoper + 3)))
     return A, phi
 
 
