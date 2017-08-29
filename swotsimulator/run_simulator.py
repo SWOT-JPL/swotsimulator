@@ -84,6 +84,7 @@ def run_simulator(file_param):
     p.nadir = getattr(p, 'nadir', True)
     p.grid = getattr(p, 'grid', 'regular')
     p.order_orbit_col = getattr(p, 'order_orbit_col', None)
+    p.ice_mask = getattr(p, 'ice_mask', True)
 
     # - Progress bar variables are global
     global istep
@@ -513,7 +514,7 @@ def load_sgrid(sgridfile, p):
 def interpolate_regular_1D(lon_in, lat_in, var, lon_out, lat_out, Teval=None):
     ''' Interpolation of data when grid is regular and coordinate in 1D. '''
     lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
-    if Teval is None:
+    if Teval is None and p.ice_mask is True:
         Teval = interpolate.RectBivariateSpline(lat_in, lon_in,
                                             numpy.isnan(var),
                                             kx=1, ky=1, s=0).ev(lat_out,
@@ -701,13 +702,13 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     SSH_true[ind_time[0], :] = SSH_true_ind_time.reshape(nal,
                                                                          nac)
                     if p.nadir is True:
-                        SSH_true_ind_time, Teval = interpolate_regular_1D(
+                        SSH_true_ind_time, nTeval = interpolate_regular_1D(
                                           model_data.vlon,
                                           model_data.vlat,
                                           SSH_model,
                                           ngrid.lon[ind_nadir_time[0]].ravel(),
                                           ngrid.lat[ind_nadir_time[0]].ravel(),
-                                          Teval = nTeval)
+                                          Teval=nTeval)
                         SSH_true_nadir[ind_nadir_time[0]] = SSH_true_ind_time
                 else:
                     # Grid is irregular, interpolation can be done using
