@@ -193,6 +193,9 @@ def run_simulator(file_param):
             ngrid.gridfile = sgridfile
         else:
             ngrid = None
+        # Set Teval and nTeval to None to interpolate the mask once
+        Teval = None
+        nTeval = None
     #   Select model data around the swath to reduce interpolation cost in
     #   griddata
 
@@ -208,10 +211,10 @@ def run_simulator(file_param):
             if not p.file_input:
                 model_data = []
 
-            SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress = create_SWOTlikedata(
+            SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, Teval, nTeval = create_SWOTlikedata(
                     cycle, numpy.shape(listsgridfile)[0]*rcycle, list_file,
                     modelbox, sgrid, ngrid, model_data, modeltime, err, errnad,
-                    p, progress_bar=True)
+                    p, progress_bar=True, Teval=Teval, nTeval=nTeval)
             #   Save outputs in a netcdf file
             if (~numpy.isnan(vindice)).any() or not p.file_input:
                 save_SWOT(cycle, sgrid, err, p, time=time, vindice=vindice,
@@ -509,12 +512,7 @@ def load_sgrid(sgridfile, p):
 
 def interpolate_regular_1D(lon_in, lat_in, var, lon_out, lat_out, Teval=None):
     ''' Interpolation of data when grid is regular and coordinate in 1D. '''
-    # To correct for IDL issues
-    if numpy.max(lon_in)>359 and numpy.min(lon_in)<1:
-        lon_in[lon_in > 180] = lon_in[lon_in > 180] - 360
-        #lon_in = np.mod(lon_in - (lref - 180), 360) + (lref - 180)
-        lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
-    # Interpolate mask if it has not been done (Teval is None)
+    lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
     if Teval is None:
         Teval = interpolate.RectBivariateSpline(lat_in, lon_in,
                                             numpy.isnan(var),
@@ -600,7 +598,7 @@ def select_modelbox(sgrid, model_data):
 
 def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                         model_data, modeltime, err, errnad, p,
-                        progress_bar=True):
+                        progress_bar=True, Teval=None, nTeval=None):
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
     _data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
@@ -697,7 +695,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                              model_data.vlat,
                                              SSH_model,
                                              sgrid.lon[ind_time[0], :].ravel(),
-                                             sgrid.lat[ind_time[0], :].ravel())
+                                             sgrid.lat[ind_time[0], :].ravel(),
+                                             Teval=Teval)
                     nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
                     SSH_true[ind_time[0], :] = SSH_true_ind_time.reshape(nal,
                                                                          nac)
@@ -707,7 +706,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                           model_data.vlat,
                                           SSH_model,
                                           ngrid.lon[ind_nadir_time[0]].ravel(),
-                                          ngrid.lat[ind_nadir_time[0]].ravel())
+                                          ngrid.lat[ind_nadir_time[0]].ravel(),
+                                          Teval = nTeval)
                         SSH_true_nadir[ind_nadir_time[0]] = SSH_true_ind_time
                 else:
                     # Grid is irregular, interpolation can be done using
@@ -796,7 +796,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
         else:
             errnad.SSH = SSH_true_nadir + errnad.nadir + err.wet_tropo2nadir
     # if p.file_input: del ind_time, SSH_model, model_step
-    return SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress
+    return SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, \
+           Teval, nTeval
 
 
 def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
