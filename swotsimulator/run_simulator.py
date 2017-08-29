@@ -514,7 +514,7 @@ def load_sgrid(sgridfile, p):
 def interpolate_regular_1D(lon_in, lat_in, var, lon_out, lat_out, Teval=None):
     ''' Interpolation of data when grid is regular and coordinate in 1D. '''
     lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
-    if Teval is None and p.ice_mask is True:
+    if Teval is None or p.ice_mask is True:
         Teval = interpolate.RectBivariateSpline(lat_in, lon_in,
                                             numpy.isnan(var),
                                             kx=1, ky=1, s=0).ev(lat_out,
