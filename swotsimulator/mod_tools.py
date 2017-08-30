@@ -65,7 +65,7 @@ def gen_signal1d(xx, A, phi, lambda_min, lambda_max, npseudoper):
                           numpy.log10(1 + 1. / npseudoper))
     ffl = 10**(logffl)
     for k in range(len(ffl)):
-      ka = (2 * (xx * ffl[k] / npseudoper) + 1).astype(int)
+      ka = 2 * (xx * ffl[k] / npseudoper).astype(int) + 1
       Cka = numpy.abs(numpy.sin(2 * math.pi * xx * ffl[k] / npseudoper / 2.))
       kb = (2 * ((xx + npseudoper / 2. / ffl[k]) * ffl[k]
             / npseudoper).astype(int))
