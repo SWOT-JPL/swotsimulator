@@ -142,11 +142,18 @@ class error():
                       PStim[numpy.min(numpy.where(freq >= 1./p.lambda_cut))]
                 # - Compute random coefficients using the power spectrum
                 if p.savesignal is True:
-                    self.A_tim, self.phi_tim = mod_tools.gen_rcoeff_signal1d(
-                         freq, PStim, 2*p.delta_al, p.lambda_max, p.npseudoper,
+                    self.A_tim_l, self.phi_tim_l = \
+                         mod_tools.gen_rcoeff_signal1d(freq, PStim,
+                         2*p.delta_al, p.lambda_max, p.npseudoper,
+                         p.len_repeat)
+                    self.A_tim_r, self.phi_tim_r = \
+                         mod_tools.gen_rcoeff_signal1d(freq, PStim,
+                         2*p.delta_al, p.lambda_max, p.npseudoper,
                          p.len_repeat)
                 else:
-                    self.A_tim, self.phi_tim, self.fr_tim = \
+                    self.A_tim_l, self.phi_tim_l, self.fr_tim_l = \
+                        mod_tools.gen_coeff_signal1d(freq, PStim, self.ncomp1d)
+                    self.A_tim_r, self.phi_tim_r, self.fr_tim_r = \
                         mod_tools.gen_coeff_signal1d(freq, PStim, self.ncomp1d)
             if p.wet_tropo==True:
                 # - Define power spectrum of error in path delay
@@ -221,9 +228,12 @@ class error():
             self.phi_bd = numpy.array(fid.variables['phi_bd'][:]).squeeze()
             self.fr_bd = numpy.array(fid.variables['fr_bd'][:]).squeeze()
         if p.timing is True:
-            self.A_tim = numpy.array(fid.variables['A_tim'][:]).squeeze()
-            self.phi_tim = numpy.array(fid.variables['phi_tim'][:]).squeeze()
-            self.fr_tim = numpy.array(fid.variables['fr_tim'][:]).squeeze()
+            self.A_tim_l = numpy.array(fid.variables['A_tim_l'][:]).squeeze()
+            self.phi_tim_l = numpy.array(fid.variables['phi_tim_l'][:]).squeeze()
+            self.fr_tim_l = numpy.array(fid.variables['fr_tim_l'][:]).squeeze()
+            self.A_tim_r = numpy.array(fid.variables['A_tim_r'][:]).squeeze()
+            self.phi_tim_r = numpy.array(fid.variables['phi_tim_r'][:]).squeeze()
+            self.fr_tim_r = numpy.array(fid.variables['fr_tim_r'][:]).squeeze()
         if p.wet_tropo is True:
             self.A_wt = numpy.array(fid.variables['A_wt'][:]).squeeze()
             if numpy.shape(self.A_wt)[0] != self.ncomp2d:
@@ -359,20 +369,31 @@ class error():
             if p.savesignal is True:
                 xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
                                     * sgrid.al_cycle))%(p.len_repeat)
-                tim = mod_tools.gen_signal1d(xx, self.A_tim, self.phi_tim,
+                tim_l = mod_tools.gen_signal1d(xx, self.A_tim_l, self.phi_tim_l,
+                                      2*p.delta_al, p.lambda_max, p.npseudoper)
+                tim_r = mod_tools.gen_signal1d(xx, self.A_tim_r, self.phi_tim_r,
                                       2*p.delta_al, p.lambda_max, p.npseudoper)
             else:
-                tim = numpy.zeros((nal))
-                # self.timing=numpy.empty((nal,nac))
+                tim_l = numpy.zeros((nal))
+                tim_r = numpy.zeros((nal))
+            # - Compute the associated phase error on the swath in m
                 for comp in range(0, self.ncomp1d):
-                    phase_x_al = (2. * pi * float(self.fr_tim[comp])
+                    phase_x_al = (2. * pi * float(self.fr_tim_l[comp])
                                   * (numpy.float64(sgrid.x_al[:])
                                   + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                    tim[:] = (tim[:] + 2 * self.A_tim[comp]
-                              * numpy.cos(phase_x_al[:] + self.phi_tim[comp]))
+                    tim_l[:] = (tim_l[:] + 2 * self.A_tim_l[comp]
+                              * numpy.cos(phase_x_al[:] + self.phi_tim_l[comp]))
+                for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2. * pi * float(self.fr_tim_r[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                    tim_r[:] = (tim_r[:] + 2 * self.A_tim_r[comp]
+                              * numpy.cos(phase_x_al[:] + self.phi_tim_r[comp]))
             # - Compute the correspond timing error on the swath in m
-            self.timing[:, :] = (numpy.mat(const.C/2*(tim[:]*10**-12)).T
-                                 * numpy.mat(numpy.ones(nac)))
+            self.timing[:, : int(nac/2)] = (numpy.mat(const.C/2*(tim_l[:]
+                              *10**-12)).T* numpy.mat(numpy.ones(int(nac/2))))
+            self.timing[:, int(nac/2):] = (numpy.mat(const.C/2*(tim_r[:]
+                              *10**-12)).T* numpy.mat(numpy.ones(int(nac/2))))
         if p.wet_tropo is True:
             # - Initialization of radiometer error in right and left beam
             err_radio_r = numpy.zeros((nal))
@@ -586,12 +607,18 @@ class error():
             var = fid.createVariable('fr_bd', 'f4', ('nrand1d', ))
             var[:] = self.fr_bd
         if p.timing is True:
-            var = fid.createVariable('A_tim', 'f4', ('nrand1d', ))
-            var[:] = self.A_tim
-            var = fid.createVariable('phi_tim', 'f4', ('nrand1d', ))
-            var[:] = self.phi_tim
-            var = fid.createVariable('fr_tim', 'f4', ('nrand1d', ))
-            var[:] = self.fr_tim
+            var = fid.createVariable('A_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.A_tim_l
+            var = fid.createVariable('phi_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.phi_tim_l
+            var = fid.createVariable('fr_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.fr_tim_l
+            var = fid.createVariable('A_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.A_tim_r
+            var = fid.createVariable('phi_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.phi_tim_r
+            var = fid.createVariable('fr_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.fr_tim_r
         if p.wet_tropo is True:
             var = fid.createVariable('A_wt', 'f4', ('nrand2d', ))
             var[:] = self.A_wt
