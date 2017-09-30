@@ -126,8 +126,11 @@ ncomp2d = 2000
 # ------ Cut off frequency:
 #	 (Use lambda_cut=40000km for cross-calibration)
 lambda_cut = 20000
-lambda_max = 20000
-savesignal = False
+lambda_max = lambda_cut
+# ------ Save entire rando signal instead of random coefficients. Enables a better randomness
+savesignal = True or False
+# ------ If savesignal is True, enter number of pseudo-period of superimposed
+#        signals and repeat length
 npseudoper = 30. # Number of pseudo period of superimposed signals.
 len_repeat = 40000*14*50.
 # ------ Roll error (True to compute it):
