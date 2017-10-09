@@ -5,6 +5,12 @@ Changelog for swotsimulator
 
 This file lists the changes in each swotsimulator version
 
+2.4
+-----
+09/01/2017
+- Implement computation of random signals instead of random coefficents to improve randomness of errors at large scale
+09/30/2017
+- Implement function to save random signals to reproduce runs.
 
 2.3
 -----

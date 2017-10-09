@@ -412,7 +412,7 @@ class error():
             wt_large = numpy.zeros((nal, naclarge))
             x_large, y_large = numpy.meshgrid(x_ac_large,
                                               numpy.float64(sgrid.x_al[:])
-                                              + float(cycle*sgrid.al_cycle))
+                                              + float(acycle*sgrid.al_cycle))
             # - Compute path delay error due to wet tropo and radiometer error
             #   using random coefficient initialized with power spectrums
             for comp in range(0, self.ncomp2d):
@@ -643,6 +643,92 @@ class error():
         fid.close()
         return None
 
+    def save_signal(self, p, nac):
+        '''Save random signals to enable runs to be reproducible.
+        The ncomp1d random phase phi, amplitude A and frequency fr in 1D and
+        ncomp2d random phase phi, amplitude A and frequencies frx and fry in 2D
+        are saved in file_coeff for each error (except KaRIN) and can be
+        loaded using load_coeff.
+        Random numbers on a grid nrandkarin km long and x_ac large are stored
+        for KaRIN noise.
+        '''
+        # - Open Netcdf file in write mode
+        fid = nc.netcdf_file(p.file_coeff, 'w')  # , format='NETCDF3_CLASSIC')
+        fid.description = "Random coefficients computed for SWOT simulator"
+
+## - Create dimensions
+        fid.createDimension('xal', numpy.shape(x_al)
+        fid.createDimension('nkarin', self.nrand)
+        fid.createDimension('x_ac', nac)
+## - Create and write Variables
+        if p.karin is True:
+            var = fid.createVariable('A_karin_l', 'f4', ('nkarin', 'x_ac'))
+            var[:, :] = self.A_karin_l
+            var = fid.createVariable('A_karin_r', 'f4', ('nkarin', 'x_ac'))
+            var[:, :] = self.A_karin_r
+        if p.roll is True:
+            var = fid.createVariable('A_roll', 'f4', ('nrand1d', ))
+            var[:] = self.A_roll
+            var = fid.createVariable('phi_roll', 'f4', ('nrand1d', ))
+            var[:] = self.phi_roll
+            var = fid.createVariable('fr_roll', 'f4', ('nrand1d', ))
+            var[:] = self.fr_roll
+        if p.phase is True:
+            var = fid.createVariable('A_phase_r', 'f4', ('nrand1d', ))
+            var[:] = self.A_phase_r
+            var = fid.createVariable('phi_phase_r', 'f4', ('nrand1d', ))
+            var[:] = self.phi_phase_r
+            var = fid.createVariable('fr_phase_r', 'f4', ('nrand1d', ))
+            var[:] = self.fr_phase_r
+            var = fid.createVariable('A_phase_l', 'f4', ('nrand1d', ))
+            var[:] = self.A_phase_l
+            var = fid.createVariable('phi_phase_l', 'f4', ('nrand1d', ))
+            var[:] = self.phi_phase_l
+            var = fid.createVariable('fr_phase_l', 'f4', ('nrand1d', ))
+            var[:] = self.fr_phase_l
+        if p.baseline_dilation is True:
+            var = fid.createVariable('A_bd', 'f4', ('nrand1d', ))
+            var[:] = self.A_bd
+            var = fid.createVariable('phi_bd', 'f4', ('nrand1d', ))
+            var[:] = self.phi_bd
+            var = fid.createVariable('fr_bd', 'f4', ('nrand1d', ))
+            var[:] = self.fr_bd
+        if p.timing is True:
+            var = fid.createVariable('A_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.A_tim_l
+            var = fid.createVariable('phi_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.phi_tim_l
+            var = fid.createVariable('fr_tim_l', 'f4', ('nrand1d', ))
+            var[:] = self.fr_tim_l
+            var = fid.createVariable('A_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.A_tim_r
+            var = fid.createVariable('phi_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.phi_tim_r
+            var = fid.createVariable('fr_tim_r', 'f4', ('nrand1d', ))
+            var[:] = self.fr_tim_r
+        if p.wet_tropo is True:
+            var = fid.createVariable('A_wt', 'f4', ('nrand2d', ))
+            var[:] = self.A_wt
+            var = fid.createVariable('phi_wt', 'f4', ('nrand2d', ))
+            var[:] = self.phi_wt
+            var = fid.createVariable('frx_wt', 'f4', ('nrand2d', ))
+            var[:] = self.frx_wt
+            var = fid.createVariable('fry_wt', 'f4', ('nrand2d', ))
+            var[:] = self.fry_wt
+            var = fid.createVariable('A_radio_r', 'f4', ('nrand2d', ))
+            var[:] = self.A_radio_r
+            var = fid.createVariable('phi_radio_r', 'f4', ('nrand2d', ))
+            var[:] = self.phi_radio_r
+            var = fid.createVariable('fr_radio_r', 'f4', ('nrand2d', ))
+            var[:] = self.fr_radio_r
+            var = fid.createVariable('A_radio_l', 'f4', ('nrand2d', ))
+            var[:] = self.A_radio_l
+            var = fid.createVariable('phi_radio_l', 'f4', ('nrand2d', ))
+            var[:] = self.phi_radio_l
+            var = fid.createVariable('fr_radio_l', 'f4', ('nrand2d', ))
+            var[:] = self.fr_radio_l
+        fid.close()
+        return None
 
 class errornadir():
     '''Class errornadir defines the error on the nadir.
@@ -754,7 +840,7 @@ class errornadir():
         # - Compute random noise of 10**2 cm**2/(km/cycle)
         # - Compute the correspond error on the nadir in m
         if p.savesignal is True:
-            xx=(numpy.float64(orb.x_al[:]) + float(cycle
+            xx = (numpy.float64(orb.x_al[:]) + float(cycle
                 * orb.al_cycle))%(p.len_repeat)
             errnadir = mod_tools.gen_signal1d(xx, self.A, self.phi,
                                       2*p.delta_al, p.lambda_max, p.npseudoper)
