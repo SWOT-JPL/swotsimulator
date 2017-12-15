@@ -11,47 +11,34 @@ import sys
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
 
+
 def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     '''Computes the orbit nadir on a subdomain.
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
     added in the parameters file. \n
-    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Along track 
+    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Along track
     sampling, along track resolution). \n
     Outputs are Sat_Nadir object containing Nadir track (along track distance
     x_al, longitude lon and latitude lat,
     number of days in a cycle cycle, distance crossed in a cycle cycle_al,
     time, time shfit and time of pass passtime'''
-    npoints = 1
+    # npoints = 1
     # - Load SWOT orbit ground track
     logger.info('Load data from orbit file')
-    bnorbit= os.path.basename(orbitfile)
-    #if (bnorbit == 'orbit292.txt' or bnorbit == 'swot014_fastsampling.txt'
-    #   or bnorbit == 'swot292_science.txt'
-    #   or bnorbit == 'swot293_contingency.txt'):
-    #    logger.warn('WARNING: An old orbit file is used, orbit files have been ',
-    #          'updated')
-    #    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(0, 1, 2),
-    #                                     unpack=True)
-    #    votime *= const.secinday
-    #else:
-    #    volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
-    #                                     unpack=True)
-
     if p.order_orbit_col is None:
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
-                                         unpack=True)
+                                             unpack=True)
 
     else:
-        volon, volat, votime = numpy.loadtxt(orbitfile,
-                               usecols=(p.order_orbit_col[0],
-                               p.order_orbit_col[1], p.order_orbit_col[2]),
-                               unpack=True)
+        ncols = p.order_orbit_col
+        volon, volat, votime = numpy.loadtxt(orbitfile, usecols=ncols,
+                                             unpack=True)
         votime *= const.secinday
-    #    votime *= const.secinday
     if (volon > 360).any() or (numpy.abs(volat) > 90).any():
-        logger.error('Error in orbit file or wrong order of column \n'\
-                'Columns should be in the following order (time, lon, lat)')
+        logger.error('Error in orbit file or wrong order of column \n'
+                     'Columns should be in the following order'
+                     '(time, lon, lat)')
         sys.exit(1)
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
@@ -108,7 +95,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # Shift coordinates, so that the first point of the orbit is the beginning
     # of pass 1
     decal = ind[0][-1]
-    timeshift = votime[-1] - votime[decal]
+    # timeshift = votime[-1] - votime[decal]
     volon = numpy.hstack([volon[decal:], volon[:decal]])
     volat = numpy.hstack([volat[decal:], volat[:decal]])
     votime = numpy.hstack([votime[decal:], votime[:decal]])
@@ -136,14 +123,14 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         matnpbox[numpy.where((((modelbox[0] - p.halfswath / (const.deg2km
                  * math.cos(modelbox[2]*math.pi/180.))) <= volon)
                  | (volon <= (modelbox[1] + p.halfswath/(const.deg2km
-                 * math.cos(modelbox[3]*math.pi/180.)))))
+                              * math.cos(modelbox[3]*math.pi/180.)))))
                  & ((modelbox[2] - p.halfswath/const.deg2km) <= volat)
                  & ((modelbox[3] + p.halfswath/const.deg2km) >= volat))] = 1
     else:
         matnpbox[numpy.where(((modelbox[0] - p.halfswath / (const.deg2km
                  * math.cos(modelbox[2]*math.pi/180.))) <= volon)
                  & (volon <= (modelbox[1] + p.halfswath/(const.deg2km
-                 * math.cos(modelbox[3]*math.pi/180.))))
+                              * math.cos(modelbox[3]*math.pi/180.))))
                  & ((modelbox[2] - p.halfswath/const.deg2km) <= volat)
                  & ((modelbox[3] + p.halfswath/const.deg2km) >= volat))] = 1
     norp = int(numpy.sum(matnpbox))
@@ -170,7 +157,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         distance[i+1] = (distance[i] + numpy.sqrt(((volon[i+1]-volon[i])
                          * const.deg2km*numpy.cos(volat[i+1]
                          * 2*math.pi/360.))**2 + ((volat[i+1] - volat[i])
-                         * const.deg2km)**2))  # numpy.sum(dl[:i])
+                                                  * const.deg2km)**2))
         volon[i + 1] = (volon[i + 1] + 360) % 360
         if matnpbox[i]:
             x_al_lr[indp] = distance[i]
@@ -209,14 +196,15 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                 lon[imin] = lon_lr[index[i]]
                 lat[imin] = lat_lr[index[i]]
             else:
+                slicei = slice(index[i], index[i + 1])
                 x_al[imin: imax] = numpy.arange(x_al_lr[index[i]],
                                                 x_al_lr[index[i+1] - 1],
                                                 p.delta_al)
                 stime[imin: imax] = numpy.interp(x_al[imin: imax],
-                                                 x_al_lr[index[i]: index[i+1]],
-                                                 stime_lr[index[i]: index[i+1]])
+                                                 x_al_lr[slicei],
+                                                 stime_lr[slicei])
                 loncirc = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(
-                                        lon_lr[index[i]: index[i+1]])))
+                                        lon_lr[slicei])))
                 # if numpy.min(lon_lr[index[i]:index[i+1]])<1.
                 # and numpy.max(lon_lr[index[i]:index[i+1]])>359.:
                 # lontmp=lon_lr[index[i]:index[i+1]]
@@ -229,11 +217,11 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                 #    lon[imin:imax]=numpy.interp(x_al[imin:imax],
                 # x_al_lr[index[i]:index[i+1]], lon_lr[index[i]:index[i+1]])
                 lon[imin: imax] = numpy.interp(x_al[imin: imax],
-                                               x_al_lr[index[i]: index[i+1]],
+                                               x_al_lr[slicei],
                                                loncirc)
                 lat[imin: imax] = numpy.interp(x_al[imin: imax],
-                                               x_al_lr[index[i]: index[i+1]],
-                                               lat_lr[index[i]: index[i+1]])
+                                               x_al_lr[slicei],
+                                               lat_lr[slicei])
             imin = imax
         x_al[imin:] = numpy.arange(x_al_lr[index[-1]], x_al_lr[index[-1]]
                                    + (Ninterp - imin)*p.delta_al, p.delta_al)
@@ -241,14 +229,6 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                                     stime_lr[index[-1]:])
         loncirc = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(
                                 lon_lr[index[-1]:])))
-        # if numpy.min(lon_lr[index[-1]:])<1.
-        # and numpy.max(lon_lr[index[-1]:])>539:
-        # lontmp=lon_lr[index[-1]:]
-        # lontmp[numpy.where(lontmp>180.)]=lontmp[numpy.where(lontmp>180.)]-360
-        # lon[imin:]=numpy.interp(x_al[imin:], x_al_lr[index[-1]:], lontmp)
-        #    lon[imin:]=(lon[imin:]+360)%360
-        # else:
-        #    lon[imin:]=numpy.interp(x_al[imin:], x_al_lr[index[-1]:], lon_lr[index[-1]:])
         lon[imin:] = numpy.interp(x_al[imin:], x_al_lr[index[-1]:], loncirc)
         lat[imin:] = numpy.interp(x_al[imin:], x_al_lr[index[-1]:],
                                   lat_lr[index[-1]:])
@@ -312,7 +292,7 @@ def orbit2swath(modelbox, p, orb):
     logger.info('\n Compute SWOT grid')
     # Detect first pass that is in the subdomain
     ipass0 = 0
-    strpass = []
+    # strpass = []
     # Loop on all passes after the first pass detected
     for ipass in range(ipass0, numpy.shape(passtime)[0]):
         # Detect indices corresponding to the pass
@@ -350,9 +330,9 @@ def orbit2swath(modelbox, p, orb):
             ngrid.time = stime[ind]
 
             # Project in cartesian coordinates satellite ground location
-            SatLoc[:, 0], SatLoc[:, 1], SatLoc[:, 2] = \
-                    mod_tools.spher2cart(lon[ind[0]: ind[-1]+1: npoints],
-                                         lat[ind[0]: ind[-1]+1: npoints])
+            s2cart = mod_tools.spher2cart(lon[ind[0]: ind[-1]+1: npoints],
+                                          lat[ind[0]: ind[-1]+1: npoints])
+            SatLoc[:, 0], SatLoc[:, 1], SatLoc[:, 2] = s2cart
             # Compute satellite direction (SatLoc is periodic)
             SatDir[1: -1, 0] = ((SatLoc[2:, 0]-SatLoc[: -2, 0])
                                 / numpy.sqrt(SatLoc[1: -1, 0]**2
@@ -374,11 +354,11 @@ def orbit2swath(modelbox, p, orb):
                                                 / (const.Rearth*10**-3)),
                                                 SatDir[int(i/npoints), :])
                     ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
-                    sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = \
-                          mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
+                    cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
+                    sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = sc
                     ObsLoc = numpy.dot(numpy.transpose(R),
                                        SatLoc[int(i/npoints)])
-                    sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
+                    sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
                     if npoints > p.delta_al:
                         if i >= npoints:
                             sgrid.lon[i-npoints: i, nhalfswath+j] = numpy.arange(sgrid.lon[i-npoints, nhalfswath+j], sgrid.lon[i, nhalfswath+j], (sgrid.lon[i, nhalfswath+j]-sgrid.lon[i-npoints, nhalfswath+j])/npoints)

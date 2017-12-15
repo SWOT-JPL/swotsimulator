@@ -20,9 +20,9 @@
 # - Nov 2014: Beta version
 # - Feb 2015: Version 1.0
 # - Dec 2015: Version 2.0
-#
+# - Dec 2017: Version 3.0
 # Notes:
-# - Written for Python 2.3,  Python 3.4, tested with Python 2.7, Python 3.4
+# - Written for Python 3.4, tested with Python 2.7, Python 3.4
 #
 # Copyright (c)
 # Copyright (c) 2002-2014, California Institute of Technology.
@@ -37,13 +37,15 @@
 
 # - Set module version to package version:
 
-import swotsimulator.package_version
-__version__ = package_version.version
-__author__  = package_version.author
-__date__    = package_version.date
-__email__   = package_version.email
-__url__     = package_version.url
-del package_version
+
+__version__ = '3.00'
+__author__  = 'Lucile Gaultier and Clement Ubelmann'
+__date__ = '2014-07-01'
+__email__ = 'lucile.gaultier@gmail.com'
+__url__ = ''
+__description__ = ('SWOT Simulator')
+__author_email__ = ('lucile.gaultier@gmail.com')
+__keywords__ = ()
 
 # - If you're importing this module in testing mode, or you're running
 #  pydoc on this module via the command line, import user-specific
@@ -62,14 +64,14 @@ __python_version__ = sys.version[:3]
 # - Import numerical array formats
 try:
     import numpy
-except:
+except ImportError:
     print(''' Numpy is not available on this platform,
           ''')
 
 # - Import scientific librairies
 try:
     import scipy
-except:
+except ImportError:
     print("""Scipy is not available on this platform,
           """)
 
@@ -77,7 +79,7 @@ except:
 # - Import netcdf reading librairies
 try:
     import netCDF4
-except:
+except ImportError:
     print(''' netCDF4 is not available on this machine,
-          only netcdf3 can be read ''')
+          ''')
     # reading and writing netcdf functions in rw_data.py won't work'''

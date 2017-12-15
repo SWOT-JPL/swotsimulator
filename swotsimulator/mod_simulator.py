@@ -43,22 +43,9 @@ SSH_true_nadir=[]): Save Nadir-like data
 #-----------------------------------------------------------------------
 '''
 import os
-import shutil
 from scipy import interpolate
 import numpy
-import glob
-import gc
-from optparse import OptionParser
-import sys
-import time as ti
-import swotsimulator
-import swotsimulator.build_swath as build_swath
 import swotsimulator.rw_data as rw_data
-import swotsimulator.build_error as build_error
-import swotsimulator.mod_tools as mod_tools
-import swotsimulator.const as const
-
-# - Define global variables for progress bars
 istep = 0
 ntot = 1
 ifile = 0
@@ -133,49 +120,45 @@ def load_ngrid(sgridfile, p):
     return ngrid
 
 
-def select_modelbox(sgrid, model_data):
-    # mask=numpy.zeros((numpy.shape(model_data.vlon)))
-    # nal=len(sgrid.x_al)
-    # for kk in range(0,nal,10):
-    #   dlon1=model_data.vlon-sgrid.lon_nadir[kk]
-    #   dlon=numpy.minimum(numpy.mod(dlon1,360),numpy.mod(-dlon1,360))
-    #   ddist=(((dlon)*numpy.cos(sgrid.lat_nadir[kk]*numpy.pi/180.)
-    # *const.deg2km)**2 + ((model_data.vlat-sgrid.lat_nadir[kk])*const.deg2km)**2 )
-    #  mask[ddist<const.radius_interp**2]=1
+'''
+def select_modelbox(sgrid, model_data, p):
+    # Select data in modelbox from the model 
     model_index = numpy.where(((numpy.min(sgrid.lon)) <= model_data.vlon)
                               & (model_data.vlon <= (numpy.max(sgrid.lon)))
                               & ((numpy.min(sgrid.lat)) <= model_data.vlat)
                               & (model_data.vlat <= (numpy.max(sgrid.lat))))
     model_data.model_index = model_index
-    lonmodel1d = model_data.vlon[model_index].ravel()
-    latmodel1d = model_data.vlat[model_index].ravel()
+    # lonmodel1d = model_data.vlon[model_index].ravel()
+    # latmodel1d = model_data.vlat[model_index].ravel()
 
     if p.grid == 'regular':
-        model_data.lon1d = lon1[numpy.where(((numpy.min(sgrid.lon)) <= lon1)
-                                            & (lon1 <= (numpy.max(sgrid.lon))))]
-        model_data.lat1d = lat1[numpy.where(((numpy.min(sgrid.lat)) <= lat1)
-                                            & (lat1 <= (numpy.max(sgrid.lat))))]
+        maxlon = numpy.max(sgrid.lon)
+        model_data.lon1d = lon1[numpy.where((numpy.min(sgrid.lon) <= lon1)
+                                            & (lon1 <= maxlon))]
+        model_data.lat1d = lat1[numpy.where((numpy.min(sgrid.lat) <= lat1)
+                                            & (lat1 <= numpy.max(sgrid.lat)))]
     else:
-        model_index = numpy.where(((numpy.min(sgrid.lon)) <= model_data.vlon)
-                                  & (model_data.vlon <= (numpy.max(sgrid.lon)))
-                                  & ((numpy.min(sgrid.lat)) <= model_data.vlat)
-                                  & (model_data.vlat <= (numpy.max(sgrid.lat))))
+        model_index = numpy.where((numpy.min(sgrid.lon) <= model_data.vlon)
+                                  & (model_data.vlon <= numpy.max(sgrid.lon))
+                                  & (numpy.min(sgrid.lat) <= model_data.vlat)
+                                  & (model_data.vlat <= numpy.max(sgrid.lat)))
         model_data.lon1d = model_data.vlon[model_index].ravel()
         model_data.lat1d = model_data.vlat[model_index].ravel()
         model_data.vlon = model_data.vlon[model_index].ravel()
         model_data.vlat = model_data.vlat[model_index].ravel()
 
-    nx = len(lon1)
-    ny = len(lat1)
+    # nx = len(lon1)
+    # ny = len(lat1)
     return model_index
+'''
 
 
 def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
                         modeltime, err, errnad, p):
-    import swotsimulator.rw_data as rw_data
-    import swotsimulator.build_error as build_error
+    # import swotsimulator.rw_data as rw_data
+    # import swotsimulator.build_error as build_error
     import swotsimulator.mod_tools as mod_tools
-    import swotsimulator.const as const
+    # import swotsimulator.const as const
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH
     model_data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
@@ -218,25 +201,37 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
     # Look for satellite data that are beween step-p.timesetp/2 and
     # step+p.step/2
     if p.file_input:
-        index_filemodel = numpy.where(((time[-1]-sgrid.timeshift) >= (modeltime-p.timestep/2.)) & ((time[0]-sgrid.timeshift) < (modeltime+p.timestep/2.)))
+        index_filemodel = numpy.where(((time[-1] - sgrid.timeshift)
+                                      >= (modeltime - p.timestep/2.))
+                                      & ((time[0] - sgrid.timeshift)
+                                      < (modeltime + p.timestep/2.)))
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
-            progress = mod_tools.update_progress(float(istep)/float(ntot*ntotfile),
-                                                 'pass: ' + str(sgrid.ipass),
-                                                 'model file: ' + list_file[ifile] +', cycle: ' + str(cycle+1))
+            fstep = float(istep) / float(ntot*ntotfile)
+            spass = 'pass: {}'.format(sgrid.ipass)
+            cy1 = cycle + 1
+            sinfo = 'model file: {}, cycle: {}'.format(list_file[ifile], cy1)
+            progress = mod_tools.update_progress(fstep, spass, sinfo)
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
                 # number of file to be processed used in the progress bar
-                ntot = ntot + numpy.shape(index_filemodel)[1]-1
+                ntot = ntot + numpy.shape(index_filemodel)[1] - 1
                 # if numpy.shape(index)[1]>1:
                 # Select part of the track that corresponds to the time of the
                 # model (+-timestep/2)
-                ind_time = numpy.where(((time-sgrid.timeshift) >= (modeltime[ifile]-p.timestep/2.)) & ((time-sgrid.timeshift) < (modeltime[ifile]+p.timestep/2.)))
+                ind_time = numpy.where(((time - sgrid.timeshift)
+                                       >= (modeltime[ifile] - p.timestep/2.))
+                                       & ((time - sgrid.timeshift)
+                                       < (modeltime[ifile] + p.timestep/2.)))
                 if p.nadir:
-                    ind_nadir_time = numpy.where(((time-ngrid.timeshift) >= (modeltime[ifile]-p.timestep/2.)) & ((time-ngrid.timeshift) < (modeltime[ifile]+p.timestep/2.)))
+                    ind_nadir_time = numpy.where(((time - ngrid.timeshift)
+                                                 >= (modeltime[ifile] - p.timestep/2.))
+                                                 & ((time - ngrid.timeshift)
+                                                 < (modeltime[ifile] + p.timestep/2.)))
                 # Load data from this model file
+                pathfile = os.path.join(p.indatadir, list_file[ifile])
                 model_step = eval('rw_data.' + model_data.model
-                                  +'(file=p.indatadir + os.sep + list_file[ifile], var=p.var)')
+                                  +'(file=pathfile, var=p.var)')
                 if p.grid == 'regular':
                     model_step.read_var()
                     SSH_model = model_step.vvar[model_data.model_index_lat, :]
@@ -260,18 +255,32 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
                     lonnadir = ngrid.lon[ind_nadir_time[0]].flatten()
                     latswot = sgrid.lat[ind_time[0], :].flatten()
                     latnadir = ngrid.lat[ind_nadir_time[0]].flatten()
-                    Teval = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, numpy.isnan(SSH_model), kx=1, ky=1, s=0).ev(sgrid.lat[ind_time[0], :].ravel(), sgrid.lon[ind_time[0], :].ravel())
+                    interp = interpolate.RectBivariateSpline
+                    _Teval = interp(model_data.vlat, model_data.vlon,
+                                    numpy.isnan(SSH_model), kx=1, ky=1, s=0)
+                    Teval = _Teval.ev(sgrid.lat[ind_time[0], :].ravel(),
+                                      sgrid.lon[ind_time[0], :].ravel())
                     SSH_model_mask = + SSH_model
                     SSH_model_mask[numpy.isnan(SSH_model_mask)] = 0.
-                    SSH_true_ind_time = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, SSH_model_mask, kx=1, ky=1, s=0).ev(sgrid.lat[ind_time[0], :].ravel(), sgrid.lon[ind_time[0], :].ravel())
+                    _SSH = interp(model_data.vlat, model_data.vlon,
+                                  SSH_model_mask, kx=1, ky=1, s=0)
+                    SSH_true_ind_time = _SSH.ev(sgrid.lat[ind_time[0], :].ravel(),
+                                                sgrid.lon[ind_time[0], :].ravel())
                     SSH_true_ind_time[Teval > 0] = numpy.nan
                     nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
-                    SSH_true[ind_time[0], :] = SSH_true_ind_time.reshape(nal, nac)
+                    SSH_true[ind_time[0], :] = SSH_true_ind_time.reshape(nal,
+                                                                         nac)
                     if p.nadir:
-                        Teval = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, numpy.isnan(SSH_model), kx=1, ky=1, s=0).ev(ngrid.lon[ind_nadir_time[0]].ravel(), ngrid.lat[ind_nadir_time[0]].ravel())
+                        _T = interp(model_data.vlat, model_data.vlon,
+                                    numpy.isnan(SSH_model), kx=1, ky=1, s=0)
+                        Teval = _T.ev(ngrid.lon[ind_nadir_time[0]].ravel(),
+                                      ngrid.lat[ind_nadir_time[0]].ravel())
                         SSH_model_mask = + SSH_model
                         SSH_model_mask[numpy.isnan(SSH_model_mask)] = 0.
-                        SSH_true_ind_time = interpolate.RectBivariateSpline(model_data.vlat, model_data.vlon, SSH_model_mask, kx=1, ky=1, s=0).ev(ngrid.lon[ind_nadir_time[0]].ravel(), ngrid.lat[ind_nadir_time[0]].ravel())
+                        _SSH = interp(model_data.vlat, model_data.vlon,
+                                      SSH_model_mask, kx=1, ky=1, s=0)
+                        SSH_true_ind_time = _SSH.ev(ngrid.lon[ind_nadir_time[0]].ravel(),
+                                                    ngrid.lat[ind_nadir_time[0]].ravel())
                         SSH_true_ind_time[Teval > 0] = numpy.nan
                         SSH_true_nadir[ind_nadir_time[0]] = SSH_true_ind_time
                 else:
@@ -281,27 +290,31 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
                     # Note that griddata is slower than pyresample functions.
                     try:
                         import pyresample as pr
-                        model_data.vlon = pr.utils.wrap_longitudes(model_data.vlon)
-                        sgrid.lon = pr.utils.wrap_longitudes(sgrid.lon)
+                        wrap = pr.utils.wrap_longitudes
+                        model_data.vlon = wrap(model_data.vlon)
+                        sgrid.lon = wrap(sgrid.lon)
                         if len(numpy.shape(model_data.vlon)) <= 1:
                             model_data.vlon, model_data.vlat = numpy.meshgrid(model_data.vlon, model_data.vlat)
                             swath_def = pr.geometry.SwathDefinition(lons=model_data.vlon, lats=model_data.vlat)
                             grid_def = pr.geometry.SwathDefinition(lons=sgrid.lon, lats=sgrid.lat)
                             if p.interpolation == 'nearest':
-                                SSH_true[ind_time[0], :] = pr.kd_tree.resample_nearest(swath_def, SSH_model, grid_def, radius_of_influence=max(p.delta_al, p.delta_ac)*10**3, epsilon=100)
+                                interp = pr.kd_tree.resample_nearest
+                                SSH_true[ind_time[0], :] = interp(swath_def, SSH_model, grid_def, radius_of_influence=max(p.delta_al, p.delta_ac)*10**3, epsilon=100)
                             else:
-                                SSH_true[ind_time[0], :] = pr.kd_tree.resample_gauss(swath_def, SSH_model, grid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
+                                interp = pr.kd_tree.resample_gauss
+                                SSH_true[ind_time[0], :] = interp(swath_def, SSH_model, grid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
                             if p.nadir:
-                                ngrid.lon = pr.utils.wrap_longitudes(ngrid.lon)
+                                ngrid.lon = wrap(ngrid.lon)
                                 ngrid_def = pr.geometry.SwathDefinition(lons=ngrid.lon, lats=ngrid.lat)
                                 if p.interpolation == 'nearest':
-                                    SSH_true_nadir[ind_nadir_time[0]] = pr.kd_tree.resample_nearest(swath_def, SSH_model, ngrid_def, radius_of_influence=max(p.delta_al, p.delta_ac)*10**3, epsilon=100)
+                                    SSH_true_nadir[ind_nadir_time[0]] = interp(swath_def, SSH_model, ngrid_def, radius_of_influence=max(p.delta_al, p.delta_ac)*10**3, epsilon=100)
                                 else:
-                                    SSH_true_nadir[ind_nadir_time[0]] = pr.kd_tree.resample_gauss(swath_def, SSH_model, ngrid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
-                    except:
-                        SSH_true[ind_time[0], :] = interpolate.griddata((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (sgrid.lon[ind_time[0], :], sgrid.lat[ind_time[0], :]), method=p.interpolation)
+                                    SSH_true_nadir[ind_nadir_time[0]] = interp(swath_def, SSH_model, ngrid_def, radius_of_influence=3*max(p.delta_al, p.delta_ac)*10**3, sigmas=max(p.delta_al, p.delta_ac)*10**3, fill_value=None)
+                    except ImportError:
+                        interp = interpolate.griddata
+                        SSH_true[ind_time[0], :] = interp((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (sgrid.lon[ind_time[0], :], sgrid.lat[ind_time[0], :]), method=p.interpolation)
                         if p.nadir:
-                            SSH_true_nadir[ind_nadir_time[0]] = interpolate.griddata((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (ngrid.lon[ind_nadir_time[0]], ngrid.lat[ind_nadir_time[0]]), method=p.interpolation)
+                            SSH_true_nadir[ind_nadir_time[0]] = interp((model_data.vlon.ravel(), model_data.vlat.ravel()), SSH_model.ravel(), (ngrid.lon[ind_nadir_time[0]], ngrid.lat[ind_nadir_time[0]]), method=p.interpolation)
                         if p.interpolation == 'nearest':
                             if modelbox[0] > modelbox[1]:
                                 SSH_true[numpy.where(((sgrid.lon < modelbox[0])
