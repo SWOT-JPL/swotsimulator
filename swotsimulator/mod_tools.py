@@ -1,5 +1,6 @@
 ''' Spectral  and algebra tools  for swot simulator. \n
 Contains the following functions:
+- load_python_file: load and parse parameter file \n
 - gen_signal1d: compute 1d random error from spectrum \n
 - gen_signal2d: compute 2d random error from spectrum \n
 - rotationmat3d: rotate data  \n
@@ -9,6 +10,23 @@ Contains the following functions:
 import numpy
 import math
 import sys
+import os
+
+
+def load_python_file(file_path):
+    """Load a file and parse it as a Python module."""
+    if not os.path.exists(file_path):
+        raise IOError('File not found: {}'.format(file_path))
+
+    full_path = os.path.abspath(file_path)
+    python_filename = os.path.basename(full_path)
+    module_name, _ = os.path.splitext(python_filename)
+    module_dir = os.path.dirname(full_path)
+    if module_dir not in sys.path:
+        sys.path.append(module_dir)
+
+    module = __import__(module_name, globals(), locals(), [], 0)
+    return module
 
 
 def gen_coeff_signal1d(f, PS, nc):
