@@ -163,10 +163,10 @@ def read_var(ifile, var, index=None, time=0, depth=0, model_nan=None):
 class Sat_SWOT():
     ''' Sat_SWOT class: to read and write data that has been
     created by SWOT simulator '''
-    def __init__(self, file=None, lon=None, lat=None, lon_nadir=None,
+    def __init__(self, nfile=None, lon=None, lat=None, lon_nadir=None,
                  lat_nadir=None, time=None, cycle=None, al_cycle=None,
                  x_al=None, x_ac=None, timeshift=None):
-        self.file = file
+        self.file = nfile
         self.lon = lon
         self.lat = lat
         self.lon_nadir = lon_nadir
@@ -462,9 +462,9 @@ class Sat_SWOT():
 
 
 class Sat_nadir():
-    def __init__(self, file=None, lon=None, lat=None, time=None, cycle=None,
+    def __init__(self, nfile=None, lon=None, lat=None, time=None, cycle=None,
                  al_cycle=None, x_al=None, timeshift=None):
-        self.file = file
+        self.file = nfile
         self.lon = lon
         self.lat = lat
         self.time = time
@@ -521,7 +521,7 @@ class Sat_nadir():
         fid.close()
         return None
 
-    def write_data(self, p, **kwargs):
+    def write_data(self, **kwargs):
         '''Write SWOT data in output file file_output
         Dimensions are x_al (along track distance), x_ac (across
         track distance). \n
@@ -607,7 +607,8 @@ class Sat_nadir():
         for key, value in kwargs.items():
             if value.any():
                 if len(value.shape) == 1:
-                    var = fid.createVariable(str(key), 'f4', ('time',))
+                    var = fid.createVariable(str(key), 'f4', ('time',)
+                                             fill_value=-1.36e9)
                     var[:] = value
                 else:
                     logger.error('Wrong number of dimension for variable'
@@ -621,7 +622,6 @@ class Sat_nadir():
                     var.long_name = longname[str(key)]
                 else:
                     var.long_name = str(key)
-                var.missing_value = getattr(p, 'model_nan', 0)
         try:
             fid.corresponding_grid = fid.corresponding_grid
         except:
@@ -789,19 +789,19 @@ class file_karin():
 
 class NEMO():
     '''Class to read NEMO data \n
-    USAGE is NEMO(file=name of file ,var= variable name,
+    USAGE is NEMO(nfile=name of file ,var= variable name,
     lon=longitude name, lat=latitude name, depth= depth name,
     time=time name).\n
     Argument file is mandatory, other arguments have default
     values var='sossheig', lon='nav_lon', lat='nav_lat', depth='depth',
     time='time. \n'''
-    def __init__(self, p, file=None, var='sossheig', lon='nav_lon',
+    def __init__(self, p, nfile=None, var='sossheig', lon='nav_lon',
                  lat='nav_lat', time='time', depth='depth'):
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
         self.ntime = time
-        self.nfile = file
+        self.nfile = nfile
         self.ndepth = depth
         self.model_nan = getattr(p, 'model_nan', 0)
         p.model_nan = self.model_nan
@@ -849,7 +849,7 @@ class NEMO():
 
 class ROMS():
     '''Class to read ROMS data \n
-    USAGE is ROMS(file=name of file ,var= variable name,
+    USAGE is ROMS(nfile=name of file ,var= variable name,
     lon=longitude name, lat=latitude name, depth= depth name,
     time=time name).\n
     Argument file is mandatory, other arguments have default
@@ -859,13 +859,13 @@ class ROMS():
     is True (coordinates in degree). \n
     If units is False (coordinates in km), specify left
     low corner of the domain (lon0, lat0) in params file.'''
-    def __init__(self, p, file=None, var='rho', depth='depth', time='time',
+    def __init__(self, p, nfile=None, var='rho', depth='depth', time='time',
                  lon='x_rho', lat='y_rho'):
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
         self.ntime = time
-        self.nfile = file
+        self.nfile = nfile
         self.ndepth = depth
         self.model_nan = getattr(p, 'model_nan', 0)
         p.model_nan = self.model
@@ -909,12 +909,12 @@ class ROMS():
 
 class NETCDF_MODEL():
     '''Class to read any netcdf data.\n
-    USAGE is NETCDF_MODEL(file=name of file ,var= variable name,
+    USAGE is NETCDF_MODEL(nfile=name of file ,var= variable name,
     lon=variable longitude, lat=variable latitude, units=).\n
     Argument file is mandatory, arguments var, lon, lat
     are specified in params file. \n
     '''
-    def __init__(self, p, file=None, var=None, lon=None, lat=None, depth=0,
+    def __init__(self, p, nfile=None, var=None, lon=None, lat=None, depth=0,
                  time=0):
         if var is None:
             self.nvar = p.var
@@ -922,7 +922,7 @@ class NETCDF_MODEL():
             self.nlon = p.lon
         if lat is None:
             self.nlat = p.lat
-        self.nfile = file
+        self.nfile = nfile
         self.depth = depth
         self.time = time
         self.model_nan = getattr(p, 'model_nan', 0)
@@ -969,12 +969,12 @@ class NETCDF_MODEL():
 
 class CLS_MODEL():
     '''Class to read CLS data model type.\n
-    USAGE is NETCDF_MODEL(file=name of file ,var= variable name,
+    USAGE is NETCDF_MODEL(nfile=name of file ,var= variable name,
     lon=variable longitude, lat=variable latitude, units=).\n
     Argument file is mandatory, arguments var, lon, lat
     are specified in params file. \n
     '''
-    def __init__(self, p, file=None, var=None, lon=None, lat=None, depth=0,
+    def __init__(self, p, nfile=None, var=None, lon=None, lat=None, depth=0,
                  time=0):
         if var is None:
             self.nvar = p.var
@@ -982,7 +982,7 @@ class CLS_MODEL():
             self.nlon = p.lon
         if lat is None:
             self.nlat = p.lat
-        self.nfile = file
+        self.nfile = nfile
         self.depth = depth
         self.time = time
         self.p = p
@@ -1031,17 +1031,17 @@ class CLS_MODEL():
 
 class MITgcm():
     '''Class to read MITgcm binary data.\n
-    USAGE is MITgcm(file=name of file ,var= variable name,
+    USAGE is MITgcm(nfile=name of file ,var= variable name,
     lon=variable longitude, lat=variable latitude, units=).\n
     Argument file is mandatory, arguments var, lon, lat
     are specified in params file. \n
     '''
-    def __init__(self, p, file=None, var='Eta', lon='XC', lat='YC', depth=0,
+    def __init__(self, p, nfile=None, var='Eta', lon='XC', lat='YC', depth=0,
                  time=0):
         self.nvar = var
         self.nlon = lon
         self.nlat = lat
-        self.nfile = file
+        self.nfile = nfile
         self.depth = depth
         self.time = time
         self.model_nan = p.model_nan = 0
