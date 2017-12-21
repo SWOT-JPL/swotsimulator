@@ -29,6 +29,22 @@ def load_python_file(file_path):
     return module
 
 
+def initialize_parameters(p):
+    p.shift_lon = getattr(p, 'shift_lon', None)
+    p.shift_time = getattr(p, 'p.shift_time', None)
+    p.timeshift = getattr(p, 'p.timeshift', 0)
+    if p.shift_time is None:
+        p.timeshift = 0
+    model = getattr(p, 'model', 'NETCDF_MODEL')
+    p.model = model
+    p.model_nan = getattr(p, 'model_nan', 0)
+    p.SSH_factor = getattr(p, 'SSH_factor', 1.)
+    p.nadir = getattr(p, 'nadir', True)
+    p.grid = getattr(p, 'grid', 'regular')
+    p.order_orbit_col = getattr(p, 'order_orbit_col', None)
+    p.ice_mask = getattr(p, 'ice_mask', True)
+
+
 def gen_coeff_signal1d(f, PS, nc):
     '''Generate nc random coefficient from a spectrum PS
     with frequencies f. \n
@@ -63,13 +79,13 @@ def gen_rcoeff_signal1d(f, PS, lambda_min, lambda_max, npseudoper, repeat):
     ffl = 10**(logffl)
     logf = numpy.log10(f)
     logPS = numpy.log10(PS)
-    logPSl = numpy.interp(logffl,logf,logPS)
+    logPSl = numpy.interp(logffl, logf, logPS)
     PSl = 10**(logPSl)
     A = numpy.sqrt(2 * PSl * (ffl / npseudoper))
     phi = []
     for k in range(len(ffl)):
-      phi.append(2 * math.pi * numpy.random.random(int(2 * repeat * ffl[k]
-                                                / npseudoper + 3)))
+        phi.append(2 * math.pi * numpy.random.random(int(2 * repeat * ffl[k]
+                                                     / npseudoper + 3)))
     return A, phi
 
 
@@ -83,13 +99,13 @@ def gen_signal1d(xx, A, phi, lambda_min, lambda_max, npseudoper):
                           numpy.log10(1 + 1. / npseudoper))
     ffl = 10**(logffl)
     for k in range(len(ffl)):
-      ka = 2 * (xx * ffl[k] / npseudoper).astype(int) + 1
-      Cka = numpy.abs(numpy.sin(2 * math.pi * xx * ffl[k] / npseudoper / 2.))
-      kb = (2 * ((xx + npseudoper / 2. / ffl[k]) * ffl[k]
-            / npseudoper).astype(int))
-      Ckb = numpy.abs(numpy.sin(2 * math.pi * (xx + npseudoper / 2 / ffl[k])
-                      * ffl[k] / npseudoper / 2))
-      S = (S + A[k] * numpy.cos(2 * math.pi * ffl[k] * xx + phi[k][ka]) * Cka
+        ka = 2 * (xx * ffl[k] / npseudoper).astype(int) + 1
+        Cka = numpy.abs(numpy.sin(2 * math.pi * xx * ffl[k] / npseudoper / 2.))
+        kb = (2 * ((xx + npseudoper / 2. / ffl[k]) * ffl[k]
+              / npseudoper).astype(int))
+        Ckb = numpy.abs(numpy.sin(2 * math.pi * (xx + npseudoper / 2 / ffl[k])
+                        * ffl[k] / npseudoper / 2))
+        S = (S + A[k] * numpy.cos(2 * math.pi * ffl[k] * xx + phi[k][ka]) * Cka
              + A[k] * numpy.cos(2 * math.pi * ffl[k] * xx + phi[k][kb]) * Ckb)
     return S
 
@@ -98,7 +114,8 @@ def gen_coeff_signal2d(f, PS, nc):
     '''Generate nc random coefficient from a spectrum PS
     with frequencies f. \n
     Inputs are: frequency [f], spectrum [PS], number of realisation [nc]
-    Return Amplitude, phase and frequency in 2D (frx, fry) of nc realisations'''
+    Return Amplitude, phase and frequency in 2D (frx, fry) of nc
+    realisations'''
 
     # ''' Compute nc random vectors in an annular
     # (radius is between (min(f), max(f)) '''
@@ -106,7 +123,7 @@ def gen_coeff_signal2d(f, PS, nc):
     f2 = max(f)
     logf = numpy.log10(f)
     fr = (f2 - f1)*numpy.random.random(nc) + f1
-    logfr = numpy.log10(fr)
+    # logfr = numpy.log10(fr)
     dir = 2. * math.pi*numpy.random.random(nc)
     frx = fr * numpy.cos(dir)
     fry = fr * numpy.sin(dir)
@@ -123,14 +140,13 @@ def gen_coeff_signal2d(f, PS, nc):
     return A, phi, frx, fry
 
 
-
 def rotationmat3D(theta, axis):
     ''' Creates a rotation matrix: Slow method. \n
     Inputs are rotation angle theta and rotation axis axis.
     The rotation matrix correspond to a rotation of angle theta
     with respect to axis axis. \n
     Return the rotation matrix.'''
-    mat = numpy.eye(3, 3)
+    # mat = numpy.eye(3, 3)
     axis = axis / math.sqrt(numpy.dot(axis, axis))
     a = math.cos(theta/2.)
     b, c, d = -axis*math.sin(theta/2.)
@@ -162,10 +178,11 @@ def cart2sphervect(x, y, z):
     lat = numpy.arcsin(z/norm) * 180./math.pi
     lon = numpy.arctan(y/x) % (2*math.pi)
     if (x < 0).any():
-        lon[x < 0] = (numpy.arctan(y [x < 0]/x[x < 0]) % (2*math.pi)
+        lon[x < 0] = (numpy.arctan(y[x < 0]/x[x < 0]) % (2*math.pi)
                       + x[x < 0] / x[x < 0]*math.pi)
     lon = lon * 180/math.pi
     return lon % 360, lat
+
 
 def cart2spher(x, y, z):
     ''' Convert cartesian coordinates to spherical coordinates. \n
@@ -175,7 +192,7 @@ def cart2spher(x, y, z):
     lat = numpy.arcsin(z/norm) * 180./math.pi
     if (x < 0):
         lon = (numpy.arctan(y/x) % (2*math.pi)
-                      + max((x < 0) - (x > 0), 0)*math.pi)
+               + max((x < 0) - (x > 0), 0)*math.pi)
         # + max(-sign(x),0)*math.pi
     else:
         lon = numpy.arctan(y/x) % (2*math.pi)

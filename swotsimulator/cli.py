@@ -29,6 +29,7 @@ def run_swot_script():
     p = mod_tools.load_python_file(file_param)
     run_simulator.run_simulator(p)
 
+
 def run_nadir_script():
     """Run Altimeter Simulator"""
     import swotsimulator.run_simulator as run_simulator
@@ -43,4 +44,3 @@ def run_nadir_script():
 
     p = mod_tools.load_python_file(file_param)
     run_simulator.run_nadir(p)
-    
