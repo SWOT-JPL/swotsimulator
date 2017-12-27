@@ -48,7 +48,7 @@ i2_nan = 32767
 pd = {'varname': 'pd',
       'longname': 'Simulated path delay error due to wet tropo',
       'unit': 'm',
-      'Fill_value': i4_nan,
+      'fill_value': i4_nan,
       'min_value': -1500000,
       'max_value': 1500000,
       'type': 'i4',
@@ -65,14 +65,14 @@ SSH_model = {'varname': 'ssh_model',
              }
 SSH_obs = {'varname': 'ssh_obs',
            'longname': 'Observed SSH (ssh_model + errors)',
-           'unit': 'm'
+           'unit': 'm',
            'fill_value': i4_nan,
            'min_value': -1500000,
            'max_value': 1500000,
            'type': 'i4',
            'scale': 1e-4
            }
-index = {'varname': 'model_index'
+index = {'varname': 'model_index',
          'longname': 'Equivalent model output number in list of file',
          'unit': '',
          'min_value': 0,
@@ -83,7 +83,7 @@ index = {'varname': 'model_index'
          }
 longname = 'Residual path delay error after a 1-beam radiometer correction'
 pd_err_1b = {'varname': 'pd_err_1b',
-             'longname': longname
+             'longname': longname,
              'unit': 'm',
              'fill_value': i4_nan,
              'min_value': -1500000,
@@ -160,7 +160,7 @@ nadir_err = {'varname': 'nadir_err',
 longname = ('SSHA = SSH – MSS – ocean tide – load tide – solid tide – pole'
             'tide – inv_bar_corr – DAC_corr')
 ssha_karin_swath = {'varname': 'SSHA_kaRIn_swath',
-                    'longname': longname
+                    'longname': longname,
                     'unit': 'm',
                     'fill_value': i4_nan,
                     'min_value': -100000,
@@ -174,7 +174,7 @@ ssha_uncert = {'varname': 'SSHA_uncert',
                'fill_value': u2_nan,
                'min_value': 0,
                'max_value': None,
-               'type': 'u2'
+               'type': 'u2',
                'scale': 1.e-4
                }
 longname = 'Quality indicator on delivered SSH in the swath'
@@ -239,16 +239,16 @@ mss_reference = {'varname': 'mss_reference',
                  'fill_value': i4_nan,
                  'min_value': -1500000,
                  'max_value': 1500000,
-                 'type': 'i4'
+                 'type': 'i4',
                  'scale': 1e-4
                  }
-geoid = {'varname': 'geoid'
+geoid = {'varname': 'geoid',
 	 'longname': 'geoid height above the ellipsoid',
 	 'unit': 'm',
 	 'fill_value': i4_nan,
 	 'min_value': -1500000,
 	 'max_value': 1500000,
-	 'type': 'i4'
+	 'type': 'i4',
 	 'scale': 1e-4
 	 }
 longname = 'Coherent internal tide model (Not applied)'
@@ -272,13 +272,13 @@ karin_karin_xover_height_corr = {'varname': 'KaRIn_KaRIn_Xover_height_corr',
 				 'scale': 1e-4
 				 }
 longname = 'Correction processed from KaRIn/NadirAlt cross-overs'
-karin_na_height_corr = {'varname': 'KaRIn_NA_height_corr'
+karin_na_height_corr = {'varname': 'KaRIn_NA_height_corr',
                         'longname': longname,
 			'unit': 'm',
 			'fill_value': i2_nan,
 			'min_value': -10000,
 			'max_value': 10000,
-			'type': 'i2'
+			'type': 'i2',
 			'scale': 1e-4
 			}
 karin_cal_flag = {'varname': 'KaRIn_cal_flag',
@@ -287,6 +287,6 @@ karin_cal_flag = {'varname': 'KaRIn_cal_flag',
 		  'fill_value': u1_nan,
 		  'min_value': 0,
 		  'max_value': 255,
-		  'type': 'u1'
+		  'type': 'u1',
 		  'scale': 1
 		  }

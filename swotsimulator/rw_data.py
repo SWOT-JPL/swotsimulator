@@ -13,6 +13,7 @@ import numpy
 import sys, os
 import time as ti
 import logging
+import swotsimulator.const as const
 logger = logging.getLogger(__name__)
 
 
@@ -293,7 +294,7 @@ class Sat_SWOT():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
-        fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        fid = Dataset(self.file, 'w') #, format='NC_NETCDF4')
         fid.description = "Ouptut from SWOT simulator"
         try:
             fid.corresponding_grid = self.gridfile
@@ -352,29 +353,29 @@ class Sat_SWOT():
         scale = 1e-6
         vtime[:] = numpy.rint(self.time * 86400 / scale)
         vtime.units = "s"
-        vtime.scale = scale
+        vtime.scale_factor = scale
         vtime.min = 0
         vtime.long_name = "Time from beginning of simulation (in s)"
         vlon[:, :] = numpy.rint(self.lon / scale)
         vlon.units = "deg"
         vlon.long_name = "Longitude"
-        vlon.scale = scale
+        vlon.scale_factor = scale
         vlon.min = 0
         vlon.max = 359999999
         vlat[:, :] = numpy.rint(self.lat / scale)
         vlat.units = "deg"
         vlat.long_name = "Latitude"
-        vlat.scale = scale
+        vlat.scale_factor = scale
         vlat.min = -80000000
         vlat.max = 80000000
         vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
         vlon_nadir.units = "deg"
-        vlon_nadir.scale = scale
+        vlon_nadir.scale_factor = scale
         vlon_nadir.min = 0
         vlon_nadir.max = 359999999
         vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
         vlat_nadir.units = "deg"
-        vlat_nadir.scale = scale
+        vlat_nadir.scale_factor = scale
         vlat_nadir.min = -80000000
         vlat_nadir.max = 80000000
         vx_al[:] = self.x_al
@@ -383,8 +384,6 @@ class Sat_SWOT():
         vx_ac[:] = self.x_ac
         vx_ac.units = "km"
         vx_ac.long_name = "Across track distance from nadir"
-        longname = const.longname
-        unit = const.unit
         for key, value in kwargs.items():
             if value.any():
                 vdic = getattr(const, key)
@@ -393,7 +392,7 @@ class Sat_SWOT():
                 if len(value.shape) == 1:
                     var = fid.createVariable(vdic['varname'], vdic['type'],
                                              (dim_tim,), fill_value=fill_value)
-                    value = value * scale
+                    value = value / scale
                     if 'f' not in vdic['type']:
                         value = numpy.rint(value)
                     value[numpy.isnan(value)] = fill_value
@@ -407,22 +406,23 @@ class Sat_SWOT():
                         var = fid.createVariable(vdic['varname'], vdic['type'],
                                                  (dim_tim, dim_rad),
                                                  fill_value=fill_value)
-                    value = value * scale
+                    value = value / scale
                     if 'f' not in vdic['type']:
                         value = numpy.rint(value)
                     value[numpy.isnan(value)] = fill_value
+                    # value[numpy.where(value.mask == True)] = fill_value
                     value[value == 0] = fill_value
                     var[:, :] = value
                 vmin = vdic['min_value']
                 if vmin is not None:
-                    var.min = vmin
+                    var.valid_min = vmin
                 vmax = vdic['max_value']
                 if vmax is not None:
-                    var.max = vmax
+                    var.valid_max = vmax
                 var.units = vdic['unit']
                 var.long_name = vdic['longname']
                 if scale != 1.:
-                    var.scale = scale
+                    var.scale_factor = scale
         fid.close()
         return None
 

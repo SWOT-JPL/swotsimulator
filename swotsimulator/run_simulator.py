@@ -650,7 +650,6 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                 #   nadir track
                 # if grid is regular, use interpolate.RectBivariateSpline to
                 # interpolate
-                # import pdb ; pdb.set_trace()
                 if p.grid == 'regular' or model_data.len_coord == 1:
                     # ########################TODO
                     # To be moved to routine rw_data
@@ -823,7 +822,7 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
                 model_step_ctor = getattr(rw_data, model_data.model)
                 nfile = os.path.join(p.indatadir, list_file[ifile])
                 model_step = model_step_ctor(p, nfile=nfile, var=p.var)
-                if p.grid == 'regular' or len_coord == 1:
+                if p.grid == 'regular' or model_data.len_coord == 1:
                     model_step.read_var()
                     SSH_model = model_step.vvar[model_data.model_index_lat, :]
                     SSH_model = SSH_model[:, model_data.model_index_lon]
@@ -834,7 +833,7 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
             # track
             # if grid is regular, use interpolate.RectBivariateSpline to
             # interpolate
-            if p.grid == 'regular' and len_coord == 1:
+            if p.grid == 'regular' or model_data.len_coord == 1:
                 # ########################TODO
                 # To be moved to routine rw_data
                 indsorted = numpy.argsort(model_data.vlon)
