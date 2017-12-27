@@ -97,7 +97,8 @@ def run_simulator(p):
     if p.file_input is not None:
         model_data.read_coordinates()
         # Select model data in the region modelbox
-        if p.grid == 'regular':
+        model_data.len_coord = len(numpy.shape(model_data.vlon))
+        if p.grid == 'regular' or model_data.len_coord == 1:
             if modelbox[0] < modelbox[1]:
                 _i_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon)
                                      & (model_data.vlon <= (modelbox[1]+1)))[0]
@@ -289,7 +290,8 @@ def run_nadir(p):
     if p.file_input is not None:
         model_data.read_coordinates()
         # Select model data in the region modelbox
-        if p.grid == 'regular':
+        model_data.len_coord = len(numpy.shape(model_data.vlon))
+        if p.grid == 'regular' or model_data.len_coord == 1:
             _ind_lon = numpy.where(((modelbox[0] - 1) <= model_data.vlon)
                                    & (model_data.vlon <= (modelbox[1]+1)))[0]
             model_data.model_index_lon = _ind_lon
@@ -541,7 +543,8 @@ def select_modelbox(sgrid, model_data, p):
     # const.deg2km)**2+((model_data.vlat-sgrid.lat_nadir[kk])
     # *const.deg2km)**2 )
     #  mask[ddist<const.radius_interp**2]=1
-    if p.grid == 'regular':
+    model_data.len_coord = len(numpy.shape(model_data.vlon))
+    if p.grid == 'regular' or model_data.len_coord == 1:
         _ind_lon = numpy.where((numpy.min(sgrid.lon) <= model_data.vlon)
                                & (model_data.vlon <= numpy.max(sgrid.lon)))
         model_data.lon1d = model_data.vlon[_ind_lon]
@@ -636,7 +639,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                 model_step_ctor = getattr(rw_data, model_data.model)
                 nfile = os.path.join(p.indatadir, list_file[ifile])
                 model_step = model_step_ctor(p, nfile=nfile, var=p.var)
-                if p.grid == 'regular':
+                if p.grid == 'regular' or model_data.len_coord ==1:
                     model_step.read_var()
                     SSH_model = model_step.vvar[model_data.model_index_lat, :]
                     SSH_model = SSH_model[:, model_data.model_index_lon]
@@ -647,8 +650,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                 #   nadir track
                 # if grid is regular, use interpolate.RectBivariateSpline to
                 # interpolate
-                len_coord = len(numpy.shape(model_data.vlon))
-                if p.grid == 'regular' and len_coord == 1:
+                # import pdb ; pdb.set_trace()
+                if p.grid == 'regular' or model_data.len_coord == 1:
                     # ########################TODO
                     # To be moved to routine rw_data
                     indsorted = numpy.argsort(model_data.vlon)
@@ -682,10 +685,10 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                         wrap_lon = pr.utils.wrap_longitudes
                         model_data.vlon = wrap_lon(model_data.vlon)
                         sgrid.lon = wrap_lon(sgrid.lon)
-                        if len_coord <= 1:
-                            model_data.vlon, model_data.vlat = numpy.meshgrid(
-                                                               model_data.vlon,
-                                                               model_data.vlat)
+                        if model_data.len_coord <= 1:
+                            logger.error('Model grid is irregular, coordinates'
+                                         ' should be in 2d')
+                            sys.exit(1)
                         geomdef = pr.geometry.SwathDefinition
                         swath_def = geomdef(lons=model_data.vlon,
                                             lats=model_data.vlat)
@@ -701,7 +704,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                             _ssh = interp(swath_def, SSH_model, ngrid_def,
                                           max(p.delta_al, p.delta_ac),
                                           interp_type=p.interpolation)
-                            SSH_true_nadir[ind_time[0], :] = _ssh
+                            SSH_true_nadir[ind_time[0]] = _ssh
                     except ImportError:
                         interp = interpolate.griddata
                         model_ravel = (model_data.vlon.ravel(),
@@ -820,7 +823,7 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
                 model_step_ctor = getattr(rw_data, model_data.model)
                 nfile = os.path.join(p.indatadir, list_file[ifile])
                 model_step = model_step_ctor(p, nfile=nfile, var=p.var)
-                if p.grid == 'regular':
+                if p.grid == 'regular' or len_coord == 1:
                     model_step.read_var()
                     SSH_model = model_step.vvar[model_data.model_index_lat, :]
                     SSH_model = SSH_model[:, model_data.model_index_lon]
@@ -831,7 +834,7 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
             # track
             # if grid is regular, use interpolate.RectBivariateSpline to
             # interpolate
-            if p.grid == 'regular' and len(numpy.shape(model_data.vlon)) == 1:
+            if p.grid == 'regular' and len_coord == 1:
                 # ########################TODO
                 # To be moved to routine rw_data
                 indsorted = numpy.argsort(model_data.vlon)

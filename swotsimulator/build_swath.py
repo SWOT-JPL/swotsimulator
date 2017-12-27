@@ -244,7 +244,8 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         lon = numpy.interp(x_al, x_al_lr[:-1], loncirc)
         lat = numpy.interp(x_al, x_al_lr[:-1], lat_lr[:-1])
     lon = lon % 360
-    orb = rw_data.Sat_nadir(file=orbitfile[:-4] + '.nc')
+    nfile = '{}.nc'.format(orbitfile[:-4])
+    orb = rw_data.Sat_nadir(nfile=nfile)
     orb.x_al = x_al
     orb.time = stime
     orb.lon = lon
@@ -309,8 +310,8 @@ def orbit2swath(modelbox, p, orb):
                                       'selected pass: ' + str(ipass+1), None)
             # Initialize SWOT grid, grid variables and Satellite
             # direction and Location
-            filesgrid = p.filesgrid + '_p' + str(ipass+1).zfill(3) + '.nc'
-            sgrid = rw_data.Sat_SWOT(file=filesgrid)
+            filesgrid = '{}_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
+            sgrid = rw_data.Sat_SWOT(nfile=filesgrid)
             sgrid.x_al = x_al[ind]
             sgrid.x_ac = x_ac
             sgrid.cycle = tcycle
@@ -322,8 +323,8 @@ def orbit2swath(modelbox, p, orb):
             SatLoc = numpy.zeros((int((nind)/npoints), 3))
 
             # Initialize Nadir track, grid variables
-            filengrid = p.filesgrid + 'nadir_p' + str(ipass+1).zfill(3) + '.nc'
-            ngrid = rw_data.Sat_nadir(file=filengrid)
+            filengrid = '{}nadir_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
+            ngrid = rw_data.Sat_nadir(nfile=filengrid)
             ngrid.x_al = x_al[ind]
             ngrid.cycle = tcycle
             ngrid.al_cycle = al_cycle
@@ -355,7 +356,7 @@ def orbit2swath(modelbox, p, orb):
                                                 SatDir[int(i/npoints), :])
                     ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
                     cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
-                    sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = sc
+                    sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
                     ObsLoc = numpy.dot(numpy.transpose(R),
                                        SatLoc[int(i/npoints)])
                     sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs

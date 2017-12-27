@@ -10,7 +10,7 @@ from scipy.ndimage.filters import gaussian_filter
 import logging
 
 # Define logging level for debug purposes
-logger = logging.getLevel(__name__)
+logger = logging.getLogger(__name__)
 
 
 class error():

@@ -226,16 +226,19 @@ class Sat_SWOT():
         fid.createDimension('cycle', 1)
 
         # - Create and write Variables
-        vtime = fid.createVariable('time', 'f8', ('time',))
-        vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time',))
-        vlat_nadir = fid.createVariable('lat_nadir', 'f4', ('time',))
-        vlon = fid.createVariable('lon', 'f4', ('time', 'x_ac'))
-        vlat = fid.createVariable('lat', 'f4', ('time', 'x_ac'))
-        vcycle = fid.createVariable('cycle', 'f4', ('cycle',))
-        valcycle = fid.createVariable('al_cycle', 'f4', ('cycle',))
-        vtimeshift = fid.createVariable('timeshift', 'f4', ('cycle',))
-        vx_al = fid.createVariable('x_al', 'f4', ('time',))
-        vx_ac = fid.createVariable('x_ac', 'f4', ('x_ac',))
+        dim_tim = 'time'
+        dim_1 = 'cycle'
+        dim_ac = 'x_ac'
+        vtime = fid.createVariable('time', 'f8', (dim_tim,))
+        vlon_nadir = fid.createVariable('lon_nadir', 'f4', (dim_tim,))
+        vlat_nadir = fid.createVariable('lat_nadir', 'f4', (dim_tim_,))
+        vlon = fid.createVariable('lon', 'f4', (dim_tim, dim_ac))
+        vlat = fid.createVariable('lat', 'f4', (dim_tim, dim_ac))
+        vcycle = fid.createVariable('cycle', 'f4', (dim_1,))
+        valcycle = fid.createVariable('al_cycle', 'f4', (dim_1,))
+        vtimeshift = fid.createVariable('timeshift', 'f4', (dim_1,))
+        vx_al = fid.createVariable('x_al', 'f4', (dim_tim,))
+        vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
         vtime[:] = self.time
         vtime.axis = "T"
         vtime.units = "days since the beginning of the sampling"
@@ -253,15 +256,15 @@ class Sat_SWOT():
         vlat.standard_name = "latitude"
         vlat.units = "degrees_north"
         vlon_nadir[:] = self.lon_nadir
-        vlon.axis = "X"
-        vlon.long_name = "Longitude"
-        vlon.standard_name = "longitude"
-        vlon.units = "degrees_east"
+        vlon_nadir.axis = "X"
+        vlon_nadir.long_name = "Longitude of satellite nadir point"
+        vlon_nadir.standard_name = "longitude"
+        vlon_nadir.units = "degrees_east"
         vlat_nadir[:] = self.lat_nadir
-        vlat.axis = "Y"
-        vlat.long_name = "Latitude"
-        vlat.standard_name = "latitude"
-        vlat.units = "degrees_north"
+        vlat_nadir.axis = "Y"
+        vlat_nadir.long_name = "Latitude of satellite nadir point"
+        vlat_nadir.standard_name = "latitude"
+        vlat_nadir.units = "degrees_north"
         vcycle[:] = self.cycle
         vcycle.units = "days during a cycle"
         vcycle.long_name = "Cycle"
@@ -329,78 +332,97 @@ class Sat_SWOT():
                          'http://dx.doi.org/10.1175/JTECH-D-15-0160.1.'
         # fid.cycle = "{0:d}".format(int(self.al_cycle))
         # - Create dimensions
-        fid.createDimension('time', numpy.shape(self.lon)[0])
-        fid.createDimension('x_ac', numpy.shape(self.lon)[1])
+        dim_tim = 'time'
+        dim_ac = 'nC'
+        dim_rad = 'n2'
+        fid.createDimension(dim_tim, numpy.shape(self.lon)[0])
+        fid.createDimension(dim_ac, numpy.shape(self.lon)[1])
+        fid.createDimension(dim_rad, 2)
 
         # - Create and write variables
-        vtime = fid.createVariable('time', 'f8', ('time',))
-        vlon_nadir = fid.createVariable('lon_nadir', 'f4', ('time',))
-        vlat_nadir = fid.createVariable('lat_nadir', 'f4', ('time',))
-        vlon = fid.createVariable('lon', 'f4', ('time', 'x_ac'))
-        vlat = fid.createVariable('lat', 'f4', ('time', 'x_ac'))
-        vx_al = fid.createVariable('x_al', 'f4', ('time',))
-        vx_ac = fid.createVariable('x_ac', 'f4', ('x_ac',))
-        vtime[:] = self.time
-        vtime.units = "days"
-        vtime.long_name = "Time from beginning of simulation"
-        vlon[:, :] = self.lon
+        vtime = fid.createVariable('time_sec', 'u8', (dim_tim,))
+        vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))
+        vlat_nadir = fid.createVariable('lat_nadir', 'i4', (dim_tim,))
+        vlon = fid.createVariable('lon', 'i4', (dim_tim, dim_ac),
+                                  fill_value=2147483647)
+        vlat = fid.createVariable('lat', 'i4', (dim_tim, dim_ac),
+                                  fill_value=2147483647)
+        vx_al = fid.createVariable('x_al', 'f4', (dim_tim,))
+        vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
+        scale = 1e-6
+        vtime[:] = numpy.rint(self.time * 86400 / scale)
+        vtime.units = "s"
+        vtime.scale = scale
+        vtime.min = 0
+        vtime.long_name = "Time from beginning of simulation (in s)"
+        vlon[:, :] = numpy.rint(self.lon / scale)
         vlon.units = "deg"
         vlon.long_name = "Longitude"
-        vlat[:, :] = self.lat
+        vlon.scale = scale
+        vlon.min = 0
+        vlon.max = 359999999
+        vlat[:, :] = numpy.rint(self.lat / scale)
         vlat.units = "deg"
         vlat.long_name = "Latitude"
-        vlon_nadir[:] = self.lon_nadir
+        vlat.scale = scale
+        vlat.min = -80000000
+        vlat.max = 80000000
+        vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
         vlon_nadir.units = "deg"
-        vlat_nadir[:] = self.lat_nadir
+        vlon_nadir.scale = scale
+        vlon_nadir.min = 0
+        vlon_nadir.max = 359999999
+        vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
         vlat_nadir.units = "deg"
+        vlat_nadir.scale = scale
+        vlat_nadir.min = -80000000
+        vlat_nadir.max = 80000000
         vx_al[:] = self.x_al
         vx_al.units = "km"
         vx_al.long_name = "Along track distance from the beginning of the pass"
         vx_ac[:] = self.x_ac
         vx_ac.units = "km"
         vx_ac.long_name = "Across track distance from nadir"
-        longname = {"pd": "Simulated path delay error due to wet tropo",
-                    "SSH_model": "SSH interpolated from model",
-                    "SSH_obs": "Observed SSH (SSH_model+errors)",
-                    "index": "Equivalent model output number in list of file",
-                    "pd_err_1b": "Residual path delay error after a 1-beam radiometer correction",
-                    "pd_err_2b": "Residual path delay error after a 2-beams radiometer correction",
-                    "roll_err": "Residual roll error",
-                    "phase_err": "Phase error", "timing_err": "Timing error",
-                    "bd_err": "Baseline dilation error",
-                    "karin_err": "Karin instrument random error",
-                    "nadir_err": "Nadir error"}
-        unit = {"pd": "m", "SSH_model": "m", "SSH_obs": "m", "index": " ",
-                "pd_err_1b": "m", "pd_err_2b": "m", "roll_err": "m",
-                "phase_err": "m", "timing_err": "m", "bd_err": "m",
-                "karin_err": "m", "nadir_err": "m"}
+        longname = const.longname
+        unit = const.unit
         for key, value in kwargs.items():
             if value.any():
+                vdic = getattr(const, key)
+                scale = vdic['scale']
+                fill_value = vdic['fill_value']
                 if len(value.shape) == 1:
-                    var = fid.createVariable(str(key), 'f4',
-                                             ('time',), fill_value=-1.36e9)
-                    vmin = numpy.nanmin(value)
-                    vmax = numpy.nanmax(value)
-                    value[numpy.isnan(value)] = -1.36e9
-                    value[value == 0] = -1.36e9
+                    var = fid.createVariable(vdic['varname'], vdic['type'],
+                                             (dim_tim,), fill_value=fill_value)
+                    value = value * scale
+                    if 'f' not in vdic['type']:
+                        value = numpy.rint(value)
+                    value[numpy.isnan(value)] = fill_value
+                    value[value == 0] = fill_value
                     var[:] = value
                 if len(value.shape) == 2:
-                    var = fid.createVariable(str(key), 'f4', ('time', 'x_ac'),
-                                             fill_value=-1.36e9)
-                    vmin = numpy.nanmin(value)
-                    vmax = numpy.nanmax(value)
-                    value[numpy.isnan(value)] = -1.36e9
-                    value[value == 0] = -1.36e9
+                    var = fid.createVariable(vdic['varname'], vdic['type'],
+                                             (dim_tim, dim_ac),
+                                             fill_value=fill_value)
+                    if value.shape[1] == 2:
+                        var = fid.createVariable(vdic['varname'], vdic['type'],
+                                                 (dim_tim, dim_rad),
+                                                 fill_value=fill_value)
+                    value = value * scale
+                    if 'f' not in vdic['type']:
+                        value = numpy.rint(value)
+                    value[numpy.isnan(value)] = fill_value
+                    value[value == 0] = fill_value
                     var[:, :] = value
-                if str(key) in unit.keys():
-                    var.units = unit[str(key)]
-                else:
-                    var.units = ''
-                if str(key) in longname.keys():
-                    var.long_name = longname[str(key)]
-                else:
-                    var.long_name = str(key)
-
+                vmin = vdic['min_value']
+                if vmin is not None:
+                    var.min = vmin
+                vmax = vdic['max_value']
+                if vmax is not None:
+                    var.max = vmax
+                var.units = vdic['unit']
+                var.long_name = vdic['longname']
+                if scale != 1.:
+                    var.scale = scale
         fid.close()
         return None
 
@@ -607,7 +629,7 @@ class Sat_nadir():
         for key, value in kwargs.items():
             if value.any():
                 if len(value.shape) == 1:
-                    var = fid.createVariable(str(key), 'f4', ('time',)
+                    var = fid.createVariable(str(key), 'f4', ('time',),
                                              fill_value=-1.36e9)
                     var[:] = value
                 else:
@@ -918,10 +940,16 @@ class NETCDF_MODEL():
                  time=0):
         if var is None:
             self.nvar = p.var
+        else:
+            self.nvar = var
         if lon is None:
             self.nlon = p.lon
+        else:
+            self.nlon = lon
         if lat is None:
             self.nlat = p.lat
+        else:
+            self.nlat = lat
         self.nfile = nfile
         self.depth = depth
         self.time = time
