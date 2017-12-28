@@ -276,6 +276,7 @@ class Sat_SWOT():
         dim_1 = 'cycle'
         dim_ac = 'x_ac'
         vtime = fid.createVariable('time', 'f8', (dim_tim,))
+        vtime_sec = fid.createVariable('time_sec', 'f8', (dim_tim,))
         vlon_nadir = fid.createVariable('lon_nadir', 'f4', (dim_tim,))
         vlat_nadir = fid.createVariable('lat_nadir', 'f4', (dim_tim,))
         vlon = fid.createVariable('lon', 'f4', (dim_tim, dim_ac))
@@ -289,6 +290,12 @@ class Sat_SWOT():
         vtime.axis = "T"
         vtime.units = "days since the beginning of the sampling"
         vtime.long_name = "Time"
+        vtime.standard_name = "time"
+        vtime.calendar = "gregorian"
+        vtime_sec[:] = self.time * 86400
+        vtime.axis = "T"
+        vtime.units = "seconds since the beginning of the sampling"
+        vtime.long_name = "Time in seconds"
         vtime.standard_name = "time"
         vtime.calendar = "gregorian"
         vlon[:, :] = self.lon
@@ -453,15 +460,19 @@ class Sat_SWOT():
                          '{}'.format(self.file))
             sys.exit(1)
         stime = []
+        stime_sec = []
         slon = []
         slat = []
         slon_nadir = []
         slat_nadir = []
         listvar = {'time': stime, 'lon': slon, 'lat': slat,
+                   'time_sec': stime_sec,
                    'lon_nadir': slon_nadir, 'lat_nadir': slat_nadir}
 
         # - Read variables in listvar and return them
         for stringvar in listvar:
+            if stringvar not in fid.variables.keys():
+                continue
             var = fid.variables[stringvar]
             if len(var.shape) == 1:
                 _tmpvar = fid.variables[stringvar][:]
@@ -476,6 +487,8 @@ class Sat_SWOT():
             setattr(self, stringvar, listvar[stringvar])
         # - Read variables in arguments
         for key, value in kwargs.items():
+            if key not in fid.variables.keys():
+                continue
             var = fid.variables[key]
             if len(var.shape) == 1:
                 value = numpy.array(fid.variables[key][:]).squeeze()

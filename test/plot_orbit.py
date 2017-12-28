@@ -42,7 +42,7 @@ if isBasemap is True:
                     labels = [2, 0, 0, 0])
 for coordfile in listfile:
     print(coordfile)
-    data = rw_data.Sat_SWOT(file=coordfile)
+    data = rw_data.Sat_SWOT(nfile=coordfile)
     data.load_swath()
     if modelbox[0] < 0:
         data.lon_nadir[numpy.where(data.lon_nadir > 180)] = (data.lon_nadir[

@@ -43,13 +43,13 @@ if isBasemap is True:
                     labels = [2, 0, 0, 0])
 for coordfile in listfile:
     print(coordfile)
-    data = rw_data.Sat_nadir(file = coordfile)
-    data.load_orb(SSH_model = [], SSH_obs = SSH_obs)
-    data.SSH_model[numpy.isnan(data.SSH_model)] = 0.
-    data.SSH_obs[numpy.isnan(data.SSH_obs) ]= 0.
+    data = rw_data.Sat_nadir(nfile = coordfile)
+    data.load_orb(ssh_model = [], ssh_obs = [])
+    data.ssh_model[numpy.isnan(data.ssh_model)] = 0.
+    data.ssh_obs[numpy.isnan(data.ssh_obs) ]= 0.
     if isBasemap is True: x,y = m(data.lon,data.lat)
     norm = mpl.colors.Normalize(-0.15, 0.15)
-    C = plt.scatter(data.lon[:],data.lat[:], c = data.SSH_obs,
-                    edgecolors = 'None', norm = norm)
+    C = plt.scatter(data.lon[:],data.lat[:], c=data.ssh_obs,
+                    edgecolors = 'None', norm=norm)
 plt.savefig(os.path.join(p.outdatadir, '{}_sat_pass.png'.format(p.config)))
 plt.show()

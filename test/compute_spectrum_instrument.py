@@ -47,7 +47,7 @@ if not listfile:
     sys.exit('No file found {}_c*_p*.nc'.format(p.file_output))
 for coordfile in listfile:
     print(coordfile)
-    data = rw_data.Sat_SWOT(file=coordfile)
+    data = rw_data.Sat_SWOT(nfile=coordfile)
     data.load_swath(roll_err=[], phase_err=[], bd_err=[], timing_err=[],
                     x_ac=[])
 

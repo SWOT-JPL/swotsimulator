@@ -12,7 +12,7 @@ def psd1d(hh = None,dx = 1.,tap = 0.05, detrend = True):
   if detrend:
     hh = signal.detrend(hh)
 
-  if tap>0:  
+  if tap>0:
     ntaper = numpy.int(tap * nx + 0.5)
     taper = numpy.zeros(nx)+1.
     taper[:ntaper] = numpy.cos(numpy.arange(ntaper)/(ntaper-1.)*pi/2+3*pi/2)

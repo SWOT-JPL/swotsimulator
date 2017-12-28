@@ -17,17 +17,17 @@ f0 = numpy.linspace(1/distance_min*dx, 1/2 - 1/distance_min*dx,
                     num=int(distance_min/dx/2.))
 for coordfile in listfile:
     print(coordfile)
-    data=rw_data.Sat_SWOT(file = coordfile)
-    data.load_swath(SSH_obs=[], SSH_model=[])
-    nal, nac = numpy.shape(data.SSH_obs)
+    data = rw_data.Sat_SWOT(nfile=coordfile)
+    data.load_swath(ssh_obs=[], ssh_model=[])
+    nal, nac = numpy.shape(data.ssh_obs)
     for iac in range(nac):
       if nal*dx>=distance_min:
 
         tap = 0.04
-        ffo, PSD_obs = myspectools.psd1d(hh=data.SSH_obs[10:-10,iac], dx=dx,
-                                        detrend=True, tap=tap)
-        ffm, PSD_model = myspectools.psd1d(hh=data.SSH_model[10:-10,iac], dx=dx,
-                                        detrend=True, tap=tap)
+        ffo, PSD_obs = myspectools.psd1d(hh=data.ssh_obs[10:-10,iac], dx=dx,
+                                         detrend=True, tap=tap)
+        ffm, PSD_model = myspectools.psd1d(hh=data.ssh_model[10:-10,iac],
+                                           dx=dx, detrend=True, tap=tap)
 
         try:
 
@@ -36,24 +36,24 @@ for coordfile in listfile:
         except:
           SS_obs = numpy.interp(f0, ffo, PSD_obs)
           SS_model = numpy.interp(f0,ffm, PSD_model)
-        nr+=1
+        nr += 1
 
-SS_obs/=nr
-SS_model/=nr
+SS_obs /= nr
+SS_model /= nr
 
 ff = f0
 dff = ff[1]-ff[0]
 
 plt.close()
 plt.figure()
-plt.loglog(ff, SS_model, color='red',lw=2, label='SSH_model')
-plt.loglog(ff, SS_obs, color='k', label='SSH_obs')
+plt.loglog(ff, SS_model, color='red',lw=2, label='ssh_model')
+plt.loglog(ff, SS_obs, color='k', label='ssh_obs')
 plt.grid()
 #plt.axis([5e-3,0.25,1e-4,1e3])
 plt.xlabel(u'cy/km')
 plt.ylabel(u'm²/(cy/km)')
 plt.legend()
 plt.title('SSH spectra for SWOT-like data and model data interpolated on the swath')
-plt.savefig('{}_SSH_spectra.png'.format(p.config))
+plt.savefig('{}_ssh_spectra.png'.format(p.config))
 plt.show()
 

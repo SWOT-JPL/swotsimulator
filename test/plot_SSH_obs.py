@@ -15,10 +15,9 @@ listfile = glob.glob(p.file_output+'_c01_p*.nc')
 if p.modelbox is not None:
   modelbox = p.modelbox
 elif p.config=="OREGON":
-  modelbox = [-130., -123., 42., 48.]
-else: 
-  modelbox = [float(x) for x in input("specify your modelbox with format lower_lon, upper_lon, lower_lat, upper_lat: ").split(',')]
-  print(modelbox)
+    modelbox = [-130., -123., 42., 48.]
+else:
+    modelbox = [float(x) for x in input("specify your modelbox with format lower_lon, upper_lon, lower_lat, upper_lat: ").split(',')]
 fig = pyplot.figure()
 pyplot.clf()
 #pyplot.ion()
@@ -41,8 +40,8 @@ if isBasemap is True:
                     labels=[2, 0, 0, 0])
 for coordfile in listfile:
     print(coordfile)
-    data = rw_data.Sat_SWOT(file=coordfile)
-    data.load_swath(SSH_obs=[])
+    data = rw_data.Sat_SWOT(nfile=coordfile)
+    data.load_swath(ssh_obs=[])
     nac = numpy.shape(data.lon)[1]
     if modelbox[0] < 0:
         data.lon[numpy.where(data.lon > 180)] = (data.lon[numpy.where(
@@ -53,7 +52,7 @@ for coordfile in listfile:
         x = data.lon
         y = data.lat
     norm = mpl.colors.Normalize(vmin=-0.1, vmax=0.1)
-    SSH = data.SSH_obs
+    SSH = data.ssh_obs
     mask = ((SSH==0) | (abs(SSH) > 9999.))
     SSH = numpy.ma.array(SSH, mask=mask)
     _min = -1.0
@@ -68,5 +67,5 @@ for coordfile in listfile:
     pyplot.clim(_min, _max)
 pyplot.colorbar()
 pyplot.title('SWOT like data for config {}'.format(p.config))
-pyplot.savefig('{}_swath_SSH_obs.png'.format(p.config))
+pyplot.savefig('{}_swath_ssh_obs.png'.format(p.config))
 pyplot.show()

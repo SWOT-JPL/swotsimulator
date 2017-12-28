@@ -13,12 +13,12 @@ else:
 os.environ['PYTHONPATH'] = py_path
 '''
 if  (len(sys.argv) < 2):
-    file_param='../example'+os.sep+'params_example.txt'
+    file_param='../example'+os.sep+'params_example.py'
     print("no params file specified, default is " +file_param)
 else:
     file_param=str(sys.argv[1])
 if os.path.isfile(file_param):
-        shutil.copyfile(file_param, 'params.py') 
+        shutil.copyfile(file_param, 'params.py')
 else:
         print("Error: No such file: '%s'" % file_param)
         sys.exit()

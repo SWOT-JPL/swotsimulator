@@ -14,13 +14,13 @@ dx=p.delta_al #km
 listfile=glob.glob(p.file_output+'_c*'+'_p*.nc')
 
 nr=0
-for file in listfile:
-    print(file)
+for ifile in listfile:
+    print(ifile)
     hh_roll=[]
     hh_phase=[]
     hh_bd=[]
     hh_timing=[]
-    data=rw_data.Sat_SWOT(file=coordfile)
+    data=rw_data.Sat_SWOT(nfile=ifile)
     data.load_swath(wt=[], wt_err=[])
     nal, nac=numpy.shape(data.roll_err)
 
