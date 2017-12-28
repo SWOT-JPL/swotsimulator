@@ -5,9 +5,27 @@ Changelog for swotsimulator
 
 This file lists the changes in each swotsimulator version
 
+3.0
+---
+12/27/2017
+- Improve packaging, swotsimulator have to be installed
+- Fix issues on mask when interpolating using pyresample
+- Add variables and change type according to inputs from CNES/JPL format sheet
 
 2.3
 -----
+08/31/2017
+- Decorrelate left and right part of the mast for timing error
+- Add option to generate random signals instead of random coefficients
+- Handle mask when netCDF file does not have one
+- Resolve interpolation issues for Global model around 0degE
+
+07/31/2017
+- Add option number of columns to read any orbit files
+
+06/26/2017
+- Add digit precision in time variable (from f4 to f8)
+
 03/15/2017
 - Fix bug in interpolation
 03/01/2017
@@ -24,10 +42,10 @@ This file lists the changes in each swotsimulator version
 2.2.1
 -----
 11/20/2016
-- Add plotting script in the documentation to automatically update figure with outputs from the last version of the simulator. 
+- Add plotting script in the documentation to automatically update figure with outputs from the last version of the simulator.
 
 08/20/2016
-- Bug fixed: 
+- Bug fixed:
         -> Spatial lag (params key ... ) was not implemented properly
 
 2.2
