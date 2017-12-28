@@ -187,7 +187,7 @@ class Sat_SWOT():
         distance crossed in a cycle, time, along track and across track
         distances are stored.'''
         # - Open Netcdf file in write mode
-        fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        fid = Dataset(self.file, 'w')
         # - Create Global attribute
         fid.title = 'SWOT swath grid simulated by SWOT simulator'
         fid.keywords = 'check keywords'  # Check keywords
@@ -232,7 +232,7 @@ class Sat_SWOT():
         dim_ac = 'x_ac'
         vtime = fid.createVariable('time', 'f8', (dim_tim,))
         vlon_nadir = fid.createVariable('lon_nadir', 'f4', (dim_tim,))
-        vlat_nadir = fid.createVariable('lat_nadir', 'f4', (dim_tim_,))
+        vlat_nadir = fid.createVariable('lat_nadir', 'f4', (dim_tim,))
         vlon = fid.createVariable('lon', 'f4', (dim_tim, dim_ac))
         vlat = fid.createVariable('lat', 'f4', (dim_tim, dim_ac))
         vcycle = fid.createVariable('cycle', 'f4', (dim_1,))
@@ -396,7 +396,7 @@ class Sat_SWOT():
                     if 'f' not in vdic['type']:
                         value = numpy.rint(value)
                     value[numpy.isnan(value)] = fill_value
-                    value[value == 0] = fill_value
+                    # value[value == 0] = fill_value
                     var[:] = value
                 if len(value.shape) == 2:
                     var = fid.createVariable(vdic['varname'], vdic['type'],
@@ -411,7 +411,7 @@ class Sat_SWOT():
                         value = numpy.rint(value)
                     value[numpy.isnan(value)] = fill_value
                     # value[numpy.where(value.mask == True)] = fill_value
-                    value[value == 0] = fill_value
+                    # value[value == 0] = fill_value
                     var[:, :] = value
                 vmin = vdic['min_value']
                 if vmin is not None:

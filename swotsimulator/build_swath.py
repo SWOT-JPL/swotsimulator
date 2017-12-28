@@ -305,9 +305,9 @@ def orbit2swath(modelbox, p, orb):
         nind = numpy.shape(ind)[0]
         # Compute swath grid if pass is in the subdomain
         if nind > 5:
-            mod_tools.update_progress(float(ipass+1)
-                                      / float(numpy.shape(passtime)[0]),
-                                      'selected pass: ' + str(ipass+1), None)
+            pstep = float(ipass + 1) / float(numpy.shape(passtime)[0])
+            str1 = 'selected pass: {}'.format(ipass + 1)
+            mod_tools.update_progress(pstep, str1, None)
             # Initialize SWOT grid, grid variables and Satellite
             # direction and Location
             filesgrid = '{}_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
@@ -335,7 +335,7 @@ def orbit2swath(modelbox, p, orb):
                                           lat[ind[0]: ind[-1]+1: npoints])
             SatLoc[:, 0], SatLoc[:, 1], SatLoc[:, 2] = s2cart
             # Compute satellite direction (SatLoc is periodic)
-            SatDir[1: -1, 0] = ((SatLoc[2:, 0]-SatLoc[: -2, 0])
+            SatDir[1: -1, 0] = ((SatLoc[2:, 0] - SatLoc[: -2, 0])
                                 / numpy.sqrt(SatLoc[1: -1, 0]**2
                                 + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
             SatDir[1: -1, 1] = ((SatLoc[2:, 1] - SatLoc[: -2, 1])
@@ -344,8 +344,8 @@ def orbit2swath(modelbox, p, orb):
             SatDir[1: -1, 2] = ((SatLoc[2:, 2] - SatLoc[: -2, 2])
                                 / numpy.sqrt(SatLoc[1: -1, 0]**2
                                 + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
-            SatDir[-1] = SatDir[-2]
-            SatDir[0] = SatDir[1]
+            SatDir[-1, :] = SatDir[-2, :]
+            SatDir[0, :] = SatDir[1, :]
             # Rotate from earth center around satellite direction to compute
             # swath points of angles between the borders of the swath in left
             # and right swath
@@ -359,6 +359,7 @@ def orbit2swath(modelbox, p, orb):
                     sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
                     ObsLoc = numpy.dot(numpy.transpose(R),
                                        SatLoc[int(i/npoints)])
+                    cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
                     sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
                     if npoints > p.delta_al:
                         if i >= npoints:

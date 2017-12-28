@@ -513,7 +513,8 @@ def interpolate_irregular_pyresample(swath_in, var, grid_out, radius,
         interp = pr.kd_tree.resample_gauss
         var_out = interp(swath_in, var, grid_out,
                          radius_of_influence=3*radius*10**3,
-                         sigmas=radius*10**3, fill_value=None)
+                         sigmas=radius*10**3, fill_value=0)
+    var_out[var_out == 0] = numpy.nan
     return var_out
 
 
@@ -664,7 +665,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     _ssh, Teval = interp(p, model_data.vlon, model_data.vlat,
                                          SSH_model, lonswot, latswot,
                                          Teval=Teval)
-                    nal, nac = numpy.shape(lonswot)
+                    nal, nac = numpy.shape(sgrid.lon)
                     SSH_true[ind_time[0], :] = _ssh.reshape(nal, nac)
                     if p.nadir is True:
                         lonnadir = ngrid.lon[ind_nadir_time[0]].ravel()
@@ -685,8 +686,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                         model_data.vlon = wrap_lon(model_data.vlon)
                         sgrid.lon = wrap_lon(sgrid.lon)
                         if model_data.len_coord <= 1:
-                            logger.error('Model grid is irregular, coordinates'
-                                         ' should be in 2d')
+                            logger.error('I model grid is irregular,'
+                                         'coordinates should be in 2d')
                             sys.exit(1)
                         geomdef = pr.geometry.SwathDefinition
                         swath_def = geomdef(lons=model_data.vlon,
