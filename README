@@ -11,32 +11,32 @@ The swotsimulator code can be downloaded at http://swot.jpl.nasa.gov/science/res
 
 Licence
 -------
-The swotsimulator is under LGPL licence (see :ref:`COPYING <licence_long>` )
+The swotsimulator is under BSD licence (see :ref:`COPYING <licence_long>` )
 
 Installation
 ------------
-The code runs with python and uses the following libraries: 
+The code runs with python and uses the following libraries:
 
-* Numpy 
+* Numpy
 
 * Scipy
 
 * NetCDF4 if you need to read netcdf4 model files (not included in Canopy)
 
-If you don't have python and the needed python libraries on your machine 
+If you don't have python and the needed python libraries on your machine
 you can download the enthought python distribution canopy at
 <https://store.enthought.com/> and follow the installation instructions.
 
-To install swotsimulator: 
+To install swotsimulator:
 
 -> If you have installed canopy:
 
-Open a canopy terminal (``Tools - Canopy Terminal``) 
+Open a canopy terminal (``Tools - Canopy Terminal``)
 
 .. code-block:: python
 
    > cd [yourpath]/swotsimulator/
-   > python setup.py install 
+   > python setup.py install
 
 ->If you have your own python and libraries:
 
@@ -44,15 +44,15 @@ Open a canopy terminal (``Tools - Canopy Terminal``)
 
 .. code-block:: python
 
-   > sudo python setup.py install 
+   > sudo python setup.py install
 
 - local installation:
 
 .. code-block:: python
 
-   > python setup.py install --home=your/local/path 
+   > python setup.py install --home=your/local/path
 
-- Uninstall: 
+- Uninstall:
 
 .. code-block:: python
 
@@ -65,37 +65,37 @@ Run the SWOT simulator:
 
 .. code-block:: python
 
-   > python run.py [your params file]
+   > swotsimulator [your params file]
 
 Run the nadir alone:
 
 .. code-block:: python
 
-   > python run_nadiralone.py [your params file]
+   > nadirsimulator [your params file]
 
 
 For example, to run the example do:
 
-* open ``./example/params_example.txt`` and check that the directory path
+* open ``./example/params_example.py`` and check that the directory path
   are correct, if needed modify path of ``dir_setup``, ``indatadir``, ``outdatadir``
   with your own path (the path of the simulator directory).
 
 * Run the simulator:
-  ``python run.py ./example/params_example.txt``
+  ``swotsimulator ./example/params_example.py``
 
 
 Note that if you have installed python using enthought Canopy, you should either
 use the Canopy terminal or run the canopy python instead of python (direct path or
-use an alias). 
+use an alias).
 
-The data provided in the example were produced by the Regional Ocean Modeling System 
-(ROMS) off the Oregon coast developed by Dr. Yi Chao and his team.
+The data provided in the example were produced by the Regional Ocean Modeling
+ System (ROMS) off the Oregon coast developed by Dr. Yi Chao and his team.
 
 Testing
 -------
 Outputs of the simulator can be tested using algorithm from the test directory. 
 
-To run all tests, go to the test directory: 
+To run all tests, go to the test directory:
 
 .. code-block:: python
 
@@ -104,12 +104,12 @@ To run all tests, go to the test directory:
 Documentation
 -------------
 - To build the documentation, in the ``doc`` directory:
-  
+
     * Build html: ``make html``
 
     * Build pdf: ``make latexpdf``
 
-  The build documentation files are located in ``doc/build/html`` and in ``doc/build/latex/`` 
+  The build documentation files are located in ``doc/build/html`` and in ``doc/build/latex/``
 
 - for a complete description:
   see the ``doc`` directory or just run ``pydoc PyDom``

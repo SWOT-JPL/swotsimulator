@@ -1,4 +1,3 @@
-================================
 SWOT Simulator for Ocean Science
 ================================
 
@@ -13,8 +12,8 @@ Before running the example:
   - click on swotsimulator_largedata.zip to download the data,
   - unzip the downloaded zipped document
   - copy everything from the unzipped directory into example/input_field directory
-  
-Note that you only have to do that once when you clone the git swotsimulator repository. Updating the code by doing a 'git pull' won't modify the example data files. 
+
+Note that you only have to do that once when you clone the git swotsimulator repository. Updating the code by doing a 'git pull' won't modify the example data files.
 
 Manual
 ------------
@@ -22,6 +21,9 @@ Refer to [Full manual](https://github.com/SWOTsimulator/swotsimulator/blob/maste
 
 Updates impacting users
 -----------------------
+* December 27, 2017
+ * change SWOT simulator output format to be compliant with CNES/JPL mockup
+
 * December 17, 2016
  * update orbit files
 
