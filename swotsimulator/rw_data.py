@@ -161,6 +161,51 @@ def read_var(ifile, var, index=None, time=0, depth=0, model_nan=None):
     return T
 
 
+def write_var(fid, dim, key, value):
+    ''' Write variable key with value value in netcdf file fid'''
+    dim_tim, dim_ac, dim_rad = dim
+    # Get attribute from dictionary
+    vdic = getattr(const, key)
+    scale = vdic['scale']
+    fill_value = vdic['fill_value']
+    # Write variables in 1d
+    if len(value.shape) == 1:
+        var = fid.createVariable(vdic['varname'], vdic['type'],
+                                 (dim_tim,), fill_value=fill_value)
+        value = value / scale
+        if 'f' not in vdic['type']:
+            value = numpy.rint(value)
+        value[numpy.isnan(value)] = fill_value
+        var[:] = value
+    # Write variables in 2d
+    if len(value.shape) == 2:
+        if value.shape[1] == 2:
+            var = fid.createVariable(vdic['varname'], vdic['type'],
+                                     (dim_tim, dim_rad),
+                                     fill_value=fill_value)
+        else:
+            var = fid.createVariable(vdic['varname'], vdic['type'],
+                                     (dim_tim, dim_ac),
+                                     fill_value=fill_value)
+
+        value = value / scale
+        if 'f' not in vdic['type']:
+            value = numpy.rint(value)
+        value[numpy.isnan(value)] = fill_value
+        var[:, :] = value
+    # Set attributes to variable
+    vmin = vdic['min_value']
+    if vmin is not None:
+        var.valid_min = vmin
+    vmax = vdic['max_value']
+    if vmax is not None:
+        var.valid_max = vmax
+    var.units = vdic['unit']
+    var.long_name = vdic['longname']
+    if scale != 1.:
+        var.scale_factor = scale
+
+
 class Sat_SWOT():
     ''' Sat_SWOT class: to read and write data that has been
     created by SWOT simulator '''
@@ -296,10 +341,11 @@ class Sat_SWOT():
         # - Open netcdf file in write mode
         fid = Dataset(self.file, 'w') #, format='NC_NETCDF4')
         fid.description = "Ouptut from SWOT simulator"
-        try:
+        if hasattr(self, 'gridfile'):
             fid.corresponding_grid = self.gridfile
-        except:
-            pass
+        if hasattr(self, 'fid.corresponding_grid'):
+            fid.corresponding_grid = self.corresponding_grid
+
         fid.title = 'SWOT-like data simulated by SWOT simulator'
         fid.keywords = 'SWOT, altimetry, SSH, satellite, remote sensing'
         fid.Conventions = "CF-1.6"
@@ -354,75 +400,43 @@ class Sat_SWOT():
         vtime[:] = numpy.rint(self.time * 86400 / scale)
         vtime.units = "s"
         vtime.scale_factor = scale
-        vtime.min = 0
+        vtime.valid_min = 0
         vtime.long_name = "Time from beginning of simulation (in s)"
         vlon[:, :] = numpy.rint(self.lon / scale)
         vlon.units = "deg"
         vlon.long_name = "Longitude"
         vlon.scale_factor = scale
-        vlon.min = 0
-        vlon.max = 359999999
+        vlon.valid_min = 0
+        vlon.valid_max = 359999999
         vlat[:, :] = numpy.rint(self.lat / scale)
         vlat.units = "deg"
         vlat.long_name = "Latitude"
         vlat.scale_factor = scale
-        vlat.min = -80000000
-        vlat.max = 80000000
+        vlat.valid_min = -80000000
+        vlat.valid_max = 80000000
         vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
         vlon_nadir.units = "deg"
         vlon_nadir.scale_factor = scale
-        vlon_nadir.min = 0
-        vlon_nadir.max = 359999999
+        vlon_nadir.valid_min = 0
+        vlon_nadir.valid_max = 359999999
         vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
         vlat_nadir.units = "deg"
         vlat_nadir.scale_factor = scale
-        vlat_nadir.min = -80000000
-        vlat_nadir.max = 80000000
+        vlat_nadir.valid_min = -80000000
+        vlat_nadir.valid_max = 80000000
         vx_al[:] = self.x_al
         vx_al.units = "km"
         vx_al.long_name = "Along track distance from the beginning of the pass"
         vx_ac[:] = self.x_ac
         vx_ac.units = "km"
         vx_ac.long_name = "Across track distance from nadir"
+        dim = [dim_tim, dim_ac, dim_rad]
         for key, value in kwargs.items():
-            if value.any():
-                vdic = getattr(const, key)
-                scale = vdic['scale']
-                fill_value = vdic['fill_value']
-                if len(value.shape) == 1:
-                    var = fid.createVariable(vdic['varname'], vdic['type'],
-                                             (dim_tim,), fill_value=fill_value)
-                    value = value / scale
-                    if 'f' not in vdic['type']:
-                        value = numpy.rint(value)
-                    value[numpy.isnan(value)] = fill_value
-                    # value[value == 0] = fill_value
-                    var[:] = value
-                if len(value.shape) == 2:
-                    var = fid.createVariable(vdic['varname'], vdic['type'],
-                                             (dim_tim, dim_ac),
-                                             fill_value=fill_value)
-                    if value.shape[1] == 2:
-                        var = fid.createVariable(vdic['varname'], vdic['type'],
-                                                 (dim_tim, dim_rad),
-                                                 fill_value=fill_value)
-                    value = value / scale
-                    if 'f' not in vdic['type']:
-                        value = numpy.rint(value)
-                    value[numpy.isnan(value)] = fill_value
-                    # value[numpy.where(value.mask == True)] = fill_value
-                    # value[value == 0] = fill_value
-                    var[:, :] = value
-                vmin = vdic['min_value']
-                if vmin is not None:
-                    var.valid_min = vmin
-                vmax = vdic['max_value']
-                if vmax is not None:
-                    var.valid_max = vmax
-                var.units = vdic['unit']
-                var.long_name = vdic['longname']
-                if scale != 1.:
-                    var.scale_factor = scale
+            if key == 'empty_var'and value is not None:
+                for key2, value2 in value.items():
+                    write_var(fid, dim, key2, value2)
+            elif key != 'empty_var' and value.any():
+                write_var(fid, dim, key, value)
         fid.close()
         return None
 
@@ -475,10 +489,8 @@ class Sat_SWOT():
                 sys.exit(1)
             # value[value == var.fill_value] = numpy.nan
             setattr(self, key, value)
-        try:
+        if hasattr(fid, 'corresponding_grid'):
             self.corresponding_grid = fid.corresponding_grid
-        except:
-            pass
         fid.close()
         return None
 
@@ -553,12 +565,13 @@ class Sat_nadir():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
-        fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        fid = Dataset(self.file, 'w')
         fid.description = "Orbit computed by SWOT simulator"
-        try:
+        if hasattr(self, 'gridfile'):
             fid.corresponding_grid = self.gridfile
-        except:
-            pass
+        if hasattr(self, 'corresponding_grid'):
+            fid.corresponding_grid = self.corresponding_grid
+
         fid.title = 'Altimeter like data simulated by SWOT simulator'
         fid.keywords = 'check keywords'  # Check keywords
         fid.Conventions = "CF-1.6"
@@ -592,62 +605,45 @@ class Sat_nadir():
                          'http://dx.doi.org/10.1175/JTECH-D-15-0160.1.'
         # fid.cycle = "{0:d}".format(int(self.al_cycle))
         # - Create dimensions
-        fid.createDimension('time', numpy.shape(self.lon)[0])
-        fid.createDimension('cycle', 1)
+        dim_tim = 'time'
+        dim_1 = 'cycle'
+        fid.createDimension(dim_tim, numpy.shape(self.lon)[0])
+        fid.createDimension(dim_1, 1)
 
         # - Create and write variables
-        vtime = fid.createVariable('time', 'f8', ('time',))
-        vlon = fid.createVariable('lon', 'f4', ('time',))
-        vlat = fid.createVariable('lat', 'f4', ('time',))
-        vxal = fid.createVariable('x_al', 'f4', ('time',))
-        vcycle = fid.createVariable('ncycle', 'f4', ('cycle',))
-        vtime[:] = self.time
-        vtime.units = "days"
-        vtime.long_name = "Time from beginning of simulation"
-        vlon[:] = self.lon
+        vtime = fid.createVariable('time', 'u8', (dim_tim,))
+        vlon = fid.createVariable('lon', 'i4', (dim_tim,))
+        vlat = fid.createVariable('lat', 'i4', (dim_tim,))
+        vxal = fid.createVariable('x_al', 'f4', (dim_tim,))
+        vcycle = fid.createVariable('ncycle', 'f4', (dim_1,))
+        scale = 1e-6
+        vtime[:] = numpy.rint(self.time * 86400 / scale)
+        vtime.units = "s"
+        vtime.long_name = "Time from beginning of simulation (in s)"
+        vtime.scale_factor = scale
+        vtime.valid_min = 0
+        vlon[:] = numpy.rint(self.lon / scale)
         vlon.units = "deg"
         vlon.long_name = "Longitude"
-        vlat[:] = self.lat
+        vlon.scale_factor = scale
+        vlon.valid_min = 0
+        vlon.valid_max = 359999999
+        vlat[:] = numpy.rint(self.lat / scale)
         vlat.units = "deg"
         vlat.long_name = "Latitude"
+        vlat.scale_factor = scale
+        vlat.valid_min = -80000000
+        vlat.valid_max = 80000000
         vxal[:] = self.x_al
         vxal.units = "km"
         vxal.long_name = "Along track distance"
         vcycle[0] = self.cycle
         vcycle.units = "days"
         vcycle.long_name = "Number of days in a cycle"
-        pdln = "Residual path delay error after a 1-beam radiometer correction"
-        longname = {"SSH_model": "SSH interpolated from model",
-                    "SSH_obs": "Observed SSH (SSH_model+errors)",
-                    "index": "Equivalent model output number in list of file",
-                    "nadir_err": "Nadir error",
-                    "pd_err_1b": pdln,
-                    "pd": "Simulated path delay error due to wet tropo"}
-        unit = {"SSH_model": "m", "SSH_obs": "m", "index": "",
-                "nadir_err": "m", "pd_err_1b": "m", "pd": "m",
-                "pd_err_2b": "m"}
+        dim = [dim_tim, 0, 0]
         for key, value in kwargs.items():
             if value.any():
-                if len(value.shape) == 1:
-                    var = fid.createVariable(str(key), 'f4', ('time',),
-                                             fill_value=-1.36e9)
-                    var[:] = value
-                else:
-                    logger.error('Wrong number of dimension for variable'
-                                 ' {}, should be less than 1'.format(var))
-                    sys.exit(1)
-                if str(key) in unit.keys():
-                    var.units = unit[str(key)]
-                else:
-                    var.units = ''
-                if str(key) in longname.keys():
-                    var.long_name = longname[str(key)]
-                else:
-                    var.long_name = str(key)
-        try:
-            fid.corresponding_grid = fid.corresponding_grid
-        except:
-            pass
+                write_var(fid, dim, key, value)
         fid.close()
         return None
 
@@ -659,7 +655,7 @@ class Sat_nadir():
         distance crossed in a cycle, time, along track and across track
         distances are stored.'''
         # - Open Netcdf file in write mode
-        fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
+        fid = Dataset(self.file, 'w')
         fid.title = 'Satellite orbit grid computed by SWOT simulator'
         fid.keywords = 'check keywords'  # Check keywords
         fid.Conventions = "CF-1.6"

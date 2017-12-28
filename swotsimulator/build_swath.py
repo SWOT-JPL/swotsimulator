@@ -146,7 +146,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     distance = numpy.zeros((nop))
     # Compute and store distances and coordinates that are in the defined
     # subdomain
-    logger.info('Compute SWOT nadir coordinate in the new domain')
+    logger.info('Compute nadir coordinate in the new domain')
     for i in range(0, nop - 1):
         mod_tools.update_progress(float(i) / float(nop-1), None, None)
         if abs(volon[i + 1] - volon[i]) > 1:

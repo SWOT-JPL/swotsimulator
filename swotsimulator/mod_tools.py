@@ -43,6 +43,8 @@ def initialize_parameters(p):
     p.grid = getattr(p, 'grid', 'regular')
     p.order_orbit_col = getattr(p, 'order_orbit_col', None)
     p.ice_mask = getattr(p, 'ice_mask', True)
+    p.save_variables = getattr(p, 'save_variables', 'classic')
+    p.savesignal = getattr(p, 'savesignal', False)
 
 
 def gen_coeff_signal1d(f, PS, nc):
