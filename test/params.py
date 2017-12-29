@@ -4,32 +4,38 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~") 
+home = expanduser("~") + '/src/'
 # ------ Directory that contains orbit file:
-dir_setup = home+os.sep+'swotsimulator'+os.sep+'data'+os.sep
+dir_setup = os.path.join(home, 'swotsimulator', 'data')
 # ------ Directory that contains your own inputs:
-indatadir = home+os.sep+'swotsimulator'+os.sep+'example'+os.sep+'input_fields'+os.sep
+indatadir = os.path.join(home, 'swotsimulator', 'example',
+                         'input_fields')
 # ------ Directory that contains your outputs:
-outdatadir = '/mnt/data_b/SWOT' + os.sep
+outdatadir = os.path.join(home, 'swotsimulator', 'example',
+                           'swot_output')
 # ------ Orbit file:
+# Order of columns (lon, lat, time) in the orbit file
+# (default is (1, 2, 0) with order_orbit_col = None)
+order_orbit_col = None
+# Name of the orbit file
 satname = "science"
-filesat = dir_setup+os.sep+'ephem_science_sept2015_ell.txt'
-# ------ Name of the configuration (to build output files names) 
-config = "GLOB"
-            
-# -----------------------# 
-# SWOT swath parameters 
-# -----------------------# 
+filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
+# ------ Name of the configuration (to build output files names)
+config = "OREGON"
+
+# -----------------------#
+# SWOT swath parameters
+# -----------------------#
 # ------ Satellite grid file root name:
 # 	 (Final file name is root_name_[numberofpass].nc)
-filesgrid = outdatadir+os.sep+config+'_'+satname+'_grid'
+filesgrid = os.path.join(outdatadir, '{}_{}_grid'.format(config,satname))
 # ------ Force the computation of the satellite grid:
 makesgrid = False
 # ------ Give a subdomain if only part of the model is needed:
 #	 (modelbox=[lon_min, lon_max, lat_min, lat_max])
 # 	 (If modelbox is None, the whole domain of the model is considered)
-modelbox = [0., 360., -90., 90.]
-# ------ Distance between the nadir and the end of the swath (in km): 
+modelbox = None  # [230.144,234.598,42.27,47.8283]
+# ------ Distance between the nadir and the end of the swath (in km):
 halfswath = 60.
 # ------ Distance between the nadir and the beginning of the swath (in km):
 halfgap = 10.
@@ -37,8 +43,8 @@ halfgap = 10.
 delta_al = 2.
 # ------ Across track resolution (in km):
 delta_ac = 2.
-# ------ Shift longitude of the orbit file if no pass is in the domain (in degree):
-#        Default value is None (no shift)
+# ------ Shift longitude of the orbit file if no pass is in the domain
+#        (in degree): Default value is None (no shift)
 shift_lon = None
 # ------ Shift time of the satellite pass (in day):
 #        Default value is None (no shift)
@@ -49,14 +55,16 @@ shift_time = None
 # -----------------------#
 # ------ List of model files:
 #	 (The first file contains the grid and is not considered as model data)
-#        To generate the noise alone, file_input=None and specify region in modelbox
-file_input = None
+#        To generate the noise alone, file_input = None
+#        and specify region in modelbox
+file_input = os.path.join(indatadir, 'list_of_file.txt')
 # ------ Type of model data:
 #	 (Optional, default is NETCDF_MODEL and reads netcdf3 and netcdf4 files)
 #	 (Other options are ROMS, NEMO and CLS to read Nemo, roms or CLS)
 model = 'NETCDF_MODEL'
 # ------ Type of grid:
-# 'regular' or 'irregular', if 'regular' only 1d coordinates are extracted from model       
+#        'regular' or 'irregular', if 'regular' only 1d coordinates
+#        are extracted from model
 grid = 'irregular'
 # ------ Specify SSH variable:
 var = 'H'
@@ -70,7 +78,7 @@ lat = 'lat_rho'
 timestep = 1.
 # ------ Number of outputs to consider:
 #        (timestep*nstep=total number of days)
-nstep = 22.
+nstep = 25.
 # ------ Not a number value:
 model_nan = 0.
 
@@ -79,12 +87,16 @@ model_nan = 0.
 # -----------------------#
 # ------ Output file root name:
 #	 (Final file name is root_name_c[cycle]_p[pass].nc
-file_output = outdatadir+os.sep+config+'_'+satname
+file_output = os.path.join(outdatadir, '{}_{}'.format(config, satname))
 # ------ Interpolation of the SSH from the model (if grid is irregular and
 #         pyresample is not installed:
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
 interpolation = 'linear'
+# ------ Save variables with all mockup variables ('all'), only swotsimulator
+#        variables ('classic', default behaviour) or in expert mode ('expert')
+save_variables = 'all'
+
 # -----------------------#
 # SWOT error parameters
 # -----------------------#
@@ -93,11 +105,11 @@ interpolation = 'linear'
 #        If file_coeff is specified and does not exist, file is created
 #	 If you don't want runs to be reproducible, file_coeff is set to None
 file_coeff = None
-#file_coeff=outdatadir+os.sep+'Random_coeff.nc'
+# file_coeff = os.path.join(outdatadir,'Random_coeff.nc')
 # ------ KaRIN noise (True to compute it):
 karin = True
 # ------ KaRIN file containing spectrum for several SWH:
-karin_file = dir_setup + os.sep + 'karin_noise.nc'
+karin_file = os.path.join(dir_setup, 'karin_noise.nc')
 # ------ SWH for the region:
 #        if swh greater than 7 m, swh is set to 7
 swh = 2.0
@@ -109,14 +121,22 @@ nrandkarin = 1000
 # -- Compute nadir (True or False):
 nadir = True
 # ------ File containing spectrum of instrument error:
-file_inst_error=dir_setup+os.sep+"global_sim_instrument_error.nc"
-# ------ Number of random realisations for instrumental and geophysical error (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d is used for 2D spectrum (wet troposphere computation):
-ncomp1d = 2000
-ncomp2d = 2000
+file_inst_error = os.path.join(dir_setup, "global_sim_instrument_error.nc")
+# ------ Number of random realisations for instrumental and geophysical error
+#        (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d
+#        is used for 2D spectrum (wet troposphere computation):
+ncomp1d = 6000
+ncomp2d = 6000
 # ------ Cut off frequency:
 #	 (Use lambda_cut=40000km for cross-calibration)
 lambda_cut = 20000
-lambda_max = 20000
+lambda_max = lambda_cut
+# ------ Save entire rando signal instead of random coefficients. Enables a better randomness
+savesignal = True
+# ------ If savesignal is True, enter number of pseudo-period of superimposed
+#        signals and repeat length
+npseudoper = 30. # Number of pseudo period of superimposed signals.
+len_repeat = 40000*14*50.
 # ------ Roll error (True to compute it):
 roll = True
 # ------ Phase error (True to compute it):
@@ -134,7 +154,7 @@ wet_tropo = True
 #        Gaussian footprint of sigma km
 sigma = 8.
 # ------ Number of beam used to correct wet_tropo signal (1, 2 or 'both'):
-nbeam='both'
+nbeam = 2
 # ------ Beam position if there are 2 beams (in km from nadir):
 beam_pos_l = -35.
 beam_pos_r = 35.

@@ -96,6 +96,7 @@ interpolation = 'linear'
 # ------ Save variables with all mockup variables ('all'), only swotsimulator
 #        variables ('classic', default behaviour) or in expert mode ('expert')
 save_variables = 'all'
+
 # -----------------------#
 # SWOT error parameters
 # -----------------------#
@@ -124,14 +125,14 @@ file_inst_error = os.path.join(dir_setup, "global_sim_instrument_error.nc")
 # ------ Number of random realisations for instrumental and geophysical error
 #        (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d
 #        is used for 2D spectrum (wet troposphere computation):
-ncomp1d = 2000
+ncomp1d = 4000
 ncomp2d = 2000
 # ------ Cut off frequency:
 #	 (Use lambda_cut=40000km for cross-calibration)
 lambda_cut = 20000
 lambda_max = lambda_cut
 # ------ Save entire rando signal instead of random coefficients. Enables a better randomness
-savesignal = True or False
+savesignal = True
 # ------ If savesignal is True, enter number of pseudo-period of superimposed
 #        signals and repeat length
 npseudoper = 30. # Number of pseudo period of superimposed signals.

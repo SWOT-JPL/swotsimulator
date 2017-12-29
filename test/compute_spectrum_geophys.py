@@ -31,20 +31,19 @@ for ifile in listfile:
       if p.phase: ff, PSD_phase=myspectools.psd1d(hh=data.phase_err,dx=dx, detrend=True, tap=tap)
       if p.baselinedilation: ff, PSD_bd=myspectools.psd1d(hh=data.bd_err,dx=dx, detrend=True, tap=tap)
       if p.timing: ff, PSD_timing=myspectools.psd1d(hh=data.timing_err,dx=dx, detrend=True, tap=tap)
-      try: 
+      try:
 
         SS_roll=SS_roll+numpy.interp(f0, ff, PSD_roll)
         SS_phase=SS_phase+numpy.interp(f0, ff, PSD_phase)
         SS_bd=SS_bd+numpy.interp(f0, ff, PSD_bd)
         SS_timing=SS_timing+numpy.interp(f0, ff, PSD_timing)
       except:
-      
         SS_roll=numpy.interp(f0, ff, PSD_roll)
         SS_phase=numpy.interp(f0,ff, PSD_phase)
         SS_bd=numpy.interp(f0, ff, PSD_bd)
         SS_timing=numpy.interp(f0, ff, PSD_timing)
       nr+=1
-  
+
 SS_roll/=nr
 SS_phase/=nr
 SS_bd/=nr
