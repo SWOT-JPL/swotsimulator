@@ -11,6 +11,7 @@ This file lists the changes in each swotsimulator version
 - Improve packaging, swotsimulator have to be installed
 - Fix issues on mask when interpolating using pyresample
 - Add variables and change type according to inputs from CNES/JPL format sheet
+- Add expert mode, to save only noise in 1D
 
 2.3
 -----
