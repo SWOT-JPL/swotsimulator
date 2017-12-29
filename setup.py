@@ -12,15 +12,15 @@ logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
 # Check Python version
-if not 3 == sys.version_info[0]:
-    logger.error('This package is only available for Python 3.x')
-    sys.exit(1)
+#if not 3 == sys.version_info[0]:
+#    logger.error('This package is only available for Python 3.x')
+#    sys.exit(1)
 
 __package_name__ = 'swotsimulator'
 project_dir = os.path.dirname(__file__)
-git_exe = shutil.which('git')
-git_dir = os.path.join(project_dir, '.git')
-has_git = (git_exe is not None and os.path.isdir(git_dir))
+#git_exe = shutil.which('git')
+#git_dir = os.path.join(project_dir, '.git')
+#has_git = (git_exe is not None and os.path.isdir(git_dir))
 # version_file = os.path.join(project_dir, 'VERSION.txt')
 readme_file = os.path.join(project_dir, 'README')
 package_dir = os.path.join(project_dir, __package_name__)
@@ -43,8 +43,8 @@ with open(readme_file, 'rt') as f:
 optional_dependencies = {'plot': ['matplotlib', ], 'carto': ['matplotlib',
                          'cartopy'], 'pyresample': ['pyresample', ]}
 
-cmds = [f'swotsimulator = {__package_name__}.cli:run_swot_script',
-        f'nadirsimulator = {__package_name__}.cli:run_nadir_script',]
+cmds = ['swotsimulator = {}.cli:run_swot_script'.format(__package_name__),
+        'nadirsimulator = {}.cli:run_nadir_script'.format(__package_name__),]
 setup(name='swotsimulator',
       version=metadata['__version__'],
       description=metadata['__description__'],
