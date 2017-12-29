@@ -507,6 +507,118 @@ class Sat_SWOT():
         fid.close()
         return None
 
+    def write_expert_data(self, **kwargs):
+        '''Write SWOT data in output file file_output
+        Dimensions are x_al (along track distance), x_ac (across
+        track distance). \n
+        Variables are longitude, latitude, index (file number),
+        error-free SSH (SSH interpolated from the model), selected
+        errors (karin, wet_tropo, roll, baseline_dilation, phase,
+        timing) and SSH with errors. \n
+        '''
+        # - Open netcdf file in write mode
+        fid = Dataset(self.file, 'w') #, format='NC_NETCDF4')
+        fid.description = "Ouptut from SWOT simulator"
+        if hasattr(self, 'gridfile'):
+            fid.corresponding_grid = self.gridfile
+        if hasattr(self, 'fid.corresponding_grid'):
+            fid.corresponding_grid = self.corresponding_grid
+
+        fid.title = 'SWOT-like data simulated by SWOT simulator'
+        fid.keywords = 'SWOT, altimetry, SSH, satellite, remote sensing'
+        fid.Conventions = "CF-1.6"
+        fid.summary = 'SWOT grid data produced'
+        fid.description = "SWOT fixed grid"
+        fid.Metadata_Conventions = "Unidata Dataset Discovery v1.0"
+        fid.history = 'Grid File created by swotsimulator version ' + version
+        fid.processing_level = 'L2'
+        fid.standard_name_vocabulary = "CF-1.6"
+        fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
+        fid.creator_email = "lucile.gaultier@gmail.com"
+        fid.publisher_url = "github/SWOTSimulator/"
+        fid.time_coverage_start = self.time[0]
+        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.time_coverage_end = self.time[-1]
+        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
+        fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
+        fid.geospatial_lat_units = "degrees_north"
+        fid.geospatial_lon_max = "{:.2f}".format(numpy.max(self.lon))
+        fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
+        fid.geospatial_lon_units = "degrees_east"
+        fid.project = "SWOT"
+        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.keywords_vocabulary = "NASA"
+        fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
+                         'Challenge of Using Future SWOT Data for Oceanic '\
+                         'Field Reconstruction. J. Atmos. Oceanic Technol., '\
+                         '33, 119-126, doi:10.1175/jtech-d-15-0160.1. '\
+                         'http://dx.doi.org/10.1175/JTECH-D-15-0160.1.'
+        # fid.cycle = "{0:d}".format(int(self.al_cycle))
+        # - Create dimensions
+        dim_tim = 'time'
+        dim_ac = 'nC'
+        dim_rad = 'n2'
+
+        fid.createDimension(dim_tim, numpy.shape(self.lon)[0])
+        fid.createDimension(dim_ac, numpy.shape(self.lon)[1])
+        fid.createDimension(dim_rad, 2)
+
+        # - Create and write variables
+        vtime = fid.createVariable('time_sec', 'u8', (dim_tim,))
+        vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))
+        vlat_nadir = fid.createVariable('lat_nadir', 'i4', (dim_tim,))
+        vlon = fid.createVariable('lon', 'i4', (dim_tim, dim_ac),
+                                  fill_value=2147483647)
+        vlat = fid.createVariable('lat', 'i4', (dim_tim, dim_ac),
+                                  fill_value=2147483647)
+        vx_al = fid.createVariable('x_al', 'f4', (dim_tim,))
+        vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
+        scale = 1e-6
+        vtime[:] = numpy.rint(self.time * 86400 / scale)
+        vtime.units = "s"
+        vtime.scale_factor = scale
+        vtime.valid_min = 0
+        vtime.long_name = "Time from beginning of simulation (in s)"
+        vlon[:, :] = numpy.rint(self.lon / scale)
+        vlon.units = "deg"
+        vlon.long_name = "Longitude"
+        vlon.scale_factor = scale
+        vlon.valid_min = 0
+        vlon.valid_max = 359999999
+        vlat[:, :] = numpy.rint(self.lat / scale)
+        vlat.units = "deg"
+        vlat.long_name = "Latitude"
+        vlat.scale_factor = scale
+        vlat.valid_min = -80000000
+        vlat.valid_max = 80000000
+        vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
+        vlon_nadir.units = "deg"
+        vlon_nadir.scale_factor = scale
+        vlon_nadir.valid_min = 0
+        vlon_nadir.valid_max = 359999999
+        vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
+        vlat_nadir.units = "deg"
+        vlat_nadir.scale_factor = scale
+        vlat_nadir.valid_min = -80000000
+        vlat_nadir.valid_max = 80000000
+        vx_al[:] = self.x_al
+        vx_al.units = "km"
+        vx_al.long_name = "Along track distance from the beginning of the pass"
+        vx_ac[:] = self.x_ac
+        vx_ac.units = "km"
+        vx_ac.long_name = "Across track distance from nadir"
+        dim = [dim_tim, dim_ac, dim_rad]
+        for key, value in kwargs.items():
+            if key == 'empty_var'and value is not None:
+                for key2, value2 in value.items():
+                    write_var(fid, dim, key2, value2)
+            elif key != 'empty_var' and value.any():
+                write_var(fid, dim, key, value)
+        fid.close()
+        return None
+
 
 class Sat_nadir():
     def __init__(self, nfile=None, lon=None, lat=None, time=None, cycle=None,

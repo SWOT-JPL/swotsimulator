@@ -109,7 +109,16 @@ roll_err = {'varname': 'roll_err',
             'min_value': -1500000,
             'max_value': 1500000,
             'type': 'i4',
-            'scale': 1e-4
+            'scale': 1e-6
+            }
+roll_err_1d = {'varname': 'roll_err1d',
+            'longname': 'Residual roll error in 1 dimension',
+            'unit': 'm',
+            'fill_value': i4_nan,
+            'min_value': -1500000,
+            'max_value': 1500000,
+            'type': 'i4',
+            'scale': 1e-9
             }
 phase_err = {'varname': 'phase_err',
              'longname': 'Phase error',
@@ -118,7 +127,16 @@ phase_err = {'varname': 'phase_err',
              'min_value': -1500000,
              'max_value': 1500000,
              'type': 'i4',
-             'scale': 1e-4
+             'scale': 1e-6
+             }
+phase_err_1d = {'varname': 'phase_err_1d',
+             'longname': 'Phase error',
+             'unit': 'm',
+             'fill_value': i4_nan,
+             'min_value': -1500000,
+             'max_value': 1500000,
+             'type': 'i4',
+             'scale': 1e-9
              }
 timing_err = {'varname': 'timing_err',
               'longname': 'Timing error',
@@ -127,7 +145,16 @@ timing_err = {'varname': 'timing_err',
               'min_value': -1500000,
               'max_value': 1500000,
               'type': 'i4',
-              'scale': 1e-4
+              'scale': 1e-6
+              }
+timing_err_1d = {'varname': 'timing_err_1d',
+              'longname': 'Timing error',
+              'unit': 'm',
+              'fill_value': i4_nan,
+              'min_value': -1500000,
+              'max_value': 1500000,
+              'type': 'i4',
+              'scale': 1e-9
               }
 bd_err = {'varname': 'bd_err',
           'longname': 'Baseline dilation error',
@@ -136,7 +163,16 @@ bd_err = {'varname': 'bd_err',
           'min_value': -1500000,
           'max_value': 1500000,
           'type': 'i4',
-          'scale': 1e-4
+          'scale': 1e-6
+          }
+bd_err_1d = {'varname': 'bd_err_1d',
+          'longname': 'Baseline dilation error',
+          'unit': 'm',
+          'fill_value': i4_nan,
+          'min_value': -1500000,
+          'max_value': 1500000,
+          'type': 'i4',
+          'scale': 1e-9
           }
 karin_err = {'varname': 'karin_err',
              'longname': 'Karin instrument random error',

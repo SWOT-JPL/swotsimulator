@@ -13,6 +13,31 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def reconstruct_2D_error(x_ac, err_out, dict_noise):
+    nac = numpy.shape(x_ac)[0]
+    if 'phase' in dict_noise.keys():
+        ac_l = numpy.mat(x_ac[:int(nac / 2)])
+        ac_r = numpy.mat(x_ac[int(nac / 2):])
+        phase1d = dict_noise['phase']
+        err_out.phase[:, :int(nac / 2)] = numpy.mat(phase1d[:, 0]).T * ac_l
+        err_out.phase[:, int(nac / 2):] = numpy.mat(phase1d[:, 1]).T * ac_r
+    if 'roll' in dict_noise.keys():
+        ac = numpy.mat(x_ac)
+        roll1d = dict_noise['roll']
+        err_out.roll[:, :] = numpy.mat(roll1d).T * ac
+    if 'baseline_dilation' in dict_noise.keys():
+        ac2 = numpy.mat((x_ac)**2)
+        baseline_dilation1d = numpy.mat(dict_noise['baseline_dilation'])
+        err_out.baseline_dilation[:, :] = baseline_dilation1d.T * ac2
+    if 'timing' in dict_noise.keys():
+        timing1d = dict_noise['timing']
+        ones_ac = numpy.mat(numpy.ones((int(nac/2))))
+        err_out.timing[:, :int(nac / 2)] = numpy.mat(timing1d[:, 0]).T*ones_ac
+        err_out.timing[:, int(nac / 2):] = numpy.mat(timing1d[:, 1]).T*ones_ac
+    return None
+
+
+
 class error():
     '''Class error define all the possible errors that can be computed using
     SWOT simulator.
@@ -110,11 +135,18 @@ class error():
                                                             p.npseudoper,
                                                             p.len_repeat)
                     self.A_phase_l, self.phi_phase_l = gencoef
+                    gencoef = mod_tools.gen_rcoeff_signal1d(freq, PSphase,
+                                                            2 * p.delta_al,
+                                                            p.lambda_max,
+                                                            p.npseudoper,
+                                                            p.len_repeat)
                     self.A_phase_r, self.phi_phase_r = gencoef
                 else:
                     gencoef = mod_tools.gen_coeff_signal1d(freq, PSphase,
                                                            self.ncomp1d)
                     self.A_phase_l, self.phi_phase_l, self.fr_phase_l = gencoef
+                    gencoef = mod_tools.gen_coeff_signal1d(freq, PSphase,
+                                                           self.ncomp1d)
                     self.A_phase_r, self.phi_phase_r, self.fr_phase_r = gencoef
             if p.baseline_dilation is True:
                 # - Read baseline dilation power spectrum, wavelength longer
@@ -150,11 +182,18 @@ class error():
                                                             p.npseudoper,
                                                             p.len_repeat)
                     self.A_tim_l, self.phi_tim_l = gencoef
+                    gencoef = mod_tools.gen_rcoeff_signal1d(freq, PStim,
+                                                            2 * p.delta_al,
+                                                            p.lambda_max,
+                                                            p.npseudoper,
+                                                            p.len_repeat)
                     self.A_tim_r, self.phi_tim_r = gencoef
                 else:
                     gencoef = mod_tools.gen_coeff_signal1d(freq, PStim,
                                                            self.ncomp1d)
                     self.A_tim_l, self.phi_tim_l, self.fr_tim_l = gencoef
+                    gencoef = mod_tools.gen_coeff_signal1d(freq, PStim,
+                                                           self.ncomp1d)
                     self.A_tim_r, self.phi_tim_r, self.fr_tim_r = gencoef
             if p.wet_tropo is True:
                 # - Define power spectrum of error in path delay
@@ -198,7 +237,8 @@ class error():
         try:
             fid = netCDF4.Dataset(p.file_coeff, 'r')
         except IOError:
-            print('There was an error opening file {}'.format(p.file_coeff))
+            logger.error('There was an error opening file '
+                         '{}'.format(p.file_coeff))
             sys.exit(1)
         if p.karin is True:
             _A_karin = fid.variables['A_karin_l'][:, :]
@@ -327,14 +367,12 @@ class error():
                                   * numpy.cos(phase_x_al[:]
                                   + self.phi_phase_r[comp]))
             # - Compute the associated phase error on the swath in m
-            phase_to_m = (1 / (const.Fka*2*pi/const.C*const.B)
-                          * (1 + const.sat_elev / const.Rearth) * 2*pi / 360.)
-            mat1 = numpy.mat(phase_to_m * theta_l[:])
-            mat2 = numpy.mat(sgrid.x_ac[: int(nac/2)] * 10**3)
-            self.phase[:, : int(nac / 2)] = (mat1.T * mat2)
-            mat1 = numpy.mat(phase_to_m * theta_r[:])
-            mat2 = numpy.mat(sgrid.x_ac[int(nac/2):] * 10**3)
-            self.phase[:, int(nac / 2):] = (mat1.T * mat2)
+            _to_km = (1 / (const.Fka * 2*pi / const.C * const.B)
+                       * (1 + const.sat_elev / const.Rearth) *pi/180. * 10**3)
+            phase1d = numpy.concatenate(([_to_km * theta_l[:].T],
+                                        [_to_km * theta_r[:].T]),
+                                             axis=0)
+            self.phase1d = phase1d.T
             del theta_l, theta_r
         if p.roll is True:
             # - Compute roll angle using random coefficients or signals
@@ -355,9 +393,8 @@ class error():
                                 * numpy.cos(phase_x_al[:]
                                 + self.phi_roll[comp]))
             # - Compute the associated roll  error on the swath in m
-            self.roll[:, :] = (numpy.mat((1 + const.sat_elev/const.Rearth)
-                               * theta[:]*pi/180./3600.).T
-                               * numpy.mat(sgrid.x_ac*10**3))
+            self.roll1d = ((1 + const.sat_elev/const.Rearth)
+                          * theta[:]*pi/180./3600. * 10**3)
             del theta
         if p.baseline_dilation is True:
             # - Compute baseline dilation using random coefficients or signals
@@ -380,10 +417,9 @@ class error():
                               + self.phi_bd[comp]))
             # - Compute the associated baseline dilation  error
             #   on the swath in m
-            self.baseline_dilation[:, :] = (numpy.mat((1 + const.sat_elev
-                                            / const.Rearth) * (dil[:]*10**-6)
-                                            / (const.sat_elev*const.B)).T
-                                            * numpy.mat((sgrid.x_ac*10**3)**2))
+            _to_km = ((1 + const.sat_elev / const.Rearth) # * 10**-6 * 10**6
+                      /(const.sat_elev * const.B))
+            self.baseline_dilation1d = _to_km * dil[:]
             del dil
         if p.timing is True:
             # - Compute timing delay using random coefficients previously
@@ -404,25 +440,24 @@ class error():
                 tim_r = numpy.zeros((nal))
             # - Compute the associated phase error on the swath in m
                 for comp in range(0, self.ncomp1d):
+                    phase_x_al = (2.  * pi * float(self.fr_tim_r[comp])
+                                  * (numpy.float64(sgrid.x_al[:])
+                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                    tim_r[:] = (tim_r[:] + 2 * self.A_tim_r[comp]
+                                * numpy.cos(phase_x_al[:]
+                                + self.phi_tim_r[comp]))
+                for comp in range(0, self.ncomp1d):
                     phase_x_al = (2. * pi * float(self.fr_tim_l[comp])
                                   * (numpy.float64(sgrid.x_al[:])
                                   + float(cycle*sgrid.al_cycle))) % (2.*pi)
                     tim_l[:] = (tim_l[:] + 2 * self.A_tim_l[comp]
                                 * numpy.cos(phase_x_al[:]
                                 + self.phi_tim_l[comp]))
-                for comp in range(0, self.ncomp1d):
-                    phase_x_al = (2. * pi * float(self.fr_tim_r[comp])
-                                  * (numpy.float64(sgrid.x_al[:])
-                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                    tim_r[:] = (tim_r[:] + 2 * self.A_tim_r[comp]
-                                * numpy.cos(phase_x_al[:]
-                                + self.phi_tim_r[comp]))
             # - Compute the corresponding timing error on the swath in m
-            mat1 = numpy.mat(const.C/2 * (tim_l[:] * 10**-12))
-            mat2 = numpy.mat(numpy.ones(int(nac/2)))
-            self.timing[:, : int(nac/2)] = (mat1.T * mat2)
-            mat1 = numpy.mat(const.C/2 * (tim_r[:] * 10**-12))
-            self.timing[:, int(nac/2):] = mat1.T * mat2
+            _to_m = const.C/2 * 10**(-12)
+            timing1d = numpy.concatenate(([_to_m * tim_l[:].T],
+                                         [_to_m * tim_r[:].T]), axis=0)
+            self.timing1d = timing1d.T
         if p.wet_tropo is True:
             # - Initialization of radiometer error in right and left beam
             err_radio_r = numpy.zeros((nal))
@@ -567,7 +602,20 @@ class error():
                              "or 2 or 'both'")
                 sys.exit(1)
         if p.ssb is True:
-            print("No SSB error implemented yet")
+            logger.error("No SSB error implemented yet")
+        return None
+
+    def reconstruct_2D(self, p, x_ac):
+        dict_noise = {}
+        if p.phase is True:
+            dict_noise['phase'] = self.phase1d
+        if p.roll is True:
+            dict_noise['roll'] = self.roll1d
+        if p.baseline_dilation is True:
+            dict_noise['baseline_dilation'] = self.baseline_dilation1d
+        if p.timing is True:
+            dict_noise['timing'] = self.timing1d
+        reconstruct_2D_error(x_ac, self, dict_noise)
         return None
 
     def make_SSH_error(self, SSH_true, p):

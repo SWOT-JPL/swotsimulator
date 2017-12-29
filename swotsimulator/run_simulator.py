@@ -770,7 +770,9 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
         str2 = 'no model file provided, cycle: {}'.format(cycle + 1)
         progress = mod_tools.update_progress(pstep, str1, str2)
     err.make_error(sgrid, cycle, SSH_true, p)
-    err.make_SSH_error(SSH_true, p)
+    if p.save_variables != 'expert':
+        err.reconstruct_2D(p, sgrid.x_ac)
+        err.make_SSH_error(SSH_true, p)
     if p.nadir is True:
         errnad.make_error(ngrid, cycle, SSH_true_nadir, p)
         if p.nbeam == 1:
@@ -923,12 +925,22 @@ def save_SWOT(cycle, sgrid, err, p, time=[], vindice=[], SSH_true=[],
         all_var = make_empty_vars(sgrid)
     else:
         all_var = None
-    OutputSWOT.write_data(SSH_model=SSH_true, index=vindice, roll_err=err.roll,
-                          bd_err=err.baseline_dilation, phase_err=err.phase,
-                          ssb_err=err.ssb, karin_err=err.karin,
-                          pd_err_1b=err.wet_tropo1, pd_err_2b=err.wet_tropo2,
-                          pd=err.wt, timing_err=err.timing, SSH_obs=err.SSH,
-                          empty_var=all_var)
+    if save_var == 'expert':
+        OutputSWOT.write_data(SSH_model=SSH_true, index=vindice,
+                              roll_err_1d=err.roll1d, phase_err_1d=err.phase1d,
+                              bd_err_1d=err.baseline_dilation1d,
+                              ssb_err=err.ssb, karin_err=err.karin,
+                              pd_err_1b=err.wet_tropo1,
+                              pd_err_2b=err.wet_tropo2, pd=err.wt,
+                              timing_err_1d=err.timing1d)
+    else:
+        OutputSWOT.write_data(SSH_model=SSH_true, index=vindice,
+                              roll_err=err.roll, bd_err=err.baseline_dilation,
+                              phase_err=err.phase, ssb_err=err.ssb,
+                              karin_err=err.karin, pd_err_1b=err.wet_tropo1,
+                              pd_err_2b=err.wet_tropo2, pd=err.wt,
+                              timing_err=err.timing, SSH_obs=err.SSH,
+                              empty_var=all_var)
     return None
 
 
