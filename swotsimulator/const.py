@@ -195,7 +195,7 @@ nadir_err = {'varname': 'nadir_err',
 
 # - Variables for CNES mockup
 list_var_mockup = ['ssha_karin_swath', 'ssha_uncert', 'ssh_quality_flag',
-                   'karin_surf_type', 'dynamic_ice_flag', 'rad_surf_type',
+                   'dynamic_ice_flag', 'rad_surf_type',
                    'rain_flag', 'mss_reference', 'geoid',
                    'internal_tide_solution1', 'karin_karin_xover_height_corr',
                    'karin_na_height_corr', 'karin_cal_flag']
@@ -204,6 +204,16 @@ list_var_mockup = ['ssha_karin_swath', 'ssha_uncert', 'ssh_quality_flag',
 longname = ('SSHA = SSH – MSS – ocean tide – load tide – solid tide – pole'
             'tide – inv_bar_corr – DAC_corr')
 ssha_karin_swath = {'varname': 'SSHA_kaRIn_swath',
+                    'longname': longname,
+                    'unit': 'm',
+                    'fill_value': i4_nan,
+                    'min_value': -100000,
+                    'max_value': 100000,
+                    'type': 'i4',
+                    'scale': 1e-4
+                    }
+longname = 'Fully corrected sea surface height above reference ellipsoid'
+ssh_karin_swath = {'varname': 'SSH_kaRIn_swath',
                     'longname': longname,
                     'unit': 'm',
                     'fill_value': i4_nan,

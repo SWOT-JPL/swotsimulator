@@ -911,6 +911,23 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
     return SSH_true_nadir, vindice, time, progress
 
 
+def make_flags(var, sgrid, modelbox, beam_pos):
+    modelbox = [230.2, 234.6, 42.3, 47.8]
+    ind = numpy.where((sgrid.lon < modelbox[0]) | (sgrid.lon > modelbox[1])
+                      | (sgrid.lat < modelbox[2]) | (sgrid.lat > modelbox[3]))
+    var[ind] = 0
+    flag_k = numpy.zeros(numpy.shape(var))
+    flag_k[numpy.isnan(var)] = 3
+    var_r = numpy.zeros((numpy.shape(var)[0], 2))
+    var_r[:, 0] = var[:, beam_pos[0]]
+    var_r[:, 1] = var[:, beam_pos[1]]
+    flag_r = numpy.zeros(numpy.shape(var_r))
+    flag_r[numpy.isnan(var_r)] = 1
+
+
+    return flag_k
+
+
 def save_SWOT(cycle, sgrid, err, p, time=[], vindice=[], SSH_true=[],
               save_var='all'):
     ofile = '{}_c{:02d}_p{:03d}.nc'.format(p.file_output, cycle + 1,
@@ -921,10 +938,16 @@ def save_SWOT(cycle, sgrid, err, p, time=[], vindice=[], SSH_true=[],
                                   lon_nadir=(sgrid.lon_nadir+360) % 360,
                                   lat_nadir=sgrid.lat_nadir)
     OutputSWOT.gridfile = sgrid.gridfile
+    err.SSH2 = err.SSH
     if save_var == 'all':
         all_var = make_empty_vars(sgrid)
+        err.SSH2 = err.SSH
+        beam_pos = (12, 47)
+        flag = make_flags(err.SSH, sgrid, p.modelbox, beam_pos)
     else:
         all_var = None
+        err.SSH2 = None
+        flag = None
     if save_var == 'expert':
         OutputSWOT.write_data(SSH_model=SSH_true, index=vindice,
                               roll_err_1d=err.roll1d, phase_err_1d=err.phase1d,
@@ -939,7 +962,8 @@ def save_SWOT(cycle, sgrid, err, p, time=[], vindice=[], SSH_true=[],
                               phase_err=err.phase, ssb_err=err.ssb,
                               karin_err=err.karin, pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,
-                              timing_err=err.timing, SSH_obs=err.SSH,
+                              timing_err=err.timing, ssh_karin_swath=err.SSH2,
+                              SSH_obs=err.SSH, karin_surf_type=flag,
                               empty_var=all_var)
     return None
 
