@@ -65,6 +65,7 @@ def run_simulator(p):
     # - Initialize some parameters values
     timestart = datetime.datetime.now()
     mod_tools.initialize_parameters(p)
+    mod_tools.check_path(p)
 
     # - Progress bar variables are global
     global istep
@@ -137,6 +138,7 @@ def run_simulator(p):
     if p.makesgrid is True:
         logger.info('\n Force creation of SWOT grid')
         orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
+        # build swath for this orbit
         build_swath.orbit2swath(modelbox, p, orb)
         logger.info("\n SWOT Grids and nadir tracks have been written in "
                     "{}".format(p.outdatadir))

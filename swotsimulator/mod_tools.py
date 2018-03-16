@@ -9,8 +9,12 @@ Contains the following functions:
 - update_progress: Progress bar'''
 import numpy
 import math
+import logging
 import sys
 import os
+
+# Define logger level for debug purposes
+logger = logging.getLogger(__name__)
 
 
 def load_python_file(file_path):
@@ -45,6 +49,29 @@ def initialize_parameters(p):
     p.ice_mask = getattr(p, 'ice_mask', True)
     p.save_variables = getattr(p, 'save_variables', 'classic')
     p.savesignal = getattr(p, 'savesignal', False)
+    return None
+
+
+def check_path(p):
+    if os.path.isdir(p.dir_setup) is False:
+        logger.error('Data directory {} not found'.format(p.dir_setup))
+        sys.exit(1)
+    if os.path.isdir(p.indatadir) is False:
+        logger.error('Input directory {} not found'.format(p.indatadir))
+        sys.exit(1)
+    if os.path.isdir(p.outdatadir) is False:
+        logger.warn('Output directory {} did not exist and was '
+                    'created'.format(p.dir_setup))
+        os.makedirs(p.outdatadir)
+    filesat_path = os.path.join(p.dir_setup, p.filesat)
+    if os.path.isfile(filesat_path) is False:
+        logger.error('Orbit file {} not found'.format(filesat_path))
+        sys.exit(1)
+    if p.file_input is not None:
+        if os.path.isfile(p.file_input) is False:
+            logger.error('Model file list {} not found'.format(p.file_input))
+            sys.exit(1)
+    return None
 
 
 def gen_coeff_signal1d(f, PS, nc):
