@@ -55,8 +55,8 @@ for coordfile in listfile:
     SSH = data.ssh_obs
     mask = ((SSH==0) | (abs(SSH) > 9999.))
     SSH = numpy.ma.array(SSH, mask=mask)
-    _min = -1.0
-    _max = 1.0 #numpy.max(SSH)
+    _min = -0.3
+    _max = 0.3 #numpy.max(SSH)
     if _max < _min:
         continue
     pyplot.pcolormesh(x[:, :int(nac/2)], y[:, :int(nac/2)],

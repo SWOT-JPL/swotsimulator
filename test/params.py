@@ -4,7 +4,7 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~") + '/src/'
+home = expanduser("~")
 # ------ Directory that contains orbit file:
 dir_setup = os.path.join(home, 'swotsimulator', 'data')
 # ------ Directory that contains your own inputs:
@@ -30,7 +30,7 @@ config = "OREGON"
 # 	 (Final file name is root_name_[numberofpass].nc)
 filesgrid = os.path.join(outdatadir, '{}_{}_grid'.format(config,satname))
 # ------ Force the computation of the satellite grid:
-makesgrid = False
+makesgrid = True
 # ------ Give a subdomain if only part of the model is needed:
 #	 (modelbox=[lon_min, lon_max, lat_min, lat_max])
 # 	 (If modelbox is None, the whole domain of the model is considered)
@@ -125,8 +125,8 @@ file_inst_error = os.path.join(dir_setup, "global_sim_instrument_error.nc")
 # ------ Number of random realisations for instrumental and geophysical error
 #        (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d
 #        is used for 2D spectrum (wet troposphere computation):
-ncomp1d = 6000
-ncomp2d = 6000
+ncomp1d = 4000
+ncomp2d = 2000
 # ------ Cut off frequency:
 #	 (Use lambda_cut=40000km for cross-calibration)
 lambda_cut = 20000

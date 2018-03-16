@@ -23,6 +23,7 @@ fig = pyplot.figure
 pyplot.clf()
 #pyplot.ion()
 
+listfile = sorted(listfile)
 if isBasemap is True:
     m = Basemap(llcrnrlon=modelbox[0], \
             llcrnrlat=modelbox[2], \
@@ -52,6 +53,12 @@ for coordfile in listfile:
     else:
         x = data.lon_nadir
         y = data.lat_nadir
-    C = pyplot.plot(x, y, '.')
+    ipass = coordfile[-6:-3]
+    if ((numpy.max(data.lon_nadir) > modelbox[0])
+        and (numpy.min(data.lon_nadir) < modelbox[1])):
+        C = pyplot.plot(x, y, '.', label='{}'.format(ipass))
+    else:
+        C = pyplot.plot(x, y, '.')
+pyplot.legend(loc=3, mode="expand", ncol=3)
 pyplot.savefig('{}_sat_pass.png'.format(p.config))
 pyplot.show()
