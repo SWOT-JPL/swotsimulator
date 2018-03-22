@@ -44,14 +44,19 @@ from scipy import interpolate
 import numpy
 import glob
 import sys
+import math
+import time
 import swotsimulator.build_swath as build_swath
 import swotsimulator.rw_data as rw_data
 import swotsimulator.build_error as build_error
 import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
+import multiprocessing
 import logging
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
+#logger = multiprocessing.log_to_stderr()
+#logger.setLevel(logging.DEBUG)
 
 
 # - Define global variables for progress bars
@@ -61,7 +66,8 @@ ifile = 0
 
 
 def run_simulator(p):
-
+    #multiprocessing.log_to_stderr()
+    #logger = multiprocessing.get_logger()
     # - Initialize some parameters values
     timestart = datetime.datetime.now()
     mod_tools.initialize_parameters(p)
@@ -170,49 +176,26 @@ def run_simulator(p):
     #   Initialize progress bar variables
     istep = 0
     ntot = 1
-
     # - Loop on SWOT grid files
+    jobs = []
+    p2 = mod_tools.todict(p)
     for sgridfile in listsgridfile:
-        #   Load SWOT grid files (Swath and nadir)
-        sgrid = load_sgrid(sgridfile, p)
-        sgrid.gridfile = sgridfile
-        if p.nadir is True:
-            ngrid = load_ngrid(sgridfile, p)
-            ngrid.gridfile = sgridfile
-        else:
-            ngrid = None
-        # Set Teval and nTeval to None to interpolate the mask once
-        Teval = None
-        nTeval = None
-    #   Select model data around the swath to reduce interpolation cost in
-    #   griddata
-
-    # - Generate SWOT like and nadir-like data:
-    #   Compute number of cycles needed to cover all nstep model timesteps
-        rcycle = (p.timestep * p.nstep)/float(sgrid.cycle)
-        ncycle = int(rcycle)
-    #   Loop on all cycles
-        for cycle in range(0, ncycle+1):
-            if ifile > (p.nstep/p.timestep + 1):
-                break
-            #   Create SWOT-like and Nadir-like data
-            if not p.file_input:
-                model_data = []
-
-            SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, Teval, nTeval, mask_land = create_SWOTlikedata(
-                    cycle, numpy.shape(listsgridfile)[0]*rcycle, list_file,
-                    modelbox, sgrid, ngrid, model_data, modeltime, err, errnad,
-                    p, progress_bar=True, Teval=Teval, nTeval=nTeval)
-            #   Save outputs in a netcdf file
-            if (~numpy.isnan(vindice)).any() or not p.file_input:
-                save_SWOT(cycle, sgrid, err, p, mask_land, time=time, vindice=vindice,
-                          SSH_true=SSH_true, save_var=p.save_variables)
-                if p.nadir is True:
-                    save_Nadir(cycle, ngrid, errnad, err, p, time=time,
-                               vindice_nadir=vindice_nadir,
-                               SSH_true_nadir=SSH_true_nadir)
-            del time
-            # if p.file_input: del index
+        jobs.append([sgridfile, p2, listsgridfile, list_file, modelbox,
+                     model_data, modeltime, err, errnad])
+        """
+        jobs.append([sgridfile])
+        """
+    logger.info('make swot data')
+    make_swot_data(p.proc_count, jobs)
+    '''
+    for sgridfile in listsgridfile:
+        args_process = (sgridfile, p, ifile, listsgridfile, list_file,
+                        modelbox, sgrid, ngrid, model_data, modeltime,
+                        err, errnad,
+                        progress_bar=True, Teval=Teval, nTeval=nTeval)
+        p = multiprocessing.Process(target=make_swotlike, args=(args_process))
+        jobs.append(p)
+        p.start()
         sgrid.lon = (sgrid.lon + 360) % 360
         if p.nadir is True:
             ngrid.lon = (ngrid.lon + 360) % 360
@@ -223,9 +206,11 @@ def run_simulator(p):
         del sgrid
         if p.nadir is True:
             del ngrid
+    p.join()
     if progress != 1:
         str1 = 'All passes have been processed'
         progress = mod_tools.update_progress(1, str1, '')
+    '''
     # - Write Selected parameters in a txt file
     timestop = datetime.datetime.now()
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
@@ -387,8 +372,9 @@ def run_nadir(p):
         ncycle = int(rcycle)
         #   Loop on all cycles
         for cycle in range(0, ncycle + 1):
-            if ifile > (p.nstep/p.timestep + 1):
-                break
+            ### TODO move this line somwhere where we have ifile information
+            #if ifile > (p.nstep/p.timestep + 1):
+            #    break
             #   Create SWOT-like and Nadir-like data
             if p.file_input is None:
                 model_data = []
@@ -431,6 +417,93 @@ def run_nadir(p):
                 p.outdatadir))
     logger.info("----------------------------------------------------------")
 
+
+def make_swot_data(_proc_count, jobs):
+    """ Compute SWOT-like data for all grids and all cycle, """
+    # - Set up parallelisation parameters
+    proc_count = min(len(jobs), _proc_count)
+
+    manager = multiprocessing.Manager()
+    msg_queue = manager.Queue()
+    pool = multiprocessing.Pool(proc_count)
+    # Add the message queue to the list of arguments for each job
+    # (it will be removed later)
+    [j.append(msg_queue) for j in jobs]
+    chunk_size = math.ceil(len(jobs) / proc_count)
+    status = {}
+    for n, w in enumerate(pool._pool):
+        status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
+        total = min(chunk_size, (len(jobs) - n * chunk_size))
+        proc_jobs = jobs[n::proc_count]
+        status[w.pid]['grids'] = [j[0] for j in proc_jobs]
+        status[w.pid]['total'] = total
+    sys.stdout.write('\n' * proc_count)
+    tasks = pool.map_async(worker_method_swot, jobs, chunksize=chunk_size)
+    sys.stdout.flush()
+    while not tasks.ready():
+        if not msg_queue.empty():
+            msg = msg_queue.get()
+            mod_tools.update_progress_multiproc(status, msg)
+        time.sleep(0.5)
+
+    while not msg_queue.empty():
+        msg = msg_queue.get()
+        mod_tools.update_progress_multiproc(status, msg)
+
+    pool.close()
+    pool.join()
+
+
+def worker_method_swot(*args, **kwargs):
+    _args = list(args)[0]
+    msg_queue = _args.pop()
+    sgridfile = _args[0]
+    p2, listsgridfile, list_file, modelbox, model_data, modeltime, err, errnad = _args[1:]
+    p = mod_tools.fromdict(p2)
+    #   Load SWOT grid files (Swath and nadir)
+    sgrid = load_sgrid(sgridfile, p)
+    sgrid.gridfile = sgridfile
+    if p.nadir is True:
+        ngrid = load_ngrid(sgridfile, p)
+        ngrid.gridfile = sgridfile
+    else:
+        ngrid = None
+    # Set Teval and nTeval to None to interpolate the mask once
+    Teval = None
+    nTeval = None
+    #   Select model data around the swath to reduce interpolation cost in
+    #   griddata
+
+    # - Generate SWOT like and nadir-like data:
+    #   Compute number of cycles needed to cover all nstep model timesteps
+    rcycle = (p.timestep * p.nstep)/float(sgrid.cycle)
+    ncycle = int(rcycle)
+    #   Loop on all cycles
+    for cycle in range(0, ncycle+1):
+        # #TODO move this somwhere where we have ifile information
+        #if ifile > (p.nstep/p.timestep + 1):
+        #    break
+        # Add a message to tell the main program that the cycle is being
+        # processed
+        msg_queue.put((os.getpid(), sgridfile, cycle))
+
+        #   Process_cycle: create SWOT-like and Nadir-like data
+        if not p.file_input:
+            model_data = []
+        SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, Teval, nTeval, mask_land = create_SWOTlikedata(
+                cycle, numpy.shape(listsgridfile)[0]*rcycle, list_file,
+                modelbox, sgrid, ngrid, model_data, modeltime, err, errnad,
+                p, progress_bar=True, Teval=Teval, nTeval=nTeval)
+        #   Save outputs in a netcdf file
+        if (~numpy.isnan(vindice)).any() or not p.file_input:
+            save_SWOT(cycle, sgrid, err, p, mask_land, time=time, vindice=vindice,
+                      SSH_true=SSH_true, save_var=p.save_variables)
+            if p.nadir is True:
+                save_Nadir(cycle, ngrid, errnad, err, p, time=time,
+                           vindice_nadir=vindice_nadir,
+                           SSH_true_nadir=SSH_true_nadir)
+    # Add a special message once a grid has been completely processed
+    msg_queue.put((os.getpid(), sgridfile, None))
 
 def load_error(p):
     '''Initialize random coefficients that are used to compute
@@ -577,7 +650,7 @@ def select_modelbox(sgrid, model_data, p):
 
 def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                         model_data, modeltime, err, errnad, p,
-                        progress_bar=True, Teval=None, nTeval=None):
+                        progress_bar=False, Teval=None, nTeval=None):
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
     _data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
@@ -624,11 +697,11 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                       & (time_shift_start < model_tmax))
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
-            pstep = float(istep) / float(ntot * ntotfile)
-            str1 = 'pass: {}'.format(sgrid.ipass)
-            str2 = 'model file: {}, cycle: {}'.format(list_file[ifile],
-                                                      cycle + 1)
-            progress = mod_tools.update_progress(pstep, str1, str2)
+            # TODO remove?
+            # pstep = float(istep) / float(ntot * ntotfile)
+            # str1 = 'pass: {:03d}'.format(sgrid.ipass)
+            # str2 = 'cycle: {:03d}'.format(cycle + 1)
+            # progress = mod_tools.update_progress_multiproc(pstep, str1, str2)
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
                 # number of file to be processed used in the progress bar
@@ -785,10 +858,10 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
             istep += ntot #1
     else:
         istep += ntot #1
-        pstep = float(istep) / float(ntotfile * ntot)
-        str1 = 'pass: {}'.format(sgrid.ipass)
-        str2 = 'no model file provided, cycle: {}'.format(cycle + 1)
-        progress = mod_tools.update_progress(pstep, str1, str2)
+        # pstep = float(istep) / float(ntotfile * ntot)
+        # str1 = 'pass: {}'.format(sgrid.ipass)
+        # str2 = 'no model file provided, cycle: {}'.format(cycle + 1)
+        #progress = mod_tools.update_progress(pstep, str1, str2)
     err.make_error(sgrid, cycle, SSH_true, p)
     if p.save_variables != 'expert':
         err.reconstruct_2D(p, sgrid.x_ac)
