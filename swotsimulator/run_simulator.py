@@ -572,6 +572,7 @@ def interpolate_regular_1D(p, lon_in, lat_in, var, lon_out, lat_out,
         Teval = _Teval.ev(lat_out, lon_out)
     # Trick to avoid nan in interpolation
     var_mask = + var
+    var_mask._sharedmask=False
     var_mask[numpy.isnan(var_mask)] = 0.
     # Interpolate variable
     _var = interp(lat_in, lon_in, var_mask, kx=1, ky=1, s=0)

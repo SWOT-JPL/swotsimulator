@@ -257,7 +257,11 @@ def update_progress_multiproc(status, info):
     for parrallelised tasks"""
     pid = info[0]
     grid_name = info[1]
-    ipass = grid_name[-6:-3]
+    if isinstance(grid_name, str):
+        ipass = grid_name[-6:-3]
+    else:
+        ipass = '{:03d}'.format(grid_name)
+
     cycle = info[2]
 
     count = len(status.keys())
