@@ -394,7 +394,7 @@ def make_swot_data(_proc_count, jobs):
     # Add the message queue to the list of arguments for each job
     # (it will be removed later)
     [j.append(msg_queue) for j in jobs]
-    chunk_size = math.ceil(len(jobs) / proc_count)
+    chunk_size = int(math.ceil(len(jobs) / proc_count))
     status = {}
     for n, w in enumerate(pool._pool):
         status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
@@ -760,7 +760,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                             SSH_true_nadir[ind_time[0]] = _ssh
                     except ImportError:
                         interp = interpolate.griddata
-                        model_ravel = (lon_model(),
+                        model_ravel = (lon_model.ravel(),
                                        model_data.vlat.ravel())
                         _ssh = interp(model_ravel, SSH_model.ravel(),
                                       (lon_grid[ind_time[0], :],

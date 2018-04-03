@@ -317,7 +317,7 @@ def make_swot_grid(_proc_count, jobs):
     # Add the message queue to the list of arguments for each job
     # (it will be removed later)
     [j.append(msg_queue) for j in jobs]
-    chunk_size = math.ceil(len(jobs) / proc_count)
+    chunk_size = int(math.ceil(len(jobs) / proc_count))
     status = {}
     for n, w in enumerate(pool._pool):
         status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}

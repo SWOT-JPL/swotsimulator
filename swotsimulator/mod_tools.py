@@ -283,8 +283,8 @@ def update_progress_multiproc(status, info):
         done = math.floor(bar_size * proc_state['done'] / proc_state['total'])
         todo = bar_size - done
         proc_elems = ['\n[']
-        proc_elems.extend(['#'] * done)
-        proc_elems.extend([' '] * todo)
+        proc_elems.extend(['#'] * int(math.ceil(done)))
+        proc_elems.extend([' '] * int(math.ceil(todo)))
         proc_elems.extend(['] {}'.format(proc_state['extra'])])
         sys.stdout.write(''.join(proc_elems))
         sys.stdout.flush()
