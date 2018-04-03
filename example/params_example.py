@@ -22,6 +22,8 @@ satname = "science"
 filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
 # ------ Name of the configuration (to build output files names)
 config = "OREGON"
+#Number of processors to be used
+proc_number = 3
 
 # -----------------------#
 # SWOT swath parameters

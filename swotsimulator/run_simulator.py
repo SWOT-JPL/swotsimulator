@@ -937,7 +937,7 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
             # Handle Greenwich line
             lon_model = + model_data.vlon
             lon_ngrid = + ngrid.lon
-            if numpy.max(lon_grid) > 359:
+            if numpy.max(lon_ngrid) > 359:
                 lon_ngrid = numpy.mod(lon_ngrid + 180., 360.) - 180.
                 lon_model = numpy.mod(lon_model + 180., 360.) - 180.
             # if grid is regular, use interpolate.RectBivariateSpline to
