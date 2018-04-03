@@ -10,8 +10,11 @@ Contains the following functions:
 import numpy
 import math
 import logging
+import multiprocessing
 import sys
 import os
+import types
+import datetime
 
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
@@ -49,6 +52,7 @@ def initialize_parameters(p):
     p.ice_mask = getattr(p, 'ice_mask', True)
     p.save_variables = getattr(p, 'save_variables', 'classic')
     p.savesignal = getattr(p, 'savesignal', False)
+    p.proc_count = getattr(p, 'proc_number', 1)
     return None
 
 
@@ -230,6 +234,62 @@ def cart2spher(x, y, z):
     return lon % 360, lat
 
 
+def todict(p):
+    result = {}
+    for attr in dir(p):
+        value = getattr(p, attr)
+        if (isinstance(value, types.ModuleType)
+            or isinstance(value, types.MethodType)
+            or isinstance(value, types.FunctionType)
+            or attr.startswith('__')):
+            continue
+        result[attr] = value
+    return result
+
+
+def fromdict(result):
+    p = type('swotparam', (object,), result)
+    return p
+
+
+def update_progress_multiproc(status, info):
+    """Creation of progress bar: print on screen progress of run, optimized
+    for parrallelised tasks"""
+    pid = info[0]
+    grid_name = info[1]
+    if isinstance(grid_name, str):
+        ipass = grid_name[-6:-3]
+    else:
+        ipass = '{:03d}'.format(grid_name)
+
+    cycle = info[2]
+
+    count = len(status.keys())
+    sys.stdout.write(_term_move_up() * count)
+    now = datetime.datetime.now().strftime('%H:%M:%S')
+    for pid in status:
+        if grid_name in status[pid]['grids']:
+            if cycle is None:
+                # Grid has been completely processed
+                status[pid]['done'] += 1
+                status[pid]['extra'] = '{}|> pass: {} ....... DONE'.format(now, ipass)
+            else:
+                # Just update extra info
+                status[pid]['extra'] = '{}|> pass: {}, cycle: {:04d}'.format(now, ipass,
+                                                               cycle)
+
+    bar_size = 20
+    for pid, proc_state in status.items():
+        done = math.floor(bar_size * proc_state['done'] / proc_state['total'])
+        todo = bar_size - done
+        proc_elems = ['\n[']
+        proc_elems.extend(['#'] * done)
+        proc_elems.extend([' '] * todo)
+        proc_elems.extend(['] {}'.format(proc_state['extra'])])
+        sys.stdout.write(''.join(proc_elems))
+        sys.stdout.flush()
+
+
 def update_progress(progress, arg1, arg2):
     '''Creation of a progress bar: print on screen the progress of the run'''
     barLength = 30  # Modify this to change the length of the progress bar
@@ -255,3 +315,11 @@ def update_progress(progress, arg1, arg2):
     sys.stdout.write(text)
     sys.stdout.flush()
     return progress
+
+
+def _term_move_up():  # pragma: no cover
+    """Borrowed from https://github.com/tqdm/tqdm/blob/master/tqdm/_tqdm.py
+    MIT 2016 (c) [PR #96] on behalf of Google Inc.
+    MIT 2013 (c) Noam Yorav-Raphael, original author."""
+    return '' if (os.name == 'nt') and (colorama is None) else '\x1b[A'
+
