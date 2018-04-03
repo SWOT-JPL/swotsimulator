@@ -225,7 +225,7 @@ def cart2spher(x, y, z):
     lat = numpy.arcsin(z/norm) * 180./math.pi
     if (x < 0):
         lon = (numpy.arctan(y/x) % (2*math.pi)
-               + max((x < 0) - (x > 0), 0)*math.pi)
+               + max(-numpy.sign(x), 0)*math.pi)
         # + max(-sign(x),0)*math.pi
     else:
         lon = numpy.arctan(y/x) % (2*math.pi)
