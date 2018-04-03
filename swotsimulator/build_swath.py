@@ -5,6 +5,8 @@ import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
 import os
+import multiprocessing
+import time
 import logging
 import sys
 
@@ -272,7 +274,6 @@ def orbit2swath(modelbox, p, orb):
     time'''
     ''' Compute orbit from Swath '''
     # - Load altimeter orbit
-    npoints = 1
     x_al = orb.x_al
     stime = orb.time
     lon = orb.lon
@@ -295,97 +296,155 @@ def orbit2swath(modelbox, p, orb):
     ipass0 = 0
     # strpass = []
     # Loop on all passes after the first pass detected
+    jobs = []
+    p2 = mod_tools.todict(p)
     for ipass in range(ipass0, numpy.shape(passtime)[0]):
-        # Detect indices corresponding to the pass
-        if ipass == numpy.shape(passtime)[0]-1:
-            ind = numpy.where((stime >= passtime[ipass]))[0]
-        else:
-            ind = numpy.where((stime >= passtime[ipass])
-                              & (stime < passtime[ipass+1]))[0]
-        nind = numpy.shape(ind)[0]
-        # Compute swath grid if pass is in the subdomain
-        if nind > 5:
-            pstep = float(ipass + 1) / float(numpy.shape(passtime)[0])
-            str1 = 'selected pass: {}'.format(ipass + 1)
-            mod_tools.update_progress(pstep, str1, None)
-            # Initialize SWOT grid, grid variables and Satellite
-            # direction and Location
-            filesgrid = '{}_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
-            sgrid = rw_data.Sat_SWOT(nfile=filesgrid)
-            sgrid.x_al = x_al[ind]
-            sgrid.x_ac = x_ac
-            sgrid.cycle = tcycle
-            sgrid.al_cycle = al_cycle
-            sgrid.time = stime[ind]
-            sgrid.lon = numpy.zeros((nind, 2*nhalfswath))
-            sgrid.lat = numpy.zeros((nind, 2*nhalfswath))
-            SatDir = numpy.zeros((int(nind/npoints), 3))
-            SatLoc = numpy.zeros((int((nind)/npoints), 3))
+        jobs.append([ipass, p2, passtime, stime, x_al, x_ac, tcycle, al_cycle,
+                     nhalfswath, lon, lat, orb.timeshift])
+    make_swot_grid(p.proc_count, jobs)
+    #mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+    return None
 
-            # Initialize Nadir track, grid variables
-            filengrid = '{}nadir_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
-            ngrid = rw_data.Sat_nadir(nfile=filengrid)
-            ngrid.x_al = x_al[ind]
-            ngrid.cycle = tcycle
-            ngrid.al_cycle = al_cycle
-            ngrid.time = stime[ind]
 
-            # Project in cartesian coordinates satellite ground location
-            s2cart = mod_tools.spher2cart(lon[ind[0]: ind[-1]+1: npoints],
-                                          lat[ind[0]: ind[-1]+1: npoints])
-            SatLoc[:, 0], SatLoc[:, 1], SatLoc[:, 2] = s2cart
-            # Compute satellite direction (SatLoc is periodic)
-            SatDir[1: -1, 0] = ((SatLoc[2:, 0] - SatLoc[: -2, 0])
-                                / numpy.sqrt(SatLoc[1: -1, 0]**2
-                                + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
-            SatDir[1: -1, 1] = ((SatLoc[2:, 1] - SatLoc[: -2, 1])
-                                / numpy.sqrt(SatLoc[1: -1, 0]**2
-                                + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
-            SatDir[1: -1, 2] = ((SatLoc[2:, 2] - SatLoc[: -2, 2])
-                                / numpy.sqrt(SatLoc[1: -1, 0]**2
-                                + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
-            SatDir[-1, :] = SatDir[-2, :]
-            SatDir[0, :] = SatDir[1, :]
-            # Rotate from earth center around satellite direction to compute
-            # swath points of angles between the borders of the swath in left
-            # and right swath
-            for i in range(0, nind, npoints):
-                for j in range(0, int(nhalfswath)):
-                    R = mod_tools.rotationmat3D(float((j*p.delta_ac+p.halfgap)
-                                                / (const.Rearth*10**-3)),
-                                                SatDir[int(i/npoints), :])
-                    ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
-                    cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
-                    sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
-                    ObsLoc = numpy.dot(numpy.transpose(R),
-                                       SatLoc[int(i/npoints)])
-                    cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
-                    sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
-                    if npoints > p.delta_al:
-                        if i >= npoints:
-                            sgrid.lon[i-npoints: i, nhalfswath+j] = numpy.arange(sgrid.lon[i-npoints, nhalfswath+j], sgrid.lon[i, nhalfswath+j], (sgrid.lon[i, nhalfswath+j]-sgrid.lon[i-npoints, nhalfswath+j])/npoints)
-                            sgrid.lat[i-npoints: i, nhalfswath+j] = numpy.arange(sgrid.lat[i-npoints, nhalfswath+j], sgrid.lat[i, nhalfswath+j], (sgrid.lat[i, nhalfswath+j]-sgrid.lat[i-npoints, nhalfswath+j])/npoints)
-            # if npoints>p.delta_al:
-            # print 'interp not coded'
-            # for j in range(0, 2*int(nhalfswath+1)):
-            # sgrid.lon[:,j]=numpy.arange(sgrid.lon[0,j], sgrid.lon[ind[-1],j],
-            # (sgrid.lon[-1,j]-sgrid.lon[0,j])/npoints)
-            # sgrid.lat[:,j]=numpy.arange(sgrid.lat[0,j], sgrid.lat[-1,j],
-            # (sgrid.lat[-1,j]-sgrid.lat[0,j])/npoints)
-            # Save Sgrid object
-            sgrid.timeshift = orb.timeshift
-            ngrid.timeshift = orb.timeshift
-            ngrid.lon = (lon[ind] + 360) % 360
-            ngrid.lat = lat[ind]
-            sgrid.lon_nadir = (lon[ind] + 360) % 360
-            sgrid.lat_nadir = lat[ind]
-            # Remove grid file if it exists and save it
-            if os.path.exists(filesgrid):
-                os.remove(filesgrid)
-            sgrid.write_swath()
-            if p.nadir:
-                if os.path.exists(filengrid):
-                    os.remove(filengrid)
-                ngrid.write_orb()
-    mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+def make_swot_grid(_proc_count, jobs):
+    """ Compute SWOT grids for every pass in the domain"""
+    # - Set up parallelisation parameters
+    proc_count = min(len(jobs), _proc_count)
+
+    manager = multiprocessing.Manager()
+    msg_queue = manager.Queue()
+    pool = multiprocessing.Pool(proc_count)
+    # Add the message queue to the list of arguments for each job
+    # (it will be removed later)
+    [j.append(msg_queue) for j in jobs]
+    chunk_size = int(math.ceil(len(jobs) / proc_count))
+    status = {}
+    for n, w in enumerate(pool._pool):
+        status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
+        total = min(chunk_size, (len(jobs) - n * chunk_size))
+        proc_jobs = jobs[n::proc_count]
+        status[w.pid]['grids'] = [j[0] for j in proc_jobs]
+        status[w.pid]['total'] = total
+    sys.stdout.write('\n' * proc_count)
+    tasks = pool.map_async(worker_method_grid, jobs, chunksize=chunk_size)
+    sys.stdout.flush()
+    while not tasks.ready():
+        if not msg_queue.empty():
+            msg = msg_queue.get()
+            mod_tools.update_progress_multiproc(status, msg)
+        time.sleep(0.5)
+
+    while not msg_queue.empty():
+        msg = msg_queue.get()
+        mod_tools.update_progress_multiproc(status, msg)
+
+    pool.close()
+    pool.join()
+
+
+def worker_method_grid(*args, **kwargs):
+    _args = list(args)[0]
+    msg_queue = _args.pop()
+    ipass = _args[0]
+    p2, passtime, stime, x_al, x_ac, tcycle, al_cycle, nhalfswath, lon, lat, timeshift = _args[1:]
+    p = mod_tools.fromdict(p2)
+    npoints = 1
+    # Detect indices corresponding to the pass
+    if ipass == numpy.shape(passtime)[0]-1:
+        ind = numpy.where((stime >= passtime[ipass]))[0]
+    else:
+        ind = numpy.where((stime >= passtime[ipass])
+                          & (stime < passtime[ipass+1]))[0]
+    nind = numpy.shape(ind)[0]
+    # Compute swath grid if pass is in the subdomain
+    if nind > 5:
+        # pstep = float(ipass + 1) / float(numpy.shape(passtime)[0])
+        # str1 = 'selected pass: {}'.format(ipass + 1)
+        # mod_tools.update_progress(pstep, str1, None)
+        # Initialize SWOT grid, grid variables and Satellite
+        # direction and Location
+        filesgrid = '{}_p{:03d}.nc'.format(p.filesgrid, ipass + 1)
+        sgrid = rw_data.Sat_SWOT(nfile=filesgrid)
+        sgrid.x_al = x_al[ind]
+        sgrid.x_ac = x_ac
+        sgrid.cycle = tcycle
+        sgrid.al_cycle = al_cycle
+        sgrid.time = stime[ind]
+        sgrid.lon = numpy.zeros((nind, 2*nhalfswath))
+        sgrid.lat = numpy.zeros((nind, 2*nhalfswath))
+        SatDir = numpy.zeros((int(nind/npoints), 3))
+        SatLoc = numpy.zeros((int((nind)/npoints), 3))
+
+        # Initialize Nadir track, grid variables
+        filengrid = '{}nadir_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
+        ngrid = rw_data.Sat_nadir(nfile=filengrid)
+        ngrid.x_al = x_al[ind]
+        ngrid.cycle = tcycle
+        ngrid.al_cycle = al_cycle
+        ngrid.time = stime[ind]
+
+        # Project in cartesian coordinates satellite ground location
+        s2cart = mod_tools.spher2cart(lon[ind[0]: ind[-1]+1: npoints],
+                                      lat[ind[0]: ind[-1]+1: npoints])
+        SatLoc[:, 0], SatLoc[:, 1], SatLoc[:, 2] = s2cart
+        # Compute satellite direction (SatLoc is periodic)
+        SatDir[1: -1, 0] = ((SatLoc[2:, 0] - SatLoc[: -2, 0])
+                            / numpy.sqrt(SatLoc[1: -1, 0]**2
+                            + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
+        SatDir[1: -1, 1] = ((SatLoc[2:, 1] - SatLoc[: -2, 1])
+                            / numpy.sqrt(SatLoc[1: -1, 0]**2
+                            + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
+        SatDir[1: -1, 2] = ((SatLoc[2:, 2] - SatLoc[: -2, 2])
+                            / numpy.sqrt(SatLoc[1: -1, 0]**2
+                            + SatLoc[1: -1, 1]**2 + SatLoc[1: -1, 2]**2))
+        SatDir[-1, :] = SatDir[-2, :]
+        SatDir[0, :] = SatDir[1, :]
+        # Rotate from earth center around satellite direction to compute
+        # swath points of angles between the borders of the swath in left
+        # and right swath
+        for i in range(0, nind, npoints):
+            for j in range(0, int(nhalfswath)):
+                R = mod_tools.rotationmat3D(float((j*p.delta_ac+p.halfgap)
+                                            / (const.Rearth*10**-3)),
+                                            SatDir[int(i/npoints), :])
+                ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
+                cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
+                sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
+                ObsLoc = numpy.dot(numpy.transpose(R),
+                                   SatLoc[int(i/npoints)])
+                cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
+                sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
+                if npoints > p.delta_al:
+                    if i >= npoints:
+                        lon1 = + sgrid.lon[i-npoints, nhalfswath+j]
+                        lon2 = + sgrid.lon[i, nhalfswath+j]
+                        _lon = numpy.arange(lon1, lon2, (lon2 - lon1)/npoints)
+                        sgrid.lon[i-npoints: i, nhalfswath+j] = _lon
+                        lat1 = + sgrid.lat[i-npoints, nhalfswath+j]
+                        lat2 = + sgrid.lat[i, nhalfswath+j]
+                        _lat = numpy.arange(lat1, lat2, (lat2 - lat1)/npoints)
+                        sgrid.lat[i-npoints: i, nhalfswath+j] = _lat
+        # if npoints>p.delta_al:
+        # print 'interp not coded'
+        # for j in range(0, 2*int(nhalfswath+1)):
+        # sgrid.lon[:,j]=numpy.arange(sgrid.lon[0,j], sgrid.lon[ind[-1],j],
+        # (sgrid.lon[-1,j]-sgrid.lon[0,j])/npoints)
+        # sgrid.lat[:,j]=numpy.arange(sgrid.lat[0,j], sgrid.lat[-1,j],
+        # (sgrid.lat[-1,j]-sgrid.lat[0,j])/npoints)
+        # Save Sgrid object
+        sgrid.timeshift = timeshift
+        ngrid.timeshift = timeshift
+        ngrid.lon = (lon[ind] + 360) % 360
+        ngrid.lat = lat[ind]
+        sgrid.lon_nadir = (lon[ind] + 360) % 360
+        sgrid.lat_nadir = lat[ind]
+        # Remove grid file if it exists and save it
+        if os.path.exists(filesgrid):
+            os.remove(filesgrid)
+        sgrid.write_swath()
+        if p.nadir:
+            if os.path.exists(filengrid):
+                os.remove(filengrid)
+            ngrid.write_orb()
+    msg_queue.put((os.getpid(), ipass, None))
     return None

@@ -33,9 +33,10 @@ def run_swot_script():
 def run_nadir_script():
     """Run Altimeter Simulator"""
     import swotsimulator.run_simulator as run_simulator
-    handler.setLevel(logging.DEBUG)
+    handler.setLevel(logging.ERROR)
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
+
     if len(sys.argv) < 2:
         logger.error('Please specify a parameter file')
         sys.exit(1)
