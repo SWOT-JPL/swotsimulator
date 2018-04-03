@@ -27,6 +27,7 @@ SSH and the SSH with errors. There is one file every pass and every cycle.
 # - Feb 2015: Version 1.0
 # - Dec 2015: Version 2.0
 # - Dec 2017: Version 3.0
+# _ March 2018: Version 3.1
 #
 # Notes:
 # - Tested with Python 2.7, Python 3.6
@@ -72,10 +73,6 @@ def run_simulator(p):
     timestart = datetime.datetime.now()
     mod_tools.initialize_parameters(p)
     mod_tools.check_path(p)
-
-    # - Progress bar variables are global
-    global istep
-    global ntot
 
     # - Read list of user model files """
     if p.file_input is not None:
@@ -173,44 +170,14 @@ def run_simulator(p):
             logger.error('There is not enough model files in the list of'
                          'files')
             sys.exit(1)
-    #   Initialize progress bar variables
-    istep = 0
-    ntot = 1
-    # - Loop on SWOT grid files
+    # - Loop on SWOT grid files to construct a list of jobs
     jobs = []
     p2 = mod_tools.todict(p)
     for sgridfile in listsgridfile:
         jobs.append([sgridfile, p2, listsgridfile, list_file, modelbox,
                      model_data, modeltime, err, errnad])
-        """
-        jobs.append([sgridfile])
-        """
-    logger.info('make swot data')
+    # - Process list of jobs using multiprocessing
     make_swot_data(p.proc_count, jobs)
-    '''
-    for sgridfile in listsgridfile:
-        args_process = (sgridfile, p, ifile, listsgridfile, list_file,
-                        modelbox, sgrid, ngrid, model_data, modeltime,
-                        err, errnad,
-                        progress_bar=True, Teval=Teval, nTeval=nTeval)
-        p = multiprocessing.Process(target=make_swotlike, args=(args_process))
-        jobs.append(p)
-        p.start()
-        sgrid.lon = (sgrid.lon + 360) % 360
-        if p.nadir is True:
-            ngrid.lon = (ngrid.lon + 360) % 360
-        if p.file_input is not None:
-            model_data.vlon = (model_data.vlon + 360) % 360
-        modelbox[0] = (modelbox[0] + 360) % 360
-        modelbox[1] = (modelbox[1] + 360) % 360
-        del sgrid
-        if p.nadir is True:
-            del ngrid
-    p.join()
-    if progress != 1:
-        str1 = 'All passes have been processed'
-        progress = mod_tools.update_progress(1, str1, '')
-    '''
     # - Write Selected parameters in a txt file
     timestop = datetime.datetime.now()
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
@@ -237,7 +204,6 @@ def run_nadir(p):
     p.halfswath = 60.
 
     # - Progress bar variables are global
-    global istep
     global ntot
 
     # Build model time steps from parameter file
@@ -323,7 +289,6 @@ def run_nadir(p):
                          ' files')
             sys.exit(1)
     #   Initialize progress bar variables
-    istep = 0
     ntot = 1
 
     #   Initialize list of satellites
@@ -490,10 +455,10 @@ def worker_method_swot(*args, **kwargs):
         #   Process_cycle: create SWOT-like and Nadir-like data
         if not p.file_input:
             model_data = []
-        SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, Teval, nTeval, mask_land = create_SWOTlikedata(
+        SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, Teval, nTeval, mask_land = create_SWOTlikedata(
                 cycle, numpy.shape(listsgridfile)[0]*rcycle, list_file,
                 modelbox, sgrid, ngrid, model_data, modeltime, err, errnad,
-                p, progress_bar=True, Teval=Teval, nTeval=nTeval)
+                p, Teval=Teval, nTeval=nTeval)
         #   Save outputs in a netcdf file
         if (~numpy.isnan(vindice)).any() or not p.file_input:
             save_SWOT(cycle, sgrid, err, p, mask_land, time=time, vindice=vindice,
@@ -504,6 +469,7 @@ def worker_method_swot(*args, **kwargs):
                            SSH_true_nadir=SSH_true_nadir)
     # Add a special message once a grid has been completely processed
     msg_queue.put((os.getpid(), sgridfile, None))
+
 
 def load_error(p):
     '''Initialize random coefficients that are used to compute
@@ -651,15 +617,11 @@ def select_modelbox(sgrid, model_data, p):
 
 def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                         model_data, modeltime, err, errnad, p,
-                        progress_bar=False, Teval=None, nTeval=None):
+                        Teval=None, nTeval=None):
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
     _data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
-    # - Progress bar variables are global
-    global istep
-    global ntot
     #   Initialiaze errors and SSH
-    progress = 0
     shape_sgrid = (numpy.shape(sgrid.lon)[0], numpy.shape(sgrid.lon)[1])
     err.karin = numpy.zeros(shape_sgrid)
     err.roll = numpy.zeros(shape_sgrid)
@@ -698,15 +660,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                                       & (time_shift_start < model_tmax))
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
-            # TODO remove?
-            # pstep = float(istep) / float(ntot * ntotfile)
-            # str1 = 'pass: {:03d}'.format(sgrid.ipass)
-            # str2 = 'cycle: {:03d}'.format(cycle + 1)
-            # progress = mod_tools.update_progress_multiproc(pstep, str1, str2)
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
-                # number of file to be processed used in the progress bar
-                ntot = ntot + numpy.shape(index_filemodel)[1] - 1
                 # if numpy.shape(index)[1]>1:
                 # Select part of the track that corresponds to the time of the
                 # model (+-timestep/2)
@@ -856,13 +811,6 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
                     del ind_time, SSH_model, model_step, ind_nadir_time
                 else:
                     del ind_time, SSH_model, model_step
-            istep += ntot #1
-    else:
-        istep += ntot #1
-        # pstep = float(istep) / float(ntotfile * ntot)
-        # str1 = 'pass: {}'.format(sgrid.ipass)
-        # str2 = 'no model file provided, cycle: {}'.format(cycle + 1)
-        #progress = mod_tools.update_progress(pstep, str1, str2)
     err.make_error(sgrid, cycle, SSH_true, p)
     if p.save_variables != 'expert':
         err.reconstruct_2D(p, sgrid.x_ac)
@@ -874,7 +822,7 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, modelbox, sgrid, ngrid,
         else:
             errnad.SSH = SSH_true_nadir + errnad.nadir + err.wet_tropo2nadir
     # if p.file_input: del ind_time, SSH_model, model_step
-    return SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, progress, \
+    return SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, \
            Teval, nTeval, mask_land
 
 
@@ -1088,6 +1036,7 @@ def save_Nadir(cycle, ngrid, errnad, err, p, time=[], vindice_nadir=[],
                            pd_err_1b=err.wet_tropo1nadir, pd=err.wtnadir,
                            pd_err_2b=err.wet_tropo2nadir)
     return None
+
 
 def make_empty_vars(sgrid):
     nal, nac = numpy.shape(sgrid.lon)
