@@ -450,7 +450,7 @@ def worker_method_swot(*args, **kwargs):
         #    break
         # Add a message to tell the main program that the cycle is being
         # processed
-        msg_queue.put((os.getpid(), sgridfile, cycle))
+        msg_queue.put((os.getpid(), sgridfile, cycle + 1))
 
         #   Process_cycle: create SWOT-like and Nadir-like data
         if not p.file_input:

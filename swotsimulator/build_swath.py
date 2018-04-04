@@ -302,7 +302,7 @@ def orbit2swath(modelbox, p, orb):
         jobs.append([ipass, p2, passtime, stime, x_al, x_ac, tcycle, al_cycle,
                      nhalfswath, lon, lat, orb.timeshift])
     make_swot_grid(p.proc_count, jobs)
-    #mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+    mod_tools.update_progress(1,  'All swaths have been processed', ' ')
     return None
 
 
