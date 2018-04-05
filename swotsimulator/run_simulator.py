@@ -27,7 +27,7 @@ SSH and the SSH with errors. There is one file every pass and every cycle.
 # - Feb 2015: Version 1.0
 # - Dec 2015: Version 2.0
 # - Dec 2017: Version 3.0
-# _ March 2018: Version 3.1
+# - Apr 2018: Version 3.1
 #
 # Notes:
 # - Tested with Python 2.7, Python 3.6
