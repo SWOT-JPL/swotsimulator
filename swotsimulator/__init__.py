@@ -38,7 +38,7 @@
 # - Set module version to package version:
 
 
-__version__ = '3.00'
+__version__ = '3.10'
 __author__  = 'Lucile Gaultier and Clement Ubelmann'
 __date__ = '2014-07-01'
 __email__ = 'lucile.gaultier@gmail.com'

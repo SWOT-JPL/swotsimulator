@@ -318,6 +318,8 @@ The software is divided in 6 modules:
 
 * :mod:`run_nadir.py` enables the user to run the nadir alone.
 
+As of version 3.1, the simulator can run on several processor, just add the options `proc_number = [your number of processor] <params-file>` in your parameter file. Please note that data will be duplicated in each processor and thus can take a large amount of your RAM.
+ 
 Inputs
 -------
 The inputs are SSH model outputs in netcdf (to read netcdf4 files, the python module netCDF4 is needed). Each time step is stored in one file so that there are as many files as time steps. A list of file (in .txt format)  is read by the software. It contains the grid file and all SSH model outputs. The first file in this list is the grid, therefore, if the grid is contained in the SSH files, the first SSH file should be repeated. The directory that contains input (:ref:`indatadir <params-file>`) and the name of the list of files (:ref:`file_input <params-file>`) are specified in the params file. 
@@ -351,6 +353,8 @@ To compute each error, set the corresponding parameter to True (:ref:`karin <par
 The KaRIN noise levels are read in karin_file, and are a function of the Significant Wave Height (SWH) and of the across track distance to the nadir. The SWH can be defined in :ref:`swh <params-error>` (in m). Note that all :ref:`swh <params-error>` greater than 8.0~m are set to 8.0~m. The KaRIN noise is randomly computed using coefficients produced on a :ref:`nrandkarin  <params-error>` km long grid (suggested value is :ref:`nrandkarin  <params-error>` =1000~km). Note that two files are actually provided for the KaRIN noise, the old one karin_noise_v1.nc for those who need consistency with older run, and the new one karin_noise_v2.nc which contains more levels of noise and the noise is defined up to 5~km from the nadir (vs 10 for the old file). By default the simulator takes the newest file to compute KaRIN noise. 
 As explained in section :ref:`Instrumentalerrors`, the instrumental errors (roll, baseline_dilation, phase, timing) are randomly computed according to a spectrum specified in the file :ref:`file_inst_error  <params-error>`. A cut-off wavelength (:ref:`lambda_cut <params-error>`) of 40000~km  is recommended in model studies so that only errors below the cut-off wavelength are represented, however :ref:`lambda_cut <params-error>` should be set to None for cross-calibration studies (see section 2.1). The number of random coefficients is specified in :ref:`ncomp1d <params-error>` for 1d spectrum and (:ref:`ncomp1d <params-error>` =2000 is recommended) and :ref:`ncomp2d <params-error>` for 2d spectrum (mainly the wet_tropo error, :ref:`ncomp2d <params-error>` =2000 is recommended). Having different numbers of random coefficients for 1d and 2d spectrum enables to reduce the computing cost when one needs a high number of random cofficients for the instrument error (only 1d spectrum). The computation of the wet_tropo error is costly so that one needs to keep the number of random coefficients for 2d spectrum as small as possible.  Several parameters can be modified to compute the residual wet_tropo error. Following the subsection :ref:`Wettroposphereerrors`, the residual path delay error can be computed using one beam (:ref:`nbeam  <params-error>` =1), two beams (:ref:`nbeam  <params-error>` =2), or both of these residual path delay error can be computed (:ref:`nbeam  <params-error>` = 'both'). Each beam has a Gaussian footprint of :ref:`sigma  <params-error>` km. If there are two beams, the left beam is located at :ref:`beam_pos_l  <params-error>` km from the nadir and the right one at :ref:`beam_pos_r  <params-error>` km from the nadir. If only one beam is used, it is located at the nadir. As for the Sea State bias error (:ref:`ssb  <params-error>`), it has not been implemented yet. 
 To avoid repeating the random coefficients if the simulator is runned on large scale, a function has been written to compute the random signal. To activate it, set :ref:`savesignal = True <params-error>`. Then specify the number of peudo-period of superimposed signals :ref:`npseudoper <params-error>` and the repeat length of the signal.
+
+WARNING: The option savesignal = True does not enable reproducible runs as the signal is not saved in file (just in the memory while the program is running). Remember to set file_coeff = None.
 :ref:`ncomp1d <params-error>` and :ref:`ncomp2d <params-error>` are not used if :ref:`savesignal` is set to `True`.
 
 All the computed errors are saved in the output netcdf file. The observed SSH (SSH_obs) is also computed by adding all the computed errors to the SSH from the model (SSH_model) when model data are provided. Note that if :ref:`nbeam  <params-error>` ='both' (residual error due to path delay using one beam and two beams are both computed), only the residual error due to path delay using one beam is considered in the observed SSH. 
@@ -359,7 +363,9 @@ Two errors are considered in the nadir. The first one is the instrument error, w
 
 Reproducible runs
 -----------------
-It is possible to reproduce the exact same run by saving the random coefficients (phase phi, amplitude A and frequency fr) for every error but the KaRIN noise. Random coefficients on a :ref:`nrandkarin  <params-error>` km long and :ref:`x_ac <params-swotswath>` km large are saved for KaRIN noise. All these variables are saved during the first run in :ref:`file_coeff  <params-error>`. The random coefficients for the nadir are store in a separate file :ref:`file_coeff <params-error>` _nadir.nc. If you don’t want the runs to be reproducible, set :ref:`file_coeff <params-error>` =None. 
+It is possible to reproduce the exact same run by saving the random coefficients (phase phi, amplitude A and frequency fr) for every error but the KaRIN noise. Random coefficients on a :ref:`nrandkarin  <params-error>` km long and :ref:`x_ac <params-swotswath>` km large are saved for KaRIN noise. All these variables are saved during the first run in :ref:`file_coeff  <params-error>`. The random coefficients for the nadir are store in a separate file :ref:`file_coeff <params-error>` _nadir.nc. If you don’t want the runs to be reproducible, set :ref:`file_coeff <params-error>` =None.
+WARNING: Note that you can't run reproducible runs (file_coef = yourfiles) and have a better randomness in large scale noise (savesignal=True) as no coefficient files are generated while this last option is enabled.
+
 Warning: If the size of the across track grid (:ref:`x_ac <params-swotswath>`) or the numbers of random coefficient (:ref:`ncomp <params-error>`, :ref:`nrandkarin <params-error>`) are changed, the random coefficients must be recomputed as their shape has been modified.  
 
 Simulate nadir data alone
@@ -372,6 +378,7 @@ This run uses the module run_nadir.py, which simulates the nadir along track dat
 Getting started 
 ----------------
 All information regarding the installation and running of the software are in the :ref:`README` file. An example of a :ref:`parms.txt <params>` file is given below. A ready to launch kit is also provided in ``swotsimulator/example/``. It contains model files produced by the Regional Ocean Modeling System (ROMS) off the Oregon coast developed by Dr. Yi Chao and his team (stored in ``swotsimulator/example/input_fields/``) and a params file (``params_example.txt``). To test the Simulator using the provided example, install python and the simulator as it is advised in the :ref:`README` file, modify ``dir_setup``, ``indatadir``, ``outdatadir`` with your own path in ``swotsimulator/example/params_example.txt``. The outputs of the example are going to be saved in ``outdatadir = swotsimulator/example/swot_output/``.
+
 To print help regarding the simulator or one of the modules, type in a python or ipython window:
 
 .. code-block:: python
@@ -385,13 +392,13 @@ To run the example, type in any terminal:
 
 .. code-block:: python
 
-   >> run.py ./example/params_example.txt
+   >> swotsimulator ./example/params_example.py
 
 for the SWOT simulator and
 
 .. code-block:: python
 
-   >> run_nadiralone.py ./example/params_example_nadir.txt
+   >> nadirsimulator ./example/params_example_nadir.py
 
 to compute the nadir alone. 
 
@@ -405,27 +412,27 @@ Example of Params.txt for SWOT-like data
 .. _params-file:
 
 .. literalinclude:: params.py
-   :lines: 1-13
+   :lines: 1-20
 
 .. _params-swotswath:
 
 .. literalinclude:: params.py
-   :lines: 14-43
+   :lines: 22-49
 
 .. _params-model:
 
 .. literalinclude:: params.py
-   :lines: 45-69
+   :lines: 51-78
 
 .. _params-output:
 
 .. literalinclude:: params.py
-   :lines: 71-81
+   :lines: 80-94
 
 .. _params-error:
 
 .. literalinclude:: params.py
-   :lines: 83-
+   :lines: 97-
 
 Example of Params.txt for nadir-like data
 ``````````````````````````````````````````
@@ -433,27 +440,27 @@ Example of Params.txt for nadir-like data
 .. _params-file-nadir:
 
 .. literalinclude:: params-nadir.py
-   :lines: 1-13
+   :lines: 1-15
 
 .. _params-nadirtrack:
 
 .. literalinclude:: params-nadir.py
-   :lines: 14-41
+   :lines: 17-42
 
 .. _params-model-nadir:
 
 .. literalinclude:: params-nadir.py
-   :lines: 43-67
+   :lines: 44-71
 
 .. _params-output-nadir:
 
 .. literalinclude:: params-nadir.py
-   :lines: 70-79
+   :lines: 73-84
 
 .. _params-error-nadir:
 
 .. literalinclude:: params-nadir.py
-   :lines: 81-
+   :lines: 86-
 
 References:
 ===========

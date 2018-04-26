@@ -5,6 +5,14 @@ Changelog for swotsimulator
 
 This file lists the changes in each swotsimulator version
 
+3.1
+---
+04/26/2018
+- Implement Multiprocessing for the swotsimulator
+- User-proof Random coefficient and savesignal options
+- Update documentation (detail how to use coeff_file and savesignal options
+and add multiprocessing option)
+
 3.0
 ---
 12/27/2017
