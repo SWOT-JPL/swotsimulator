@@ -53,7 +53,18 @@ def initialize_parameters(p):
     p.save_variables = getattr(p, 'save_variables', 'classic')
     p.savesignal = getattr(p, 'savesignal', False)
     p.proc_count = getattr(p, 'proc_number', 1)
+    p.file_coeff = getattr(p, 'file_coeff', None)
+    check_option(p)
     return None
+
+
+def check_option(p):
+    # Check random file option
+    if p.file_coeff is not None:
+        if p.savesignal is True:
+            logger.error('Incompatible options in your parameter file')
+            logger.error('Either set file_coeff=None or savesignal=False')
+            sys.exit(1)
 
 
 def check_path(p):
