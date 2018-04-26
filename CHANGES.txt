@@ -7,10 +7,13 @@ This file lists the changes in each swotsimulator version
 
 3.1
 ---
-2017/04/01
-- Multiprocessing is now possible
+04/26/2018
+- Implement Multiprocessing for the swotsimulator
+- User-proof Random coefficient and savesignal options
+- Update documentation (detail how to use coeff_file and savesignal options
 - Fix bug with numpy 14.2
 - Fix bug with interpolation at 0E
+and add multiprocessing option)
 
 3.0
 ---

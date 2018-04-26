@@ -18,6 +18,8 @@ satname = [chosenorbit]
 filesat = dir_setup+'/orbit292.txt'
 # ------ Name of the configuration (to build output files names)
 config = [yourconfigname]
+# ------ Number of processors (should not be too large to avoid MemoryError)
+proc_number = [number of proc]
 
 # -----------------------#
 # SWOT swath parameters
@@ -61,7 +63,7 @@ file_input = os.path.join(indatadir, [your_list_of_file_name.txt]) or None
 #        (Optional, default is NETCDF_MODEL and reads netcdf3 and netcdf4 files)
 model = 'NETCDF_MODEL'
 # ------ Type of grid:
-# 'regular' or 'irregular', if 'regular' only 1d coordinates are extracted from model       
+# 'regular' or 'irregular', if 'regular' only 1d coordinates are extracted from model
 grid = 'irregular'
 # ------ Specify SSH variable:
 var = 'H'
@@ -91,6 +93,10 @@ or file_output = os.path.join(outdatadir, [your_output_root_name])
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
 interpolation = 'nearest' or 'linear'
+# ------ Save variables with all mockup variables ('all'), only swotsimulator
+#        variables ('classic', default behaviour) or in expert mode ('expert')
+save_variables = 'classic' or 'all' or 'expert'
+
 
 # -----------------------#
 # SWOT error parameters
@@ -116,7 +122,7 @@ nrandkarin = 1000
 # -- Compute nadir (True or False):
 nadir = True
 # ------ File containing spectrum of instrument error:
-file_inst_error = os.path.join(dir_setup,"global_sim_instrument_error.nc)
+file_inst_error = os.path.join(dir_setup, "global_sim_instrument_error.nc)
 # ------ Number of random realisations for instrumental and geophysical error (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d is used for 2D spectrum (wet troposphere computation):
 ncomp1d = 2000
 ncomp2d = 2000
