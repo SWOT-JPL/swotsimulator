@@ -344,3 +344,47 @@ karin_cal_flag = {'varname': 'KaRIn_cal_flag',
 		  'type': 'u1',
 		  'scale': 1
 		  }
+comment = ('Based on prior map calculation. 2x60 4B elements.  TBD whether '
+          'cross/along-track, closest magnitude/direction.')
+vector_to_coast = {'varname': 'vector_to_coast',
+                   'longname': 'two-component vector to coast',
+                   'units': 'm',
+                   'min_value': 0,
+                   'max_value': 120 000,
+                   'fill_value': i4_nan,
+                   'type': 'i4',
+                   'scale': 1,
+                   'comment': comment
+                   }
+comment = ('Integer number of days since January 1 2000 00:00:00 UTC of time '
+           'of measurement in UTC time scale. Measurement time as total '
+           'number of UTC seconds since January 1 2000 00:00:00 UTC is '
+           'determined as time_day*86400 + time_sec. Times on January 1, 2000 '
+           'UTC correspond to time_day = 0')
+time_day = {'varname': 'time_day',
+            'longname': 'Integer_number_of_days',
+            'calendar': 'gregorian',
+            'standard_name': 'time',
+            'units': 'days since 2000-01-01 00:00:00.0 UTC',
+            'comment': comment,
+            'type': 'i4',
+            'fill_value': i4_nan,
+            'min_value': 0
+            }
+comment = ('Seconds within day since 00:00:00 UTC of time of measurement in '
+           'the UTC time scale. Measurement time as total number of UTC '
+           'seconds since January 1 2000 00:00:00 UTC is determined as '
+           'time_day*86400 + time_sec. [tai_utc_difference] is the difference '
+           'between TAI and UTC reference time (seconds) for the first '
+           'measurement of the data set. If a leap second occurs within the '
+           'data set, the attribute leap_second is set to the UTC time at '
+           'which the leap second occurs.')
+time_sec = {'varname': 'time_sec',
+            'longname': 'UTC seconds in day',
+            'standard_name': 'time',
+            'calendar': 'gregorian',
+            'units': 'seconds since 00:00:00 UTC',
+            'comment': comment,
+            'type': 'f8',
+            'fill_value': f8_nan
+           }

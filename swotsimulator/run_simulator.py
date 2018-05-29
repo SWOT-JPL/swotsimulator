@@ -178,6 +178,9 @@ def run_simulator(p):
                      model_data, modeltime, err, errnad])
     # - Process list of jobs using multiprocessing
     make_swot_data(p.proc_count, jobs)
+    progress = mod_tools.update_progress(1,
+                                         'All passes have been processed',
+                                         '')
     # - Write Selected parameters in a txt file
     timestop = datetime.datetime.now()
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
