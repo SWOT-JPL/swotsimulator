@@ -95,9 +95,9 @@ file_output = os.path.join(outdatadir, '{}_{}'.format(config, satname))
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
 interpolation = 'linear'
-# ------ Save variables with all mockup variables ('all'), only swotsimulator
+# ------ Save variables with mockup variables ('mockup') swotsimulator
 #        variables ('classic', default behaviour) or in expert mode ('expert')
-save_variables = 'all'
+save_variables = 'classic'
 
 # -----------------------#
 # SWOT error parameters
