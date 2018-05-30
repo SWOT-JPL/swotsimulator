@@ -990,14 +990,18 @@ def save_SWOT(cycle, sgrid, err, p, mask_land, time=[], vindice=[], SSH_true=[],
                                   lon_nadir=(sgrid.lon_nadir+360) % 360,
                                   lat_nadir=sgrid.lat_nadir)
     OutputSWOT.gridfile = sgrid.gridfile
+    OutputSWOT.start_date = p.start_date
     err.SSH2 = err.SSH
-    if save_var == 'all':
+    if save_var == 'mockup':
         all_var = make_empty_vars(sgrid)
         beam_pos = (12, 47)
         tmp_var = + err.SSH
         flag = make_flags(tmp_var, sgrid, p.modelbox, beam_pos)
         all_var['karin_surf_type'] = mask_land
+        all_var['rad_surf_type'][:, 0] = mask_land[:, beam_pos[0]]
+        all_var['rad_surf_type'][:, 1] = mask_land[:, beam_pos[1]]
         all_var['ssh_karin_swath'] = + err.SSH
+        all_var['ssha_uncert'] = err.karin
     else:
         all_var = None
         err.SSH2 = None
@@ -1010,6 +1014,9 @@ def save_SWOT(cycle, sgrid, err, p, mask_land, time=[], vindice=[], SSH_true=[],
                               pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,
                               timing_err_1d=err.timing1d)
+    elif save_var == 'mockup':
+        OutputSWOT.write_data(
+                              empty_var=all_var)
     else:
         OutputSWOT.write_data(SSH_model=SSH_true, index=vindice,
                               roll_err=err.roll, bd_err=err.baseline_dilation,
@@ -1017,7 +1024,7 @@ def save_SWOT(cycle, sgrid, err, p, mask_land, time=[], vindice=[], SSH_true=[],
                               karin_err=err.karin, pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,
                               timing_err=err.timing, SSH_obs=err.SSH,
-                              empty_var=all_var)
+                              )
     return None
 
 
@@ -1045,7 +1052,7 @@ def make_empty_vars(sgrid):
     nal, nac = numpy.shape(sgrid.lon)
     var = {}
     for key in const.list_var_mockup:
-        var[key] = numpy.zeros((nal, nac))
+        var[key] = numpy.full((nal, nac), numpy.nan)
         if key == 'rad_surf_type':
-            var[key] = numpy.zeros((nal, 2))
+            var[key] = numpy.full((nal, 2), numpy.nan)
     return var

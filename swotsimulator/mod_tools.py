@@ -54,6 +54,7 @@ def initialize_parameters(p):
     p.savesignal = getattr(p, 'savesignal', False)
     p.proc_count = getattr(p, 'proc_number', 1)
     p.file_coeff = getattr(p, 'file_coeff', None)
+    p.start_date = getattr(p, 'start_date', '2000-01-01 00:00:00')
     check_option(p)
     return None
 
@@ -318,11 +319,11 @@ def update_progress(progress, arg1, arg2):
         status = "Done...\r\n"
     block = int(round(barLength*progress))
     if arg1 and arg2:
-        text = "\rPercent: [{0}] {1}%, {2}, {3}".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), arg1 + ', ' + arg2, status)
+        text = "\r[{0}] {1}%, {2}, {3}".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), arg1 + ', ' + arg2, status)
     elif arg1:
-        text = "\rPercent: [{0}] {1}%, {2}, {3}".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), arg1, status)
+        text = "\r[{0}] {1}%, {2}, {3}".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), arg1, status)
     else:
-        text = "\rPercent: [{0}] {1}%, {2} ".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), status)
+        text = "\r[{0}] {1}%, {2} ".format("#"*block + "-"*(barLength-block), "%.2f" % (progress*100), status)
     sys.stdout.write(text)
     sys.stdout.flush()
     return progress

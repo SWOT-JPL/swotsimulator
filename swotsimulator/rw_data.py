@@ -12,6 +12,7 @@ from netCDF4 import Dataset
 import numpy
 import sys, os
 import time as ti
+import datetime
 import logging
 import swotsimulator.const as const
 logger = logging.getLogger(__name__)
@@ -204,6 +205,12 @@ def write_var(fid, dim, key, value):
     var.long_name = vdic['longname']
     if scale != 1.:
         var.scale_factor = scale
+    if 'comment' in vdic.keys():
+        var.comment = vdic['comment']
+    if 'standard_name' in vdic.keys():
+        var.standard_name = vdic['standard_name']
+    if 'calendar' in vdic.keys():
+        var.calendar = vdic['calendar']
 
 
 class Sat_SWOT():
@@ -394,7 +401,6 @@ class Sat_SWOT():
         fid.createDimension(dim_rad, 2)
 
         # - Create and write variables
-        vtime = fid.createVariable('time_sec', 'u8', (dim_tim,))
         vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))
         vlat_nadir = fid.createVariable('lat_nadir', 'i4', (dim_tim,))
         vlon = fid.createVariable('lon', 'i4', (dim_tim, dim_ac),
@@ -404,11 +410,6 @@ class Sat_SWOT():
         vx_al = fid.createVariable('x_al', 'f4', (dim_tim,))
         vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
         scale = 1e-6
-        vtime[:] = numpy.rint(self.time * 86400 / scale)
-        vtime.units = "s"
-        vtime.scale_factor = scale
-        vtime.valid_min = 0
-        vtime.long_name = "Time from beginning of simulation (in s)"
         vlon[:, :] = numpy.rint(self.lon / scale)
         vlon.units = "deg"
         vlon.long_name = "Longitude"
@@ -438,6 +439,30 @@ class Sat_SWOT():
         vx_ac.units = "km"
         vx_ac.long_name = "Across track distance from nadir"
         dim = [dim_tim, dim_ac, dim_rad]
+        if 'empty_var' in kwargs:
+            dformat = '%Y-%m-%d %H:%M:%S'
+            start_date = datetime.datetime.strptime(self.start_date, dformat)
+            first_date = datetime.datetime(2000, 1, 1)
+            if start_date < first_date:
+                logger.info('start_date has been replaced by 1 January 2000'
+                            ' as it is anterior to this date')
+            time_day = []
+            time_sec = []
+            for itime in self.time:
+                td = datetime.timedelta(itime) + start_date - first_date
+                time_day.append(td.days)
+                time_sec.append(td.seconds + td.microseconds * 10**(-6))
+            write_var(fid, dim, 'time_sec', numpy.asarray(time_sec))
+            write_var(fid, dim, 'time_day', numpy.asarray(time_day))
+        else:
+            vtime = fid.createVariable('time', 'u8', (dim_tim,))
+            vtime[:] = numpy.rint(self.time * 86400 / scale)
+            vtime.units = "s"
+            vtime.scale_factor = scale
+            vtime.valid_min = 0
+            vtime.long_name = "Time from beginning of simulation (in s)"
+
+
         for key, value in kwargs.items():
             if key == 'empty_var'and value is not None:
                 for key2, value2 in value.items():

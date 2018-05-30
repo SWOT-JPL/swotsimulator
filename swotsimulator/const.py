@@ -195,10 +195,10 @@ nadir_err = {'varname': 'nadir_err',
 
 # - Variables for CNES mockup
 list_var_mockup = ['ssha_karin_swath', 'ssha_uncert', 'ssh_quality_flag',
-                   'dynamic_ice_flag', 'rad_surf_type',
-                   'rain_flag', 'mss_reference', 'geoid',
+                   'dynamic_ice_flag', 'rad_surf_type', 'ssh_karin_swath',
+                   'rain_flag', 'mss_reference', 'geoid', 'karin_surf_type',
                    'internal_tide_solution1', 'karin_karin_xover_height_corr',
-                   'karin_na_height_corr', 'karin_cal_flag']
+                   'karin_na_height_corr', 'karin_cal_flag', 'vector_to_coast']
 
 # Karin variables
 longname = ('SSHA = SSH – MSS – ocean tide – load tide – solid tide – pole'
@@ -348,9 +348,9 @@ comment = ('Based on prior map calculation. 2x60 4B elements.  TBD whether '
           'cross/along-track, closest magnitude/direction.')
 vector_to_coast = {'varname': 'vector_to_coast',
                    'longname': 'two-component vector to coast',
-                   'units': 'm',
+                   'unit': 'm',
                    'min_value': 0,
-                   'max_value': 120 000,
+                   'max_value': 120000,
                    'fill_value': i4_nan,
                    'type': 'i4',
                    'scale': 1,
@@ -365,11 +365,13 @@ time_day = {'varname': 'time_day',
             'longname': 'Integer_number_of_days',
             'calendar': 'gregorian',
             'standard_name': 'time',
-            'units': 'days since 2000-01-01 00:00:00.0 UTC',
+            'unit': 'days since 2000-01-01 00:00:00.0 UTC',
             'comment': comment,
             'type': 'i4',
+            'scale': 1,
             'fill_value': i4_nan,
-            'min_value': 0
+            'min_value': 0,
+            'max_value': None
             }
 comment = ('Seconds within day since 00:00:00 UTC of time of measurement in '
            'the UTC time scale. Measurement time as total number of UTC '
@@ -383,8 +385,11 @@ time_sec = {'varname': 'time_sec',
             'longname': 'UTC seconds in day',
             'standard_name': 'time',
             'calendar': 'gregorian',
-            'units': 'seconds since 00:00:00 UTC',
+            'unit': 'seconds since 00:00:00 UTC',
             'comment': comment,
             'type': 'f8',
-            'fill_value': f8_nan
+            'scale': 1,
+            'fill_value': f8_nan,
+            'min_value': 0,
+            'max_value': None
            }
