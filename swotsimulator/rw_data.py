@@ -401,8 +401,6 @@ class Sat_SWOT():
         fid.createDimension(dim_rad, 2)
 
         # - Create and write variables
-        vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))
-        vlat_nadir = fid.createVariable('lat_nadir', 'i4', (dim_tim,))
         vlon = fid.createVariable('lon', 'i4', (dim_tim, dim_ac),
                                   fill_value=2147483647)
         vlat = fid.createVariable('lat', 'i4', (dim_tim, dim_ac),
@@ -422,16 +420,6 @@ class Sat_SWOT():
         vlat.scale_factor = scale
         vlat.valid_min = -80000000
         vlat.valid_max = 80000000
-        vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
-        vlon_nadir.units = "deg"
-        vlon_nadir.scale_factor = scale
-        vlon_nadir.valid_min = 0
-        vlon_nadir.valid_max = 359999999
-        vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
-        vlat_nadir.units = "deg"
-        vlat_nadir.scale_factor = scale
-        vlat_nadir.valid_min = -80000000
-        vlat_nadir.valid_max = 80000000
         vx_al[:] = self.x_al
         vx_al.units = "km"
         vx_al.long_name = "Along track distance from the beginning of the pass"
@@ -461,6 +449,18 @@ class Sat_SWOT():
             vtime.scale_factor = scale
             vtime.valid_min = 0
             vtime.long_name = "Time from beginning of simulation (in s)"
+            vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))
+            vlat_nadir = fid.createVariable('lat_nadir', 'i4', (dim_tim,))
+            vlon_nadir[:] = numpy.rint(self.lon_nadir / scale)
+            vlon_nadir.units = "deg"
+            vlon_nadir.scale_factor = scale
+            vlon_nadir.valid_min = 0
+            vlon_nadir.valid_max = 359999999
+            vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
+            vlat_nadir.units = "deg"
+            vlat_nadir.scale_factor = scale
+            vlat_nadir.valid_min = -80000000
+            vlat_nadir.valid_max = 80000000
 
 
         for key, value in kwargs.items():
