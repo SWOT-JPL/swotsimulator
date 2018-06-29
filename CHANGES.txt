@@ -4,6 +4,12 @@ Changelog for swotsimulator
 
 
 This file lists the changes in each swotsimulator version
+3.2
+---
+06/29/2018
+- Implement three outputs format: classic for the old one, mockup to generate
+SWOT-like future L2 data, expert to save only noise in 1D.
+
 
 3.1
 ---
