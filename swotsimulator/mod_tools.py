@@ -275,6 +275,8 @@ def update_progress_multiproc(status, info):
         ipass = '{:03d}'.format(grid_name)
 
     cycle = info[2]
+    if cycle is not None and cycle < 0:
+        return False
 
     count = len(status.keys())
     sys.stdout.write(_term_move_up() * count)
@@ -300,11 +302,12 @@ def update_progress_multiproc(status, info):
         proc_elems.extend(['] {}'.format(proc_state['extra'])])
         sys.stdout.write(''.join(proc_elems))
         sys.stdout.flush()
+    return True
 
 
 def update_progress(progress, arg1, arg2):
     '''Creation of a progress bar: print on screen the progress of the run'''
-    barLength = 30  # Modify this to change the length of the progress bar
+    barLength = 20  # Modify this to change the length of the progress bar
     status = ""
     if isinstance(progress, int):
         progress = float(progress)
@@ -333,5 +336,6 @@ def _term_move_up():  # pragma: no cover
     """Borrowed from https://github.com/tqdm/tqdm/blob/master/tqdm/_tqdm.py
     MIT 2016 (c) [PR #96] on behalf of Google Inc.
     MIT 2013 (c) Noam Yorav-Raphael, original author."""
+    colorama = None
     return '' if (os.name == 'nt') and (colorama is None) else '\x1b[A'
 

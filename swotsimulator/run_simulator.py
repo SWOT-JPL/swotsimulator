@@ -177,10 +177,7 @@ def run_simulator(p):
         jobs.append([sgridfile, p2, listsgridfile, list_file, modelbox,
                      model_data, modeltime, err, errnad])
     # - Process list of jobs using multiprocessing
-    make_swot_data(p.proc_count, jobs)
-    progress = mod_tools.update_progress(1,
-                                         'All passes have been processed',
-                                         '')
+    ok = make_swot_data(p.proc_count, jobs)
     # - Write Selected parameters in a txt file
     timestop = datetime.datetime.now()
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
@@ -188,9 +185,17 @@ def run_simulator(p):
     op_file = 'swot_simulator_{}_{}.output'.format(timestart, timestop)
     op_file = os.path.join(p.outdatadir, op_file)
     rw_data.write_params(p, op_file)
-    logger.info("\n Simulated swot files have been written in {}".format(
-                 p.outdatadir))
-    logger.info("----------------------------------------------------------")
+    if ok is True:
+        progress = mod_tools.update_progress(1,
+                                             'All passes have been processed',
+                                             '')
+        logger.info("\n Simulated swot files have been written in {}".format(
+                     p.outdatadir))
+        logger.info(''.join(['-'] * 61))
+        #"----------------------------------------------------------")
+        sys.exit(0)
+    logger.error('\nERROR: At least one of the outputs was not saved.')
+    sys.exit(1)
 
 
 def run_nadir(p):
@@ -408,10 +413,12 @@ def make_swot_data(_proc_count, jobs):
     sys.stdout.write('\n' * proc_count)
     tasks = pool.map_async(worker_method_swot, jobs, chunksize=chunk_size)
     sys.stdout.flush()
+    ok = True
     while not tasks.ready():
         if not msg_queue.empty():
             msg = msg_queue.get()
-            mod_tools.update_progress_multiproc(status, msg)
+            _ok = mod_tools.update_progress_multiproc(status, msg)
+            ok = ok and _ok
         time.sleep(0.5)
 
     while not msg_queue.empty():
@@ -420,6 +427,7 @@ def make_swot_data(_proc_count, jobs):
 
     pool.close()
     pool.join()
+    return ok
 
 
 def worker_method_swot(*args, **kwargs):
@@ -458,18 +466,27 @@ def worker_method_swot(*args, **kwargs):
         #   Process_cycle: create SWOT-like and Nadir-like data
         if not p.file_input:
             model_data = []
-        SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, Teval, nTeval, mask_land = create_SWOTlikedata(
+        try:
+            SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, Teval, nTeval, mask_land = create_SWOTlikedata(
                 cycle, numpy.shape(listsgridfile)[0]*rcycle, list_file,
                 modelbox, sgrid, ngrid, model_data, modeltime, err, errnad,
                 p, Teval=Teval, nTeval=nTeval)
+        except:
+            msg_queue.put((os.getpid(), sgridfile, -1))
         #   Save outputs in a netcdf file
         if (~numpy.isnan(vindice)).any() or not p.file_input:
-            save_SWOT(cycle, sgrid, err, p, mask_land, time=time, vindice=vindice,
-                      SSH_true=SSH_true, save_var=p.save_variables)
+            try:
+                save_SWOT(cycle, sgrid, err, p, mask_land, time=time, vindice=vindice,
+                          SSH_true=SSH_true, save_var=p.save_variables)
+            except:
+                msg_queue.put((os.getpid(), sgridfile, -1))
             if p.nadir is True:
-                save_Nadir(cycle, ngrid, errnad, err, p, time=time,
-                           vindice_nadir=vindice_nadir,
-                           SSH_true_nadir=SSH_true_nadir)
+                try:
+                    save_Nadir(cycle, ngrid, errnad, err, p, time=time,
+                               vindice_nadir=vindice_nadir,
+                               SSH_true_nadir=SSH_true_nadir)
+                except:
+                    msg_queue.put((os.getpid(), sgridfile, -1))
     # Add a special message once a grid has been completely processed
     msg_queue.put((os.getpid(), sgridfile, None))
 
