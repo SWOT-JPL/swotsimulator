@@ -252,28 +252,40 @@ def run_nadir(p):
             logger.error('modelbox should be provided if no model file is '
                          'provided')
             sys.exit()
+    p.modelbox_calc = modelbox
     logger.debug(p.file_input)
     if p.file_input is not None:
         model_data.read_coordinates()
         # Select model data in the region modelbox
         model_data.len_coord = len(numpy.shape(model_data.vlon))
         if p.grid == 'regular' or model_data.len_coord == 1:
-            _ind_lon = numpy.where(((modelbox[0] - 1) <= model_data.vlon)
-                                   & (model_data.vlon <= (modelbox[1]+1)))[0]
-            model_data.model_index_lon = _ind_lon
-            _ind_lat = numpy.where(((modelbox[2] - 1) <= model_data.vlat)
+            if modelbox[0] < modelbox[1]:
+                _i_lon = numpy.where(((modelbox[0] - 1) <= model_data.vlon)
+                                     & (model_data.vlon <= (modelbox[1]+1)))[0]
+            else:
+                _i_lon = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                     | (model_data.vlon <= (modelbox[1]+1)))[0]
+            model_data.model_index_lon = _i_lon
+            _i_lat = numpy.where(((modelbox[2] - 1) <= model_data.vlat)
                                    & (model_data.vlat <= (modelbox[3]+1)))[0]
 
-            model_data.model_index_lat = _ind_lat
+            model_data.model_index_lat = _i_lat
             model_data.vlon = model_data.vlon[model_data.model_index_lon]
             model_data.vlat = model_data.vlat[model_data.model_index_lat]
 
         else:
-            _ind = numpy.where(((modelbox[0] - 1) <= model_data.vlon)
-                               & (model_data.vlon <= (modelbox[1]+1))
-                               & ((modelbox[2]-1) <= model_data.vlat)
-                               & (model_data.vlat <= (modelbox[3]+1)))
-            model_data.model_index = _ind
+            if modelbox[0] < modelbox[1]:
+                _i_box = numpy.where(((modelbox[0] - 1) <= model_data.vlon)
+                                     & (model_data.vlon <= (modelbox[1]+1))
+                                     & ((modelbox[2]-1) <= model_data.vlat)
+                                     & (model_data.vlat <= (modelbox[3]+1)))
+            else:
+                _i_box = numpy.where(((modelbox[0]-1) <= model_data.vlon)
+                                     | (model_data.vlon <= (modelbox[1]+1))
+                                     & ((modelbox[2]-1) <= model_data.vlat)
+                                     & (model_data.vlat <= (modelbox[3]+1)))
+
+            model_data.model_index = _i_box
             model_data.vlon = model_data.vlon[model_data.model_index]
             model_data.vlat = model_data.vlat[model_data.model_index]
         model_data.model = p.model
