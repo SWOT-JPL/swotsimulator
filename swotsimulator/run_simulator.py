@@ -917,22 +917,22 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
             # track
             # Handle Greenwich line
             lon_model = + model_data.vlon
-            lon_ngrid = + ngrid.lon
+            lon_ngrid = + ngrid.lon[ind_nadir_time[0]]
             if numpy.max(lon_ngrid) > 359:
                 lon_ngrid = numpy.mod(lon_ngrid + 180., 360.) - 180.
                 lon_model = numpy.mod(lon_model + 180., 360.) - 180.
             # if grid is regular, use interpolate.RectBivariateSpline to
             # interpolate
-            if p.grid == 'regular' or model_data.len_coord == 1:
+            if p.grid == 'regular':# or model_data.len_coord == 1:
                 # ########################TODO
                 # To be moved to routine rw_data
-                indsorted = numpy.argsort(model_data.vlon)
-                model_data.vlon = model_data.vlon[indsorted]
-                SSH_model = SSH_model[:, indsorted]
+                indsorted = numpy.argsort(lon_model)
+                lon_model = lon_model[indsorted]
+                _SSH_model = SSH_model[:, indsorted]
                 interp = interpolate_regular_1D
-                _ssh, Teval = interp(p, model_data.vlon, model_data.vlat,
-                                     SSH_model,
-                                     ngrid.lon[ind_nadir_time[0]].ravel(),
+                _ssh, Teval = interp(p, lon_model, model_data.vlat,
+                                     _SSH_model,
+                                     lon_ngrid.ravel(),
                                      ngrid.lat[ind_nadir_time[0]].ravel(),
                                      Teval=None)
                 SSH_true_nadir[ind_nadir_time[0]] = _ssh
@@ -942,12 +942,12 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
                 # Note that griddata is slower than pyresample functions.
                 try:
                     import pyresample as pr
-                    ngrid.lon = pr.utils.wrap_longitudes(ngrid.lon)
-                    model_data.vlon = pr.utils.wrap_longitudes(model_data.vlon)
+                    wlon_ngrid = pr.utils.wrap_longitudes(lon_ngrid)
+                    _lon_model = pr.utils.wrap_longitudes(lon_model)
                     geomdef = pr.geometry.SwathDefinition
-                    ngrid_def = geomdef(lons=ngrid.lon[ind_nadir_time[0]],
+                    ngrid_def = geomdef(lons=wlon_ngrid,
                                         lats=ngrid.lat[ind_nadir_time[0]])
-                    swath_def = geomdef(lons=model_data.vlon,
+                    swath_def = geomdef(lons=_lon_model,
                                         lats=model_data.vlat)
                     interp = interpolate_irregular_pyresample
                     _ssh = interp(swath_def, SSH_model, ngrid_def, p.delta_al,
@@ -955,9 +955,9 @@ def create_Nadirlikedata(cycle, ntotfile, list_file, modelbox, ngrid,
                     SSH_true_nadir[ind_nadir_time[0]] = _ssh
                 except ImportError:
                     interp = interpolate.griddata
-                    _ssh = interp((model_data.vlon.ravel(),
+                    _ssh = interp((lon_model.ravel(),
                                   model_data.vlat.ravel()), SSH_model.ravel(),
-                                  (ngrid.lon[ind_nadir_time[0]],
+                                  (lon_ngrid,
                                   ngrid.lat[ind_nadir_time[0]]),
                                   method=p.interpolation)
                     SSH_true_nadir[ind_nadir_time[0]] = _ssh
