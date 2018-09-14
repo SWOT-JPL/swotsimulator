@@ -20,6 +20,8 @@ order_orbit_col = None
 # Name of the orbit file
 satname = "science"
 filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
+# Number of days in one cycle
+# orbit_cycle = 20.85455
 # ------ Name of the configuration (to build output files names)
 config = "OREGON"
 #Number of processors to be used

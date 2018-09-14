@@ -15,6 +15,7 @@ import sys
 import os
 import types
 import datetime
+import swotsimulator.const as const
 
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
@@ -38,8 +39,8 @@ def load_python_file(file_path):
 
 def initialize_parameters(p):
     p.shift_lon = getattr(p, 'shift_lon', None)
-    p.shift_time = getattr(p, 'p.shift_time', None)
-    p.timeshift = getattr(p, 'p.timeshift', 0)
+    p.shift_time = getattr(p, 'shift_time', None)
+    p.timeshift = getattr(p, 'timeshift', 0)
     if p.shift_time is None:
         p.timeshift = 0
     model = getattr(p, 'model', 'NETCDF_MODEL')
@@ -54,6 +55,7 @@ def initialize_parameters(p):
     p.savesignal = getattr(p, 'savesignal', False)
     p.proc_count = getattr(p, 'proc_number', 1)
     p.file_coeff = getattr(p, 'file_coeff', None)
+    p.orbit_cycle = getattr(p, 'orbit_cycle', const.tcycle)
     check_option(p)
     return None
 
