@@ -43,6 +43,8 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                      '(time, lon, lat)')
         sys.exit(1)
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
+    # nop = numpy.shape(votime)[0]
+    # tcycle = votime[nop-1] + votime[1] - votime[0]
     if numpy.mean(votime[1:] - votime[:-1]) > 0.5:
         x, y, z = mod_tools.spher2cart(volon, volat)
         time_hr = numpy.arange(0., votime[-1], 0.5)
@@ -59,7 +61,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                                                           y_hr[ii],
                                                           z_hr[ii])
         time_hr = time_hr / const.secinday
-        ind = numpy.where((time_hr < const.tcycle))
+        ind = numpy.where((time_hr < p.orbit_cycle))
         volon = lon_hr[ind]
         volat = lat_hr[ind]
         votime = time_hr[ind]
