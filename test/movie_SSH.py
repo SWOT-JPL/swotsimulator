@@ -1,10 +1,11 @@
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot
 isBasemap=True
 try:
     import cartopy
 except ImportError:
     isBasemap=False
-import matplotlib
 import swotsimulator.rw_data as rw_data
 import params as p
 import glob
@@ -24,19 +25,19 @@ image = 0
 for coordfile in listfile:
     fig = pyplot.figure(figsize=(12,12))
     ax1 = pyplot.subplot(2, 1, 1)
-    ax2 = pyplot.subplot(2, 2, 1)
+    ax2 = pyplot.subplot(2, 1, 2)
     pyplot.clf()
     #pyplot.ion()
     if isBasemap is True:
         projection = cartopy.crs.PlateCarree()
         transform = cartopy.crs.PlateCarree()
         ax1 = pyplot.subplot(2, 1, 1, projection=projection)
-        ax2 = pyplot.subplot(2, 2, 1, projection=projection)
+        ax2 = pyplot.subplot(2, 1, 2, projection=projection)
         if modelbox is None:
             projection = cartopy.crs.Orthographic(0, 0)
-        ax1 = pyplot.axes(projection=projection)
-        ax2 = pyplot.axes(projection=projection)
         if modelbox is not None:
+            ax1.set_extent([modelbox[0], modelbox[1],  modelbox[2], modelbox[3]],
+                           crs=transform)
             ax2.set_extent([modelbox[0], modelbox[1],  modelbox[2], modelbox[3]],
                            crs=transform)
             norder = 6
@@ -57,7 +58,7 @@ for coordfile in listfile:
     # Loop on files
     print(coordfile)
     data = rw_data.Sat_SWOT(nfile=coordfile)
-    data.load_swath(ssh_model=[])
+    data.load_swath(ssh_model=[], SSH_kaRIn_swath=[], ssh_obs=[])
     nac = numpy.shape(data.lon)[1]
     if modelbox[0] < 0:
         data.lon[numpy.where(data.lon > 180)] = (data.lon[numpy.where(
@@ -65,29 +66,31 @@ for coordfile in listfile:
     norm = matplotlib.colors.Normalize(vmin=-0.1, vmax=0.1)
     SSH = data.ssh_model
     SSH2 = data.ssh_obs
-    mask = ((SSH==0) | (abs(SSH) > 9999.))
+    mask = ((SSH==0) | (abs(SSH) > 9999.)| numpy.isnan(SSH))
+    mask2 = ((SSH2==0) | (abs(SSH2) > 9999.)| numpy.isnan(SSH2))
     SSH = numpy.ma.array(SSH, mask=mask)
-    _min = -1
-    _max = 1
+    SSH2 = numpy.ma.array(SSH2, mask=mask2)
+    _min = -0.5
+    _max = 0.5
     if _max < _min:
         continue
     ax1.pcolormesh(data.lon[:, :int(nac/2)], data.lat[:, :int(nac/2)],
-                      SSH[:, :int(nac/2)], cmap='jet',
+                      SSH[:, :int(nac/2)], cmap='jet', vmin=_min, vmax=_max,
                       transform=transform)
-    pyplot.clim(_min, _max)
+    #ax1.clim(_min, _max)
     ax1.pcolormesh(data.lon[:, int(nac/2):], data.lat[:, int(nac/2):],
-                      SSH[:, int(nac/2):], cmap='jet',
+                      SSH[:, int(nac/2):], cmap='jet', vmin=_min, vmax=_max,
                       transform=transform)
-    pyplot.clim(_min, _max)
+    #ax1.clim(_min, _max)
     ax2.pcolormesh(data.lon[:, :int(nac/2)], data.lat[:, :int(nac/2)],
-                      SSH2[:, :int(nac/2)], cmap='jet',
+                      SSH2[:, :int(nac/2)], cmap='jet', vmin=_min, vmax=_max,
                       transform=transform)
-    pyplot.clim(_min, _max)
-    ax2.pcolormesh(data.lon[:, int(nac/2):], data.lat[:, int(nac/2):],
-                      SSH2[:, int(nac/2):], cmap='jet',
+    #ax2.clim(_min, _max)
+    c = ax2.pcolormesh(data.lon[:, int(nac/2):], data.lat[:, int(nac/2):],
+                      SSH2[:, int(nac/2):], cmap='jet', vmin=_min, vmax=_max,
                       transform=transform)
-    pyplot.clim(_min, _max)
-    pyplot.colorbar()
+    #ax2.clim(_min, _max)
+    #pyplot.colorbar(c)
     pyplot.title('SWOT like data for config {}'.format(p.config))
     pyplot.savefig('./pict/img_{:04d}'.format(image))
     image += 1
