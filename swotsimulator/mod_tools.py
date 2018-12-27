@@ -47,9 +47,13 @@ def initialize_parameters(p):
     p.model = model
     p.model_nan = getattr(p, 'model_nan', 0)
     p.SSH_factor = getattr(p, 'SSH_factor', 1.)
+    p.first_time = getattr(p, 'first_time', '2018-01-01T00:00:00Z')
+    p.list_input_var = getattr(p, 'list_input_var', None)
     p.nadir = getattr(p, 'nadir', True)
     p.grid = getattr(p, 'grid', 'regular')
     p.order_orbit_col = getattr(p, 'order_orbit_col', None)
+    p.satcycle = getattr(p, 'satcycle', None)
+    p.sat_elev = getattr(p, 'sat_elev', None)
     p.ice_mask = getattr(p, 'ice_mask', True)
     p.save_variables = getattr(p, 'save_variables', 'classic')
     p.savesignal = getattr(p, 'savesignal', False)
@@ -57,6 +61,11 @@ def initialize_parameters(p):
     p.file_coeff = getattr(p, 'file_coeff', None)
     p.start_date = getattr(p, 'start_date', '2000-01-01 00:00:00')
     p.orbit_cycle = getattr(p, 'orbit_cycle', const.tcycle)
+    listo = ['wlv', 'ssh_obs', 'ur_true', 'ucur', 'vcur', 'uuss', 'vuss',
+             'radial_angle', 'vwnd', 'mssx', 'mssy', 'mssxy', 'uwb',
+             'vindice', 'ur_obs', 'mask', 'uwnd', 'sigma0', 'ice']
+    p.list_output = getattr(p, 'list_output', listo)
+    p.progress_bar = getattr(p, 'progress_bar', True)
     check_option(p)
     return None
 
@@ -79,7 +88,7 @@ def check_path(p):
         sys.exit(1)
     if os.path.isdir(p.outdatadir) is False:
         logger.warn('Output directory {} did not exist and was '
-                    'created'.format(p.dir_setup))
+                    'created'.format(p.outdatadir))
         os.makedirs(p.outdatadir)
     filesat_path = os.path.join(p.dir_setup, p.filesat)
     if os.path.isfile(filesat_path) is False:
@@ -269,6 +278,9 @@ def fromdict(result):
 def update_progress_multiproc(status, info):
     """Creation of progress bar: print on screen progress of run, optimized
     for parrallelised tasks"""
+    if info[3] is not None:
+        # There has been an error
+        return False
     pid = info[0]
     grid_name = info[1]
     if isinstance(grid_name, str):
@@ -340,4 +352,3 @@ def _term_move_up():  # pragma: no cover
     MIT 2013 (c) Noam Yorav-Raphael, original author."""
     colorama = None
     return '' if (os.name == 'nt') and (colorama is None) else '\x1b[A'
-

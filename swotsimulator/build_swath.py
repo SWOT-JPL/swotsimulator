@@ -30,18 +30,30 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     logger.info('Load data from orbit file')
     if p.order_orbit_col is None:
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
-                                             unpack=True)
+                                             comments='#', unpack=True)
 
     else:
         ncols = p.order_orbit_col
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=ncols,
-                                             unpack=True)
+                                             comments='#', unpack=True)
         votime *= const.secinday
     if (volon > 360).any() or (numpy.abs(volat) > 90).any():
         logger.error('Error in orbit file or wrong order of column \n'
                      'Columns should be in the following order'
                      '(time, lon, lat)')
         sys.exit(1)
+    dic_sat = {}
+    with open(orbitfile, 'r') as fh:
+        for i, line in enumerate(fh):
+            if line.strip().startswith('#'):
+                key, value = line.strip().split('=')
+                dic_sat[key[1:].strip()] = float(value.strip())
+            else:
+                break
+    if 'cycle' in dic_sat.keys() and 'elevation' in dic_sat.keys():
+        p.satcycle = dic_sat['cycle']
+        p.sat_elev = dic_sat['elevation'] 
+   
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     # nop = numpy.shape(votime)[0]
     # tcycle = votime[nop-1] + votime[1] - votime[0]
@@ -56,12 +68,12 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         z_hr = f(time_hr)
         lon_hr = numpy.zeros(len(x_hr)) + numpy.nan
         lat_hr = numpy.zeros(len(x_hr)) + numpy.nan
-        for ii in range(len(x_hr)):
-            lon_hr[ii], lat_hr[ii] = mod_tools.cart2spher(x_hr[ii],
-                                                          y_hr[ii],
-                                                          z_hr[ii])
+        lon_hr, lat_hr = mod_tools.cart2sphervect(x_hr, y_hr, z_hr)
+        # Cut orbit if more than an orbit cycle
+        if p.satcycle is None:
+            p.satcycle = const.satcycle
         time_hr = time_hr / const.secinday
-        ind = numpy.where((time_hr < p.orbit_cycle))
+        ind = numpy.where((time_hr < p.satcycle))
         volon = lon_hr[ind]
         volat = lat_hr[ind]
         votime = time_hr[ind]
@@ -72,23 +84,15 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # - Get cycle period.
     tcycle = votime[nop-1] + votime[1] - votime[0]
     # shift time if the user needs to shift the time of the orbit
-    try:
-        pshift_time = p.shift_time
-        if pshift_time is not None:
-            shift_index = numpy.where(votime >= pshift_time)[0]
-            volon = numpy.hstack([volon[shift_index[0]:],
-                                 volon[:shift_index[0]]])
-            volat = numpy.hstack([volat[shift_index[0]:],
-                                 volat[:shift_index[0]]])
-    except:
-        p.shift_time = None
+    if p.shift_time is not None:
+        shift_index = numpy.where(votime >= p.shift_time)[0]
+        volon = numpy.hstack([volon[shift_index[0]:],
+                             volon[:shift_index[0]]])
+        volat = numpy.hstack([volat[shift_index[0]:],
+                             volat[:shift_index[0]]])
     # shift lon if the user needs to shift the localisation of the orbit
-    try:
-        pshift_lon = p.shift_lon
-        if pshift_lon is not None:
-            volon = volon + pshift_lon
-    except:
-        p.shift_lon = None
+    if p.shift_lon is not None:
+        volon = volon + p.shift_lon
     volon = (volon + 360) % 360
 
     # - Rearrange orbit starting from pass 1
@@ -152,7 +156,8 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # subdomain
     logger.info('Compute nadir coordinate in the new domain')
     for i in range(0, nop - 1):
-        mod_tools.update_progress(float(i) / float(nop-1), None, None)
+        if p.progress_bar is True:
+            mod_tools.update_progress(float(i) / float(nop-1), None, None)
         if abs(volon[i + 1] - volon[i]) > 1:
             if volon[i + 1] > 180.:
                 volon[i + 1] = volon[i + 1] - 360
@@ -258,6 +263,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     orb.al_cycle = distance[-1]
     orb.passtime = numpy.sort(passtime)
     orb.timeshift = p.timeshift
+    orb.sat_elev = p.sat_elev
     return orb
 
 
@@ -303,12 +309,15 @@ def orbit2swath(modelbox, p, orb):
     for ipass in range(ipass0, numpy.shape(passtime)[0]):
         jobs.append([ipass, p2, passtime, stime, x_al, x_ac, tcycle, al_cycle,
                      nhalfswath, lon, lat, orb.timeshift])
-    make_swot_grid(p.proc_count, jobs)
-    mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+    make_swot_grid(p.proc_count, jobs, p.progress_bar)
+    if p.progress_bar is True:
+        mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+    else:
+        logger.info('All swaths have been processed')
     return None
 
 
-def make_swot_grid(_proc_count, jobs):
+def make_swot_grid(_proc_count, jobs, progress_bar):
     """ Compute SWOT grids for every pass in the domain"""
     # - Set up parallelisation parameters
     proc_count = min(len(jobs), _proc_count)
@@ -333,12 +342,14 @@ def make_swot_grid(_proc_count, jobs):
     while not tasks.ready():
         if not msg_queue.empty():
             msg = msg_queue.get()
-            mod_tools.update_progress_multiproc(status, msg)
+            if progress_bar is True:
+                mod_tools.update_progress_multiproc(status, msg)
         time.sleep(0.5)
 
     while not msg_queue.empty():
         msg = msg_queue.get()
-        mod_tools.update_progress_multiproc(status, msg)
+        if progress_bar is True:
+            mod_tools.update_progress_multiproc(status, msg)
 
     pool.close()
     pool.join()
@@ -351,6 +362,9 @@ def worker_method_grid(*args, **kwargs):
     p2, passtime, stime, x_al, x_ac, tcycle, al_cycle, nhalfswath, lon, lat, timeshift = _args[1:]
     p = mod_tools.fromdict(p2)
     npoints = 1
+    sat_elev= p.sat_elev
+    if sat_elev is None:
+        sat_elev = const.sat_elev
     # Detect indices corresponding to the pass
     if ipass == numpy.shape(passtime)[0]-1:
         ind = numpy.where((stime >= passtime[ipass]))[0]

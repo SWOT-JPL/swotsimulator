@@ -18,6 +18,15 @@ import swotsimulator.const as const
 logger = logging.getLogger(__name__)
 
 
+class IncompatibleGridError(Exception):
+    """Raised"""
+    def __init__(self, path, grid_hash, params_hash, *args, **kwargs):
+        """"""
+        self.path = path
+        self.grid = skimulator.grid_check.revert_b64_gzipped_hash(grid_hash)
+        self.p = skimulator.grid_check.revert_b64_gzipped_hash(params_hash)
+
+
 def read_params(params_file):
     """ Read parameters from parameters file and store it in p.\n
     This program is not used in swot_simulator."""
@@ -238,8 +247,9 @@ class Sat_SWOT():
         Variables are longitude, latitude, number of days in a cycle,
         distance crossed in a cycle, time, along track and across track
         distances are stored.'''
+        grid_params_hash = skimulator.grid_check.get_b64_gzipped_hash(p)
         # - Open Netcdf file in write mode
-        fid = Dataset(self.file, 'w')
+        fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
         # - Create Global attribute
         fid.title = 'SWOT swath grid simulated by SWOT simulator'
         fid.keywords = 'check keywords'  # Check keywords
@@ -273,6 +283,8 @@ class Sat_SWOT():
                          '33, 119-126, doi:10.1175/jtech-d-15-0160.1.'\
                          'http://dx.doi.org/10.1175/JTECH-D-15-0160.1.'
         fid.cycle = "{0:d}".format(int(self.al_cycle))
+        fid.track = "{} th pass".format(self.ipass)
+        fid.grid_params_hash = grid_params_hash
         # - Create dimensions
         fid.createDimension('time', numpy.shape(self.lon)[0])
         fid.createDimension('x_ac', numpy.shape(self.lon)[1])
@@ -295,7 +307,7 @@ class Sat_SWOT():
         vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
         vtime[:] = self.time
         vtime.axis = "T"
-        vtime.units = "days since the beginning of the sampling"
+        vtime.units = "days since {}".format(p.first_time)
         vtime.long_name = "Time"
         vtime.standard_name = "time"
         vtime.calendar = "gregorian"
@@ -428,8 +440,8 @@ class Sat_SWOT():
         vx_ac.long_name = "Across track distance from nadir"
         dim = [dim_tim, dim_ac, dim_rad]
         if 'empty_var' in kwargs:
-            dformat = '%Y-%m-%d %H:%M:%S'
-            start_date = datetime.datetime.strptime(self.start_date, dformat)
+            dformat = '%Y-%m-%dT%H:%M:%SZ'
+            start_date = datetime.datetime.strptime(p.first_time, dformat)
             first_date = datetime.datetime(2000, 1, 1)
             if start_date < first_date:
                 logger.info('start_date has been replaced by 1 January 2000'
@@ -445,7 +457,7 @@ class Sat_SWOT():
         else:
             vtime = fid.createVariable('time', 'u8', (dim_tim,))
             vtime[:] = numpy.rint(self.time * 86400 / scale)
-            vtime.units = "s"
+            vtime.units = "seconds since {}".format(p.first_time)"
             vtime.scale_factor = scale
             vtime.valid_min = 0
             vtime.long_name = "Time from beginning of simulation (in s)"
@@ -1084,6 +1096,10 @@ class NETCDF_MODEL():
     '''
     def __init__(self, p, nfile=None, var=None, lon=None, lat=None, depth=0,
                  time=0):
+        if p.list_input_var is None and p.var is not None:
+            self.input_var_list = {'ssh': [p.var, ''],}                                  }
+        else:
+            self.input_var_list = p.list_input_var
         if var is None:
             self.nvar = p.var
         else:
@@ -1104,14 +1120,22 @@ class NETCDF_MODEL():
         self.SSH_factor = getattr(p, 'SSH_factor', 1.)
         p.SSH_factor = self.SSH_factor
         self.grid = p.grid
+        logger.debug('Nan Values {}, {}'.format(p.model_nan, self.model_nan))
 
     def read_var(self, index=None):
         '''Read variables from netcdf file \n
         Argument is index=index to load part of the variable.'''
-        self.vvar = read_var(self.nfile, self.nvar, index=index,
-                             time=self.time, depth=self.depth,
-                             model_nan=self.model_nan)
-        self.vvar = self.vvar * self.SSH_factor
+        for key, value in self.input_var_list.items():
+            nfile0 = self.nfile[0]
+            _nfile = '{}{}.nc'.format(nfile0, value[1])
+            if os.path.exists(_nfile):
+                self.input_var[key] = read_var(_nfile, value[0], index=index,
+                                               time=self.time,
+                                               depth=self.depth,
+                                               model_nan=self.model_nan)
+            else:
+                logger.info('{} not found'.format(_nfile))
+        self.input_var['ssh'] = self.input_var['ssh'] * self.SSH_factor
         # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
         return None
 
@@ -1152,6 +1176,14 @@ class CLS_MODEL():
                  time=0):
         if var is None:
             self.nvar = p.var
+        if p.list_input_var is None and p.var is not None:
+            self.input_var_list = {'ssh': [p.var, ''],}                                  }
+        else:
+            self.input_var_list = p.list_input_var
+        if var is None:
+            self.nvar = p.var
+        else:
+            self.nvar = var
         if lon is None:
             self.nlon = p.lon
         if lat is None:
@@ -1169,12 +1201,18 @@ class CLS_MODEL():
     def read_var(self, index=None):
         '''Read variables from netcdf file \n
         Argument is index=index to load part of the variable.'''
-        self.vvar = numpy.transpose(read_var(self.nfile, self.nvar,
-                                    index=index, time=self.time,
-                                    depth=self.depth,
-                                    model_nan=self.model_nan))
-        self.vvar = self.vvar * self.SSH_factor
-        # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
+        for key, value in self.input_var_list.items():
+            nfile0 = self.nfile[0]
+            _nfile = '{}{}.nc'.format(nfile0, value[1])
+            if os.path.exists(_nfile):
+                self.input_var[key] = read_var(_nfile, value[0], index=index,
+                                               time=self.time,
+                                               depth=self.depth,
+                                               model_nan=self.model_nan)
+                self.input_var[key] = numpy.transpose(self.input_var[key])
+            else:
+                logger.info('{} not found'.format(_nfile))
+        self.input_var['ssh'] = self.input_var['ssh'] * self.SSH_factor
         return None
 
     def read_coordinates(self, index=None):
