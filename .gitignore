@@ -5,7 +5,6 @@
 *.nc
 build
 dist
-example/input_fields
 example/swot_output
 swotsimulator.egg-info
 params.py
