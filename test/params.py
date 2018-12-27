@@ -4,7 +4,7 @@
 ## -- Get the user home directory
 from os.path import expanduser
 import os
-home = expanduser("~")
+home = expanduser("~") + '/src/'
 # ------ Directory that contains orbit file:
 dir_setup = os.path.join(home, 'swotsimulator', 'data')
 # ------ Directory that contains your own inputs:
@@ -13,6 +13,7 @@ indatadir = os.path.join(home, 'swotsimulator', 'example',
 # ------ Directory that contains your outputs:
 outdatadir = os.path.join(home, 'swotsimulator', 'example',
                            'swot_output')
+outdatadir = '/mnt/data/project/swot/swot_output'
 # ------ Orbit file:
 # Order of columns (lon, lat, time) in the orbit file
 # (default is (1, 2, 0) with order_orbit_col = None)
@@ -22,6 +23,8 @@ satname = "science"
 filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
 # ------ Name of the configuration (to build output files names)
 config = "OREGON"
+#Number of processors to be used
+proc_number = 3
 
 # -----------------------#
 # SWOT swath parameters
@@ -30,7 +33,7 @@ config = "OREGON"
 # 	 (Final file name is root_name_[numberofpass].nc)
 filesgrid = os.path.join(outdatadir, '{}_{}_grid'.format(config,satname))
 # ------ Force the computation of the satellite grid:
-makesgrid = True
+makesgrid = False
 # ------ Give a subdomain if only part of the model is needed:
 #	 (modelbox=[lon_min, lon_max, lat_min, lat_max])
 # 	 (If modelbox is None, the whole domain of the model is considered)
@@ -42,7 +45,7 @@ halfgap = 10.
 # ------ Along track resolution (in km):
 delta_al = 2.
 # ------ Across track resolution (in km):
-delta_ac = 2.
+delta_ac = 6.
 # ------ Shift longitude of the orbit file if no pass is in the domain
 #        (in degree): Default value is None (no shift)
 shift_lon = None
@@ -95,7 +98,7 @@ file_output = os.path.join(outdatadir, '{}_{}'.format(config, satname))
 interpolation = 'linear'
 # ------ Save variables with all mockup variables ('all'), only swotsimulator
 #        variables ('classic', default behaviour) or in expert mode ('expert')
-save_variables = 'all'
+save_variables = 'classic' #mockup'
 
 # -----------------------#
 # SWOT error parameters

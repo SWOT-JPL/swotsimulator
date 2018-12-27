@@ -2,46 +2,82 @@ import sys
 import swotsimulator.mod_tools as mod_tools
 import argparse
 import logging
-logger = logging.getLogger()
-handler = logging.StreamHandler()
 
 
 def run_swot_script():
     """Run SWOT Simulator"""
     import swotsimulator.run_simulator as run_simulator
+    # Setup logging
+    main_logger = logging.getLogger()
+    main_logger.handlers = []
+    handler = logging.StreamHandler()
     handler.setLevel(logging.DEBUG)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    '''
+    main_logger.addHandler(handler)
+    main_logger.setLevel(logging.INFO)
+
     parser = argparse.ArgumentParser()
+    parser.add_argument('params_file', nargs='?', type=str, default=None,
+                        help='Path of the parameters file')
+    parser.add_argument('--die-on-error', action='store_true', default=False,
+                        help='Force simulation to quit on first error')
     parser.add_argument('--debug', action='store_true', default=False,
                         help='Display debug log messages')
+
     args = parser.parse_args()
-    if args.debug is True:
-        logger.setLevel(logging.DEBUG)
-    '''
-    if len(sys.argv) < 2:
+
+    if args.params_file is None:
         logger.error('Please specify a parameter file')
         sys.exit(1)
-    else:
-        file_param = str(sys.argv[1])
+
+    if args.debug is True:
+        main_logger.setLevel(logging.DEBUG)
+
+    file_param = args.params_file
 
     p = mod_tools.load_python_file(file_param)
-    run_simulator.run_simulator(p)
+    try:
+        run_simulator.run_simulator(p, args.die_on_error)
+    except KeyboardInterrupt:
+        logger.error('\nInterrupted by user (Ctrl+C)')
+        sys.exit(1)
+    sys.exit(0)
 
 
 def run_nadir_script():
     """Run Altimeter Simulator"""
     import swotsimulator.run_simulator as run_simulator
-    handler.setLevel(logging.ERROR)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
 
-    if len(sys.argv) < 2:
+    # Setup logging
+    main_logger = logging.getLogger()
+    main_logger.handlers = []
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG)
+    main_logger.addHandler(handler)
+    main_logger.setLevel(logging.INFO)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('params_file', nargs='?', type=str, default=None,
+                        help='Path of the parameters file')
+    parser.add_argument('--die-on-error', action='store_true', default=False,
+                        help='Force simulation to quit on first error')
+    parser.add_argument('--debug', action='store_true', default=False,
+                        help='Display debug log messages')
+
+    args = parser.parse_args()
+
+    if args.params_file is None:
         logger.error('Please specify a parameter file')
         sys.exit(1)
-    else:
-        file_param = str(sys.argv[1])
+
+    if args.debug is True:
+        main_logger.setLevel(logging.DEBUG)
+
+    file_param = args.params_file
 
     p = mod_tools.load_python_file(file_param)
-    run_simulator.run_nadir(p)
+    try:
+        run_simulator.run_nadir(p,  args.die_on_error)
+    except KeyboardInterrupt:
+        logger.error('\nInterrupted by user (Ctrl+C)')
+        sys.exit(1)
+    sys.exit(0)

@@ -73,7 +73,7 @@ class DyingOnError(Exception):
     pass
 
 
-def run_simulator(p, die_one_error=False):
+def run_simulator(p, die_on_error=False):
     '''Main routine to run simulator, input is the imported parameter file,
     no outputs are returned but netcdf grid and data files are written as well
     as a skimulator.output file to store all used parameter.
@@ -145,7 +145,7 @@ def run_simulator(p, die_one_error=False):
         # make nadir orbit
         orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
         # build swath for this orbit
-        build_swath.orbit2swath(modelbox, p, orb)
+        build_swath.orbit2swath(modelbox, p, orb, die_on_error)
         logger.info("\n SWOT Grids and nadir tracks have been written in "
                     "{}".format(p.outdatadir))
         logger.info("-----------------------------------------------")
@@ -185,7 +185,7 @@ def run_simulator(p, die_one_error=False):
     try:
         ok = make_swot_data(p.proc_count, jobs, die_on_error, p.progress_bar)
     except DyingOnError:
-        logger.error('An error occurred and all rerrors are fatal')
+        logger.error('An error occurred and all errors are fatal')
         sys.exit(1)
     # - Write Selected parameters in a txt file
     timestop = datetime.datetime.now()
@@ -196,9 +196,8 @@ def run_simulator(p, die_one_error=False):
     rw_data.write_params(p, op_file)
     if ok is True:
         if p.progress_bar is True:
-            __ = mod_tools.update_progress(1,
-                                          'All passes have been processed',
-                                             '')
+            __ = mod_tools.update_progress(1, 'All passes have been processed',
+                                           '')
         else:
             __ = logger.info('All passes have been processed')
         logger.info("\n Simulated swot files have been written in {}".format(
@@ -238,7 +237,7 @@ def show_errors(errors_queue):
         logger.error('  {}'.format('  \n'.join(exc)))
 
 
-def run_nadir(p):
+def run_nadir(p, die_on_error=False):
 
     # - Initialize some parameters values
     timestart = datetime.datetime.now()
@@ -502,7 +501,7 @@ def worker_method_swot(*args, **kwargs):
     msg_queue = _args[-1]
     sgridfile = _args[0]
     try:
-        _worker_method_skim(*_args, **kwargs)
+        _worker_method_swot(*_args, **kwargs)
     except:
         # Error sink
         import sys
@@ -521,7 +520,7 @@ def worker_method_swot(*args, **kwargs):
 
 
 def _worker_method_swot(*args, **kwargs):
-    _args = list(args)[0]
+    _args = list(args) #[0]
     msg_queue = _args.pop()
     sgridfile = _args[0]
     p2, listsgridfile, list_file, modelbox, model_data, modeltime, err, errnad = _args[1:]
@@ -551,34 +550,22 @@ def _worker_method_swot(*args, **kwargs):
         #    break
         # Add a message to tell the main program that the cycle is being
         # processed
-        msg_queue.put((os.getpid(), sgridfile, cycle + 1))
+        msg_queue.put((os.getpid(), sgridfile, cycle + 1, None))
 
         #   Process_cycle: create SWOT-like and Nadir-like data
         if not p.file_input:
             model_data = []
-        try:
-            nfile = numpy.shape(listsgridfile)[0]*rcycle
-            create = mod.create_SWOTlikedata(cycle, nfile, list_file, modelbox,
+        create = mod.create_SWOTlikedata(cycle, list_file, modelbox,
                                          sgrid, ngrid, model_data, modeltime,
                                          err, errnad, p, Teval=Teval,
                                          nTeval=nTeval)
-            SSH_true, SSH_true_nadir, vindice, vindice_nadir, time, Teval, nTeval, mask_land = create
-        except:
-            msg_queue.put((os.getpid(), sgridfile, -1))
+        out_var, time, Teval, nTeval = create
         #   Save outputs in a netcdf file
-        if (~numpy.isnan(vindice)).any() or not p.file_input:
-            try:
-                mod.save_SWOT(cycle, sgrid, err, p, mask_land, time=time,
-                              vindice=vindice,
-                              SSH_true=SSH_true, save_var=p.save_variables)
-            except:
-                msg_queue.put((os.getpid(), sgridfile, -1))
-            if p.nadir is True:
-                try:
-                    mod.save_Nadir(cycle, ngrid, errnad, err, p, time=time,
-                               vindice_nadir=vindice_nadir,
-                               SSH_true_nadir=SSH_true_nadir)
-                except:
-                    msg_queue.put((os.getpid(), sgridfile, -1))
+        if (~numpy.isnan(out_var['vindice'])).any() or not p.file_input:
+                mod.save_SWOT(cycle, sgrid, err, p, out_var, time=time,
+                              save_var=p.save_variables)
+                if p.nadir is True:
+                    mod.save_Nadir(cycle, ngrid, errnad, err, p, out_var,
+                                   time=time)
     # Add a special message once a grid has been completely processed
-    msg_queue.put((os.getpid(), sgridfile, None))
+    msg_queue.put((os.getpid(), sgridfile, None, None))

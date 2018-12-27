@@ -4,6 +4,7 @@ from scipy import interpolate
 import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
+import swotsimulator.run_simulator as run_simulator
 import os
 import multiprocessing
 import time
@@ -52,8 +53,8 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
                 break
     if 'cycle' in dic_sat.keys() and 'elevation' in dic_sat.keys():
         p.satcycle = dic_sat['cycle']
-        p.sat_elev = dic_sat['elevation'] 
-   
+        p.sat_elev = dic_sat['elevation']
+
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     # nop = numpy.shape(votime)[0]
     # tcycle = votime[nop-1] + votime[1] - votime[0]
@@ -267,7 +268,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     return orb
 
 
-def orbit2swath(modelbox, p, orb):
+def orbit2swath(modelbox, p, orb, die_on_error):
     '''Computes the swath of SWOT satellites on a subdomain from an orbit.
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
@@ -309,7 +310,11 @@ def orbit2swath(modelbox, p, orb):
     for ipass in range(ipass0, numpy.shape(passtime)[0]):
         jobs.append([ipass, p2, passtime, stime, x_al, x_ac, tcycle, al_cycle,
                      nhalfswath, lon, lat, orb.timeshift])
-    make_swot_grid(p.proc_count, jobs, p.progress_bar)
+    try:
+        ok = make_swot_grid(p.proc_count, jobs, die_on_error, p.progress_bar)
+    except run_simulator.DyingOnError:
+        logger.error('An error occurred and all errors are fatal')
+        sys.exit(1)
     if p.progress_bar is True:
         mod_tools.update_progress(1,  'All swaths have been processed', ' ')
     else:
@@ -317,17 +322,22 @@ def orbit2swath(modelbox, p, orb):
     return None
 
 
-def make_swot_grid(_proc_count, jobs, progress_bar):
+def make_swot_grid(_proc_count, jobs, die_on_error, progress_bar):
     """ Compute SWOT grids for every pass in the domain"""
     # - Set up parallelisation parameters
     proc_count = min(len(jobs), _proc_count)
 
     manager = multiprocessing.Manager()
     msg_queue = manager.Queue()
+    errors_queue = manager.Queue()
     pool = multiprocessing.Pool(proc_count)
     # Add the message queue to the list of arguments for each job
     # (it will be removed later)
     [j.append(msg_queue) for j in jobs]
+    # Add the errors queue to the list of arguments for each job
+    # (it will be removed later)
+    [j.append(errors_queue) for j in jobs]
+
     chunk_size = int(math.ceil(len(jobs) / proc_count))
     status = {}
     for n, w in enumerate(pool._pool):
@@ -337,29 +347,60 @@ def make_swot_grid(_proc_count, jobs, progress_bar):
         status[w.pid]['grids'] = [j[0] for j in proc_jobs]
         status[w.pid]['total'] = total
     sys.stdout.write('\n' * proc_count)
+
     tasks = pool.map_async(worker_method_grid, jobs, chunksize=chunk_size)
-    sys.stdout.flush()
+    ok = True
     while not tasks.ready():
         if not msg_queue.empty():
             msg = msg_queue.get()
-            if progress_bar is True:
-                mod_tools.update_progress_multiproc(status, msg)
+            _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
+                                               die_on_error, progress_bar)
+            ok = ok and _ok
         time.sleep(0.5)
 
     while not msg_queue.empty():
         msg = msg_queue.get()
-        if progress_bar is True:
-            mod_tools.update_progress_multiproc(status, msg)
-
+        _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
+                                           die_on_error, progress_bar)
+        ok = ok and _ok
+    sys.stdout.flush()
     pool.close()
     pool.join()
+    run_simulator.show_errors(errors_queue)
 
+    return ok
 
 def worker_method_grid(*args, **kwargs):
+    """Wrapper to handle errors occurring in the workers."""
     _args = list(args)[0]
+    errors_queue = _args.pop()  # not used by the actual implementation
+    msg_queue = _args[-1]
+    sgridfile = _args[0]
+    try:
+        _worker_method_grid(*_args, **kwargs)
+    except:
+        # Error sink
+        import sys
+        exc = sys.exc_info()
+        # Format exception as a string because pickle cannot serialize stack
+        # traces
+        exc_str = traceback.format_exception(exc[0], exc[1], exc[2])
+
+        # Pass the error message to both the messages queue and the errors
+        # queue
+        msg_queue.put((os.getpid(), sgridfile, -1, exc_str))
+        errors_queue.put((os.getpid(), sgridfile, -1, exc_str))
+        return False
+
+    return True
+
+
+def _worker_method_grid(*args, **kwargs):
+    _args = list(args)# [0]
     msg_queue = _args.pop()
     ipass = _args[0]
     p2, passtime, stime, x_al, x_ac, tcycle, al_cycle, nhalfswath, lon, lat, timeshift = _args[1:]
+
     p = mod_tools.fromdict(p2)
     npoints = 1
     sat_elev= p.sat_elev
@@ -441,7 +482,6 @@ def worker_method_grid(*args, **kwargs):
                         _lat = numpy.arange(lat1, lat2, (lat2 - lat1)/npoints)
                         sgrid.lat[i-npoints: i, nhalfswath+j] = _lat
         # if npoints>p.delta_al:
-        # print 'interp not coded'
         # for j in range(0, 2*int(nhalfswath+1)):
         # sgrid.lon[:,j]=numpy.arange(sgrid.lon[0,j], sgrid.lon[ind[-1],j],
         # (sgrid.lon[-1,j]-sgrid.lon[0,j])/npoints)
@@ -457,10 +497,12 @@ def worker_method_grid(*args, **kwargs):
         # Remove grid file if it exists and save it
         if os.path.exists(filesgrid):
             os.remove(filesgrid)
+        sgrid.first_time = p.first_time
         sgrid.write_swath()
         if p.nadir:
             if os.path.exists(filengrid):
                 os.remove(filengrid)
+            ngrid.first_time = p.first_time
             ngrid.write_orb()
-    msg_queue.put((os.getpid(), ipass, None))
+    msg_queue.put((os.getpid(), ipass, None, None))
     return None

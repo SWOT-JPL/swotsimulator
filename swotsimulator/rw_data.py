@@ -175,7 +175,12 @@ def write_var(fid, dim, key, value):
     ''' Write variable key with value value in netcdf file fid'''
     dim_tim, dim_ac, dim_rad = dim
     # Get attribute from dictionary
-    vdic = getattr(const, key)
+    try:
+        vdic = getattr(const, key)
+    except AttributeError:
+        vdic = {'scale':1, 'fill_value':1.36e9, 'varname': key, 'type': 'f8',
+                'longname': '', 'unit': '', 'min_value': -1.36e9,
+                'max_value': 1.36e9}
     scale = vdic['scale']
     fill_value = vdic['fill_value']
     # Write variables in 1d
@@ -247,7 +252,7 @@ class Sat_SWOT():
         Variables are longitude, latitude, number of days in a cycle,
         distance crossed in a cycle, time, along track and across track
         distances are stored.'''
-        grid_params_hash = skimulator.grid_check.get_b64_gzipped_hash(p)
+        #grid_params_hash = skimulator.grid_check.get_b64_gzipped_hash(p)
         # - Open Netcdf file in write mode
         fid = Dataset(self.file, 'w', format='NETCDF4_CLASSIC')
         # - Create Global attribute
@@ -283,8 +288,8 @@ class Sat_SWOT():
                          '33, 119-126, doi:10.1175/jtech-d-15-0160.1.'\
                          'http://dx.doi.org/10.1175/JTECH-D-15-0160.1.'
         fid.cycle = "{0:d}".format(int(self.al_cycle))
-        fid.track = "{} th pass".format(self.ipass)
-        fid.grid_params_hash = grid_params_hash
+        #fid.track = "{} th pass".format(self.ipass)
+        #fid.grid_params_hash = grid_params_hash
         # - Create dimensions
         fid.createDimension('time', numpy.shape(self.lon)[0])
         fid.createDimension('x_ac', numpy.shape(self.lon)[1])
@@ -307,7 +312,7 @@ class Sat_SWOT():
         vx_ac = fid.createVariable('x_ac', 'f4', (dim_ac,))
         vtime[:] = self.time
         vtime.axis = "T"
-        vtime.units = "days since {}".format(p.first_time)
+        vtime.units = "days since {}".format(self.first_time)
         vtime.long_name = "Time"
         vtime.standard_name = "time"
         vtime.calendar = "gregorian"
@@ -355,7 +360,7 @@ class Sat_SWOT():
         fid.close()
         return None
 
-    def write_data(self, **kwargs):
+    def write_data(self, out_var, **kwargs):
         '''Write SWOT data in output file file_output
         Dimensions are x_al (along track distance), x_ac (across
         track distance). \n
@@ -441,7 +446,7 @@ class Sat_SWOT():
         dim = [dim_tim, dim_ac, dim_rad]
         if 'empty_var' in kwargs:
             dformat = '%Y-%m-%dT%H:%M:%SZ'
-            start_date = datetime.datetime.strptime(p.first_time, dformat)
+            start_date = datetime.datetime.strptime(self.first_time, dformat)
             first_date = datetime.datetime(2000, 1, 1)
             if start_date < first_date:
                 logger.info('start_date has been replaced by 1 January 2000'
@@ -454,10 +459,14 @@ class Sat_SWOT():
                 time_sec.append(td.seconds + td.microseconds * 10**(-6))
             write_var(fid, dim, 'time_sec', numpy.asarray(time_sec))
             write_var(fid, dim, 'time_day', numpy.asarray(time_day))
+            for key, value in out_var.items():
+                if 'nadir' not in key and value.any():
+                    if key != 'ssh_true' and key!= 'vindice':
+                        write_var(fid, dim, key, value)
         else:
             vtime = fid.createVariable('time', 'u8', (dim_tim,))
             vtime[:] = numpy.rint(self.time * 86400 / scale)
-            vtime.units = "seconds since {}".format(p.first_time)"
+            vtime.units = "seconds since {}".format(self.first_time)
             vtime.scale_factor = scale
             vtime.valid_min = 0
             vtime.long_name = "Time from beginning of simulation (in s)"
@@ -474,6 +483,9 @@ class Sat_SWOT():
             vlat_nadir.valid_min = -80000000
             vlat_nadir.valid_max = 80000000
 
+            for key, value in out_var.items():
+                if 'nadir' not in key and value.any():
+                    write_var(fid, dim, key, value)
 
         for key, value in kwargs.items():
             if key == 'empty_var'and value is not None:
@@ -544,7 +556,7 @@ class Sat_SWOT():
         fid.close()
         return None
 
-    def write_expert_data(self, **kwargs):
+    def write_expert_data(self, out_var,  **kwargs):
         '''Write SWOT data in output file file_output
         Dimensions are x_al (along track distance), x_ac (across
         track distance). \n
@@ -654,6 +666,10 @@ class Sat_SWOT():
             elif key != 'empty_var' and value.any():
                 write_var(fid, dim, key, value)
         fid.close()
+        for key, value in out_var.items():
+            if 'nadir' not in key and value.any():
+                write_var(fid, dim, key, value)
+
         return None
 
 
@@ -717,7 +733,7 @@ class Sat_nadir():
         fid.close()
         return None
 
-    def write_data(self, **kwargs):
+    def write_data(self, out_var, **kwargs):
         '''Write SWOT data in output file file_output
         Dimensions are x_al (along track distance), x_ac (across
         track distance). \n
@@ -780,7 +796,7 @@ class Sat_nadir():
         vcycle = fid.createVariable('ncycle', 'f4', (dim_1,))
         scale = 1e-6
         vtime[:] = numpy.rint(self.time * 86400 / scale)
-        vtime.units = "s"
+        vtime.units = "seconds since {}".format(self.first_time)
         vtime.long_name = "Time from beginning of simulation (in s)"
         vtime.scale_factor = scale
         vtime.valid_min = 0
@@ -805,6 +821,9 @@ class Sat_nadir():
         dim = [dim_tim, 0, 0]
         for key, value in kwargs.items():
             if value.any():
+                write_var(fid, dim, key, value)
+        for key, value in out_var.items():
+            if 'nadir' in key:
                 write_var(fid, dim, key, value)
         fid.close()
         return None
@@ -865,7 +884,7 @@ class Sat_nadir():
         vtimeshift = fid.createVariable('timeshift', 'f4', ('cycle',))
         vx_al = fid.createVariable('x_al', 'f4', ('time',))
         vtime[:] = self.time
-        vtime.units = "days"
+        vtime.units = "days since {}".format(self.first_time)
         vlon[:] = self.lon
         vlon.units = "deg"
         vlat[:] = self.lat
@@ -1096,10 +1115,14 @@ class NETCDF_MODEL():
     '''
     def __init__(self, p, nfile=None, var=None, lon=None, lat=None, depth=0,
                  time=0):
-        if p.list_input_var is None and p.var is not None:
-            self.input_var_list = {'ssh': [p.var, ''],}                                  }
+        if (p.list_input_var is None) and (var is not None):
+            self.input_var_list = {'ssh_true': [var, '']}
         else:
             self.input_var_list = p.list_input_var
+        if 'ssh_true' not in self.input_var_list:
+            logger.error('Wrong parameter file: list_input_var must contain'
+                         'ssh_true key')
+            sys.exit(1)
         if var is None:
             self.nvar = p.var
         else:
@@ -1120,13 +1143,14 @@ class NETCDF_MODEL():
         self.SSH_factor = getattr(p, 'SSH_factor', 1.)
         p.SSH_factor = self.SSH_factor
         self.grid = p.grid
+        self.input_var = {}
         logger.debug('Nan Values {}, {}'.format(p.model_nan, self.model_nan))
 
     def read_var(self, index=None):
         '''Read variables from netcdf file \n
         Argument is index=index to load part of the variable.'''
         for key, value in self.input_var_list.items():
-            nfile0 = self.nfile[0]
+            nfile0 = self.nfile
             _nfile = '{}{}.nc'.format(nfile0, value[1])
             if os.path.exists(_nfile):
                 self.input_var[key] = read_var(_nfile, value[0], index=index,
@@ -1135,7 +1159,7 @@ class NETCDF_MODEL():
                                                model_nan=self.model_nan)
             else:
                 logger.info('{} not found'.format(_nfile))
-        self.input_var['ssh'] = self.input_var['ssh'] * self.SSH_factor
+        self.input_var['ssh_true'] = self.input_var['ssh_true']*self.SSH_factor
         # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
         return None
 
@@ -1177,7 +1201,7 @@ class CLS_MODEL():
         if var is None:
             self.nvar = p.var
         if p.list_input_var is None and p.var is not None:
-            self.input_var_list = {'ssh': [p.var, ''],}                                  }
+            self.input_var_list = {'ssh': [p.var, ''],}
         else:
             self.input_var_list = p.list_input_var
         if var is None:

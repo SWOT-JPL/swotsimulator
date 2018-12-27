@@ -47,6 +47,7 @@ def initialize_parameters(p):
     p.model = model
     p.model_nan = getattr(p, 'model_nan', 0)
     p.SSH_factor = getattr(p, 'SSH_factor', 1.)
+    p.var = getattr(p, 'var', None)
     p.first_time = getattr(p, 'first_time', '2018-01-01T00:00:00Z')
     p.list_input_var = getattr(p, 'list_input_var', None)
     p.nadir = getattr(p, 'nadir', True)

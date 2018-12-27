@@ -54,7 +54,7 @@ pd = {'varname': 'pd',
       'type': 'i4',
       'scale': 1e-4
       }
-SSH_model = {'varname': 'ssh_model',
+ssh_true = {'varname': 'ssh_model',
              'longname': 'SSH interpolated from model',
              'unit': 'm',
              'fill_value': i4_nan,
@@ -63,7 +63,7 @@ SSH_model = {'varname': 'ssh_model',
              'type': 'i4',
              'scale': 1e-4
              }
-SSH_obs = {'varname': 'ssh_obs',
+ssh_obs = {'varname': 'ssh_obs',
            'longname': 'Observed SSH (ssh_model + errors)',
            'unit': 'm',
            'fill_value': i4_nan,

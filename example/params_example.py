@@ -21,9 +21,9 @@ order_orbit_col = None
 satname = "science"
 filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
 # ------ Number of days in one cycle
-satcycle = 20.85455
+satcycle = 20.86455
 # ------ Satellite elevation
-sat_elev = 817 * 10**3
+sat_elev = 891 * 10**3
 #sat_elev = 699 * 10**3
 # ------ Name of the configuration (to build output files names)
 config = "OREGON"
@@ -74,19 +74,22 @@ model = 'NETCDF_MODEL'
 # ------ First time of the model
 first_time = '2011-11-15T00:00:00Z'
 # ------ Grid file name
-file_grid_model = os.path.join(indatadir, 'ww3.20111115_cur.nc')
+file_grid_model = os.path.join(indatadir, 'OREGON_grd.nc')
 # ------ Type of grid:
 #        'regular' or 'irregular', if 'regular' only 1d coordinates
 #        are extracted from model
 grid = 'irregular'
-# ------ Specify list of variables:
-list_input_var = {'ssh': ['H', '']}
+# ------ Specify list of variables, using the format: {key: [variable_name,
+#        file_suffix], ...}, should contain at least the key 'ssh_true':
+list_input_var = {'ssh_true': ['H', '']}
 # ------ Specify factor to convert SSH values in m:
 SSH_factor = 1.
 # ------ Specify longitude variable:
 lon = 'lon_rho'
 # ------ Specify latitude variable:
 lat = 'lat_rho'
+# ------ Specify number of time in each file:
+dim_time = 1
 # ------ Time step between two model outputs (in days):
 timestep = 1.
 # ------ Number of outputs to consider:
