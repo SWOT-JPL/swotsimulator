@@ -62,11 +62,8 @@ def initialize_parameters(p):
     p.file_coeff = getattr(p, 'file_coeff', None)
     p.start_date = getattr(p, 'start_date', '2000-01-01 00:00:00')
     p.orbit_cycle = getattr(p, 'orbit_cycle', const.tcycle)
-    listo = ['wlv', 'ssh_obs', 'ur_true', 'ucur', 'vcur', 'uuss', 'vuss',
-             'radial_angle', 'vwnd', 'mssx', 'mssy', 'mssxy', 'uwb',
-             'vindice', 'ur_obs', 'mask', 'uwnd', 'sigma0', 'ice']
-    p.list_output = getattr(p, 'list_output', listo)
     p.progress_bar = getattr(p, 'progress_bar', True)
+    p.dim_time = getattr(p, 'dim_time', True)
     check_option(p)
     return None
 

@@ -18,17 +18,26 @@ outdatadir = os.path.join(home, 'swotsimulator', 'example',
 # (default is (1, 2, 0) with order_orbit_col = None)
 order_orbit_col = None
 # Name of the orbit file
-filesat = [dir_setup + os.sep + 'ephem_science_sept2015_ell.txt']
+satname = "science"
+filesat = os.path.join(dir_setup, 'ephem_science_sept2015_ell.txt')
+# ------ Number of days in one cycle
+satcycle = 20.86455
+# ------ Satellite elevation
+sat_elev = 891 * 10**3
 # , dir_setup+os.sep+'orbjason.txt', dir_setup+os.sep+'orbaltika.txt' ]
 # ------ Name of the configuration (to build output files names) 
 config="OREGON"
+#Number of processors to be used
+proc_number = 1
+# ------ Deactivate printing of progress bar to avoid huge log
+progress_bar = True
 
 # -----------------------# 
 # SWOT swath parameters 
 # -----------------------# 
 # ------ Satellite grid file root name:
 # 	 (Final file name is root_name_[numberofpass].nc)
-filesgrid = outdatadir + os.sep + config + '_grid'
+filesgrid = os.path.join(outdatadir, '{}_{}_grid'.format(config,satname))
 # ------ Force the computation of the satellite grid:
 makesgrid = True
 # ------ Give a subdomain if only part of the model is needed:
@@ -51,23 +60,30 @@ shift_time = None
 #	 (The first file contains the grid and is not considered as model data)
 #        To generate the noise alone, file_input=None and specify region 
 #        in modelbox
-file_input = indatadir + os.sep + 'list_of_file.txt'
+file_input = os.path.join(indatadir, 'list_of_file.txt')
 # ------ Type of model data: 
 #	 (Optional, default is NETCDF_MODEL and reads netcdf3 and netcdf4 files)
 #	 (Other options are ROMS, NEMO and CLS to read Nemo, roms or CLS)
 model = 'NETCDF_MODEL'
 # ------ Type of grid: 
+# ------ First time of the model
+first_time = '2011-11-15T00:00:00Z'
+# ------ Grid file name
+file_grid_model = os.path.join(indatadir, 'OREGON_grd.nc')
 #        'regular' or 'irregular', if 'regular' only 1d coordinates 
 #        are extracted from model       
 grid = 'irregular'
-# ------ Specify SSH variable:
-var = 'H'
+# ------ Specify list of variables, using the format: {key: [variable_name,
+#        file_suffix], ...}, should contain at least the key 'ssh_true':
+list_input_var = {'ssh_true': ['H', '']}
 # ------ Specify factor to convert SSH values in m:
 SSH_factor = 1.
 # ------ Specify longitude variable:
 lon = 'lon_rho'
 # ------ Specify latitude variable:
 lat = 'lat_rho'
+# ------ Specify number of time in each file:
+dim_time = 1
 # ------ Time step between two model outputs (in days):
 timestep = 1.
 # ------ Number of outputs to consider:

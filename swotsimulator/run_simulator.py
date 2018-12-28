@@ -73,7 +73,7 @@ class DyingOnError(Exception):
     pass
 
 
-def run_simulator(p, die_on_error=False):
+def run_simulator(p, die_on_error=False, nadir_alone=False):
     '''Main routine to run simulator, input is the imported parameter file,
     no outputs are returned but netcdf grid and data files are written as well
     as a skimulator.output file to store all used parameter.
@@ -145,14 +145,19 @@ def run_simulator(p, die_on_error=False):
         # make nadir orbit
         orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
         # build swath for this orbit
-        build_swath.orbit2swath(modelbox, p, orb, die_on_error)
-        logger.info("\n SWOT Grids and nadir tracks have been written in "
-                    "{}".format(p.outdatadir))
+        if nadir_alone is True:
+            build_swath.orbit2nadir(modelbox, p, orb, die_on_error)
+            logger.info("\n Nadir tracks have been written in "
+                        "{}".format(p.outdatadir))
+        else:
+            build_swath.orbit2swath(modelbox, p, orb, die_on_error)
+            logger.info("\n SWOT Grids and nadir tracks have been written in "
+                        "{}".format(p.outdatadir))
         logger.info("-----------------------------------------------")
 
     # - Initialize random coefficients that are used to compute
     #   random errors following the specified spectrum
-    err, errnad = mod.load_error(p)
+    err, errnad = mod.load_error(p, nadir_alone=nadir_alone)
 
     # - Compute interpolated SSH and errors for each pass, at each
     #   cycle
@@ -332,7 +337,7 @@ def run_nadir(p, die_on_error=False):
 
     # - Initialize random coefficients that are used to compute
     #   random errors following the specified spectrum
-    err, errnad = mod.load_error(p)
+    err, errnad = mod.load_error(p, nadir_alone=nadir_alone)
 
     # - Compute interpolated SSH and errors for each pass, at each
     #   cycle
@@ -525,14 +530,22 @@ def _worker_method_swot(*args, **kwargs):
     sgridfile = _args[0]
     p2, listsgridfile, list_file, modelbox, model_data, modeltime, err, errnad = _args[1:]
     p = mod_tools.fromdict(p2)
+    if err is None:
+        nadir_alone = True
+    else:
+        nadir_alone = False
+    compute_nadir = ((p.nadir is True) or (nadir_alone is True))
     #   Load SWOT grid files (Swath and nadir)
-    sgrid = mod.load_sgrid(sgridfile, p)
-    sgrid.gridfile = sgridfile
-    if p.nadir is True:
-        ngrid = mod.load_ngrid(sgridfile, p)
+    if compute_nadir is True:
+        ngrid = mod.load_ngrid(sgridfile, p, nadir_alone=nadir_alone)
         ngrid.gridfile = sgridfile
     else:
         ngrid = None
+    if nadir_alone is False:
+        sgrid = mod.load_sgrid(sgridfile, p)
+        sgrid.gridfile = sgridfile
+    else:
+        sgrid = ngrid
     # Set Teval and nTeval to None to interpolate the mask once
     Teval = None
     nTeval = None
@@ -561,11 +574,14 @@ def _worker_method_swot(*args, **kwargs):
                                          nTeval=nTeval)
         out_var, time, Teval, nTeval = create
         #   Save outputs in a netcdf file
+        if nadir_alone is True:
+            out_var['vindice'] = + out_var['vindice_nadir']
         if (~numpy.isnan(out_var['vindice'])).any() or not p.file_input:
+            if nadir_alone is False:
                 mod.save_SWOT(cycle, sgrid, err, p, out_var, time=time,
                               save_var=p.save_variables)
-                if p.nadir is True:
-                    mod.save_Nadir(cycle, ngrid, errnad, err, p, out_var,
-                                   time=time)
+            if compute_nadir is True:
+                mod.save_Nadir(cycle, ngrid, errnad, err, p, out_var,
+                               time=time)
     # Add a special message once a grid has been completely processed
     msg_queue.put((os.getpid(), sgridfile, None, None))

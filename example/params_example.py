@@ -19,12 +19,11 @@ outdatadir = os.path.join(home, 'swotsimulator', 'example',
 order_orbit_col = None
 # Name of the orbit file
 satname = "science"
-filesat = dir_setup + os.sep + 'ephem_science_sept2015_ell.txt'
+filesat = os.path.join(dir_setup, 'ephem_science_sept2015_ell.txt')
 # ------ Number of days in one cycle
 satcycle = 20.86455
 # ------ Satellite elevation
 sat_elev = 891 * 10**3
-#sat_elev = 699 * 10**3
 # ------ Name of the configuration (to build output files names)
 config = "OREGON"
 #Number of processors to be used

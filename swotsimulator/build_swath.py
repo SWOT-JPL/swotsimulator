@@ -128,20 +128,21 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # modelbox=[lonmin lonmax latmin latmax] add margin around the domain
     # plus one point to compute Satdir
     matnpbox = numpy.zeros((nop))
+    halfswath = getattr(p, 'halfswath', 1)
     if modelbox[0] > modelbox[1]:
-        matnpbox[numpy.where((((modelbox[0] - p.halfswath / (const.deg2km
+        matnpbox[numpy.where((((modelbox[0] - halfswath / (const.deg2km
                  * math.cos(modelbox[2]*math.pi/180.))) <= volon)
-                 | (volon <= (modelbox[1] + p.halfswath/(const.deg2km
+                 | (volon <= (modelbox[1] + halfswath/(const.deg2km
                               * math.cos(modelbox[3]*math.pi/180.)))))
-                 & ((modelbox[2] - p.halfswath/const.deg2km) <= volat)
-                 & ((modelbox[3] + p.halfswath/const.deg2km) >= volat))] = 1
+                 & ((modelbox[2] - halfswath/const.deg2km) <= volat)
+                 & ((modelbox[3] + halfswath/const.deg2km) >= volat))] = 1
     else:
-        matnpbox[numpy.where(((modelbox[0] - p.halfswath / (const.deg2km
+        matnpbox[numpy.where(((modelbox[0] - halfswath / (const.deg2km
                  * math.cos(modelbox[2]*math.pi/180.))) <= volon)
-                 & (volon <= (modelbox[1] + p.halfswath/(const.deg2km
+                 & (volon <= (modelbox[1] + halfswath/(const.deg2km
                               * math.cos(modelbox[3]*math.pi/180.))))
-                 & ((modelbox[2] - p.halfswath/const.deg2km) <= volat)
-                 & ((modelbox[3] + p.halfswath/const.deg2km) >= volat))] = 1
+                 & ((modelbox[2] - halfswath/const.deg2km) <= volat)
+                 & ((modelbox[3] + halfswath/const.deg2km) >= volat))] = 1
     norp = int(numpy.sum(matnpbox))
     # Initialize total distance travelled by the satellite since the first
     # point of the cycle in the subdomain at low (orbital file) resolution
@@ -267,6 +268,48 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     orb.sat_elev = p.sat_elev
     return orb
 
+def orbit2nadir(modelbox, p, orb, die_on_error):
+    '''Computes the nadir satellites on a subdomain from an orbit.
+    The path of the satellite is given by the orbit file and the subdomain
+    corresponds to the one in the model. Note that a subdomain can be manually
+    added in the parameters file. \n
+    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Nadir
+    parameters (along track resolution p.delta_al). \n
+    Outputs are netcdf files containing SWOT tracks (along track distance x_al,
+    longitude lon and latitude lat,
+    number of days in a cycle cycle, distance crossed in a cycle cycle_al,
+    time'''
+    ''' Compute orbit from Swath '''
+    # - Load altimeter orbit
+    x_al = orb.x_al
+    stime = orb.time
+    lon = orb.lon
+    lat = orb.lat
+    tcycle = orb.cycle
+    al_cycle = orb.al_cycle
+    passtime = orb.passtime
+
+    # - Computation of Nadir track and storage by passes
+    logger.info('\n Compute Nadir track')
+    # Detect first pass that is in the subdomain
+    ipass0 = 0
+    # strpass = []
+    # Loop on all passes after the first pass detected
+    jobs = []
+    p2 = mod_tools.todict(p)
+    for ipass in range(ipass0, numpy.shape(passtime)[0]):
+        jobs.append([ipass, p2, passtime, stime, x_al, tcycle, al_cycle,
+                     lon, lat, orb.timeshift])
+    try:
+        ok = make_nadir_grid(p.proc_count, jobs, die_on_error, p.progress_bar)
+    except run_simulator.DyingOnError:
+        logger.error('An error occurred and all errors are fatal')
+        sys.exit(1)
+    if p.progress_bar is True:
+        mod_tools.update_progress(1,  'All swaths have been processed', ' ')
+    else:
+        logger.info('All swaths have been processed')
+    return None
 
 def orbit2swath(modelbox, p, orb, die_on_error):
     '''Computes the swath of SWOT satellites on a subdomain from an orbit.
@@ -370,6 +413,56 @@ def make_swot_grid(_proc_count, jobs, die_on_error, progress_bar):
 
     return ok
 
+
+def make_nadir_grid(_proc_count, jobs, die_on_error, progress_bar):
+    """ Compute SWOT grids for every pass in the domain"""
+    # - Set up parallelisation parameters
+    proc_count = min(len(jobs), _proc_count)
+
+    manager = multiprocessing.Manager()
+    msg_queue = manager.Queue()
+    errors_queue = manager.Queue()
+    pool = multiprocessing.Pool(proc_count)
+    # Add the message queue to the list of arguments for each job
+    # (it will be removed later)
+    [j.append(msg_queue) for j in jobs]
+    # Add the errors queue to the list of arguments for each job
+    # (it will be removed later)
+    [j.append(errors_queue) for j in jobs]
+
+    chunk_size = int(math.ceil(len(jobs) / proc_count))
+    status = {}
+    for n, w in enumerate(pool._pool):
+        status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
+        total = min(chunk_size, (len(jobs) - n * chunk_size))
+        proc_jobs = jobs[n::proc_count]
+        status[w.pid]['grids'] = [j[0] for j in proc_jobs]
+        status[w.pid]['total'] = total
+    sys.stdout.write('\n' * proc_count)
+
+    tasks = pool.map_async(worker_method_nadir, jobs, chunksize=chunk_size)
+    ok = True
+    while not tasks.ready():
+        if not msg_queue.empty():
+            msg = msg_queue.get()
+            _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
+                                               die_on_error, progress_bar)
+            ok = ok and _ok
+        time.sleep(0.5)
+
+    while not msg_queue.empty():
+        msg = msg_queue.get()
+        _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
+                                           die_on_error, progress_bar)
+        ok = ok and _ok
+    sys.stdout.flush()
+    pool.close()
+    pool.join()
+    run_simulator.show_errors(errors_queue)
+
+    return ok
+
+
 def worker_method_grid(*args, **kwargs):
     """Wrapper to handle errors occurring in the workers."""
     _args = list(args)[0]
@@ -378,6 +471,31 @@ def worker_method_grid(*args, **kwargs):
     sgridfile = _args[0]
     try:
         _worker_method_grid(*_args, **kwargs)
+    except:
+        # Error sink
+        import sys
+        exc = sys.exc_info()
+        # Format exception as a string because pickle cannot serialize stack
+        # traces
+        exc_str = traceback.format_exception(exc[0], exc[1], exc[2])
+
+        # Pass the error message to both the messages queue and the errors
+        # queue
+        msg_queue.put((os.getpid(), sgridfile, -1, exc_str))
+        errors_queue.put((os.getpid(), sgridfile, -1, exc_str))
+        return False
+
+    return True
+
+
+def worker_method_nadir(*args, **kwargs):
+    """Wrapper to handle errors occurring in the workers."""
+    _args = list(args)[0]
+    errors_queue = _args.pop()  # not used by the actual implementation
+    msg_queue = _args[-1]
+    sgridfile = _args[0]
+    try:
+        _worker_method_nadir(*_args, **kwargs)
     except:
         # Error sink
         import sys
@@ -504,5 +622,52 @@ def _worker_method_grid(*args, **kwargs):
                 os.remove(filengrid)
             ngrid.first_time = p.first_time
             ngrid.write_orb()
+    msg_queue.put((os.getpid(), ipass, None, None))
+    return None
+
+
+def _worker_method_nadir(*args, **kwargs):
+    _args = list(args)# [0]
+    msg_queue = _args.pop()
+    ipass = _args[0]
+    p2, passtime, stime, x_al, tcycle, al_cycle, lon, lat, timeshift = _args[1:]
+
+    p = mod_tools.fromdict(p2)
+    npoints = 1
+    sat_elev= p.sat_elev
+    if sat_elev is None:
+        sat_elev = const.sat_elev
+    # Detect indices corresponding to the pass
+    if ipass == numpy.shape(passtime)[0]-1:
+        ind = numpy.where((stime >= passtime[ipass]))[0]
+    else:
+        ind = numpy.where((stime >= passtime[ipass])
+                          & (stime < passtime[ipass+1]))[0]
+    nind = numpy.shape(ind)[0]
+    # Compute swath grid if pass is in the subdomain
+    if nind > 5:
+        # pstep = float(ipass + 1) / float(numpy.shape(passtime)[0])
+        # str1 = 'selected pass: {}'.format(ipass + 1)
+        # mod_tools.update_progress(pstep, str1, None)
+        # Initialize SWOT grid, grid variables and Satellite
+        # direction and Location
+
+        # Initialize Nadir track, grid variables
+        filengrid = '{}_p{:03d}.nc'.format(p.filesgrid,ipass + 1)
+        ngrid = rw_data.Sat_nadir(nfile=filengrid)
+        ngrid.x_al = x_al[ind]
+        ngrid.cycle = tcycle
+        ngrid.al_cycle = al_cycle
+        ngrid.time = stime[ind]
+
+        # Save ngrid object
+        ngrid.timeshift = timeshift
+        ngrid.lon = (lon[ind] + 360) % 360
+        ngrid.lat = lat[ind]
+        # Remove grid file if it exists and save it
+        if os.path.exists(filengrid):
+            os.remove(filengrid)
+        ngrid.first_time = p.first_time
+        ngrid.write_orb()
     msg_queue.put((os.getpid(), ipass, None, None))
     return None

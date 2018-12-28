@@ -76,7 +76,8 @@ def run_nadir_script():
 
     p = mod_tools.load_python_file(file_param)
     try:
-        run_simulator.run_nadir(p,  args.die_on_error)
+        run_simulator.run_simulator(p, die_on_error=args.die_on_error,
+                                    nadir_alone=True)
     except KeyboardInterrupt:
         logger.error('\nInterrupted by user (Ctrl+C)')
         sys.exit(1)
