@@ -65,11 +65,11 @@ file_input = os.path.join(indatadir, 'list_of_file.txt')
 #	 (Optional, default is NETCDF_MODEL and reads netcdf3 and netcdf4 files)
 #	 (Other options are ROMS, NEMO and CLS to read Nemo, roms or CLS)
 model = 'NETCDF_MODEL'
-# ------ Type of grid: 
 # ------ First time of the model
 first_time = '2011-11-15T00:00:00Z'
 # ------ Grid file name
 file_grid_model = os.path.join(indatadir, 'OREGON_grd.nc')
+# ------ Type of grid: 
 #        'regular' or 'irregular', if 'regular' only 1d coordinates 
 #        are extracted from model       
 grid = 'irregular'

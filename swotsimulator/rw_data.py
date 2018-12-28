@@ -1115,8 +1115,12 @@ class NETCDF_MODEL():
     '''
     def __init__(self, p, nfile=None, var=None, lon=None, lat=None, depth=0,
                  time=0):
-        if (p.list_input_var is None) and (var is not None):
-            self.input_var_list = {'ssh_true': [var, '']}
+        if var is None:
+            self.nvar = p.var
+        else:
+            self.nvar = var
+        if (p.list_input_var is None) and (self.nvar is not None):
+            self.input_var_list = {'ssh_true': [self.nvar, '']}
         else:
             self.input_var_list = p.list_input_var
         if 'ssh_true' not in self.input_var_list:

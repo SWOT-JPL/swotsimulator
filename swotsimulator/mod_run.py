@@ -413,7 +413,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                                 _ssh = interp(swath_def, input_var[key],
                                               ngrid_def,
                                               p.delta_al,
-                                              interp_typ(ke=p.interpolation)
+                                              interp_type=p.interpolation)
                                 nkey = '{}_nadir'.format(key)
                                 out_var[nkey][ind_nadir_time[0]] = _ssh
                     except ImportError:
