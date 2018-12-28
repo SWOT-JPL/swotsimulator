@@ -97,7 +97,7 @@ model_nan = 0.
 # -----------------------# 
 # ------ Output file root name:
 #	 (Final file name is root_name_c[cycle].nc
-file_output = outdatadir + os.sep + config
+file_output = os.path.join(outdatadir, '{}_{}'.format(config,satname))
 # ------ Interpolation of the SSH from the model (if grid is irregular and 
 #         pyresample is not installed:
 #        (either 'linear' or 'nearest', use 'nearest' for large region
