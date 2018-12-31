@@ -5,9 +5,11 @@ import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
 import swotsimulator.run_simulator as run_simulator
+import swotsimulator.mod_parallel as parallel
 import os
 import multiprocessing
 import time
+import traceback
 import logging
 import sys
 
@@ -369,47 +371,16 @@ def make_swot_grid(_proc_count, jobs, die_on_error, progress_bar):
     """ Compute SWOT grids for every pass in the domain"""
     # - Set up parallelisation parameters
     proc_count = min(len(jobs), _proc_count)
+    jobs_manager = parallel.JobsManager(proc_count,
+                                        mod_tools.update_progress_multiproc,
+                                        exc_formatter, err_formatter)
 
-    manager = multiprocessing.Manager()
-    msg_queue = manager.Queue()
-    errors_queue = manager.Queue()
-    pool = multiprocessing.Pool(proc_count)
-    # Add the message queue to the list of arguments for each job
-    # (it will be removed later)
-    [j.append(msg_queue) for j in jobs]
-    # Add the errors queue to the list of arguments for each job
-    # (it will be removed later)
-    [j.append(errors_queue) for j in jobs]
+    ok = jobs_manager.submit_jobs(worker_method_grid, jobs, die_on_error,
+                                  progress_bar)
 
-    chunk_size = int(math.ceil(len(jobs) / proc_count))
-    status = {}
-    for n, w in enumerate(pool._pool):
-        status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
-        total = min(chunk_size, (len(jobs) - n * chunk_size))
-        proc_jobs = jobs[n::proc_count]
-        status[w.pid]['grids'] = [j[0] for j in proc_jobs]
-        status[w.pid]['total'] = total
-    sys.stdout.write('\n' * proc_count)
-
-    tasks = pool.map_async(worker_method_grid, jobs, chunksize=chunk_size)
-    ok = True
-    while not tasks.ready():
-        if not msg_queue.empty():
-            msg = msg_queue.get()
-            _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
-                                               die_on_error, progress_bar)
-            ok = ok and _ok
-        time.sleep(0.5)
-
-    while not msg_queue.empty():
-        msg = msg_queue.get()
-        _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
-                                           die_on_error, progress_bar)
-        ok = ok and _ok
-    sys.stdout.flush()
-    pool.close()
-    pool.join()
-    run_simulator.show_errors(errors_queue)
+    if not ok:
+        # Display errors once the processing is done
+        jobs_manager.show_errors()
 
     return ok
 
@@ -419,50 +390,38 @@ def make_nadir_grid(_proc_count, jobs, die_on_error, progress_bar):
     # - Set up parallelisation parameters
     proc_count = min(len(jobs), _proc_count)
 
-    manager = multiprocessing.Manager()
-    msg_queue = manager.Queue()
-    errors_queue = manager.Queue()
-    pool = multiprocessing.Pool(proc_count)
-    # Add the message queue to the list of arguments for each job
-    # (it will be removed later)
-    [j.append(msg_queue) for j in jobs]
-    # Add the errors queue to the list of arguments for each job
-    # (it will be removed later)
-    [j.append(errors_queue) for j in jobs]
+    jobs_manager = parallel.JobsManager(proc_count,
+                                        mod_tools.update_progress_multiproc,
+                                        exc_formatter, err_formatter)
 
-    chunk_size = int(math.ceil(len(jobs) / proc_count))
-    status = {}
-    for n, w in enumerate(pool._pool):
-        status[w.pid] = {'done': 0, 'total': 0, 'grids': None, 'extra': ''}
-        total = min(chunk_size, (len(jobs) - n * chunk_size))
-        proc_jobs = jobs[n::proc_count]
-        status[w.pid]['grids'] = [j[0] for j in proc_jobs]
-        status[w.pid]['total'] = total
-    sys.stdout.write('\n' * proc_count)
+    ok = jobs_manager.submit_jobs(worker_method_nadir, jobs, die_on_error,
+                                  progress_bar)
 
-    tasks = pool.map_async(worker_method_nadir, jobs, chunksize=chunk_size)
-    ok = True
-    while not tasks.ready():
-        if not msg_queue.empty():
-            msg = msg_queue.get()
-            _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
-                                               die_on_error, progress_bar)
-            ok = ok and _ok
-        time.sleep(0.5)
-
-    while not msg_queue.empty():
-        msg = msg_queue.get()
-        _ok = run_simulator.handle_message(errors_queue, status, msg, pool,
-                                           die_on_error, progress_bar)
-        ok = ok and _ok
-    sys.stdout.flush()
-    pool.close()
-    pool.join()
-    run_simulator.show_errors(errors_queue)
+    if not ok:
+        # Display errors once the processing is done
+        jobs_manager.show_errors()
 
     return ok
 
 
+def exc_formatter(exc):
+    """Format exception returned by sys.exc_info() as a string so that it can
+    be serialized by pickle and stored in the JobsManager."""
+    error_msg = traceback.format_exception(exc[0], exc[1], exc[2])
+    return error_msg
+
+
+def err_formatter(pid, ipass, cycle, exc):
+    """Transform errors stored by the JobsManager into readable messages."""
+    msg = None
+    if cycle < 0:
+        msg = '/!\ Error occurred while processing pass {}'.format(ipass)
+    else:
+        _msg = '/!\ Error occurred while processing cycle {} on pass {}'
+        msg = _msg.format(cycle, ipass)
+    return msg
+
+'''
 def worker_method_grid(*args, **kwargs):
     """Wrapper to handle errors occurring in the workers."""
     _args = list(args)[0]
@@ -487,7 +446,6 @@ def worker_method_grid(*args, **kwargs):
 
     return True
 
-
 def worker_method_nadir(*args, **kwargs):
     """Wrapper to handle errors occurring in the workers."""
     _args = list(args)[0]
@@ -511,13 +469,15 @@ def worker_method_nadir(*args, **kwargs):
         return False
 
     return True
+'''
 
 
-def _worker_method_grid(*args, **kwargs):
-    _args = list(args)# [0]
-    msg_queue = _args.pop()
-    ipass = _args[0]
-    p2, passtime, stime, x_al, x_ac, tcycle, al_cycle, nhalfswath, lon, lat, timeshift = _args[1:]
+def worker_method_grid(*args, **kwargs):
+    #_args = list(args)# [0]
+    #msg_queue = _args.pop()
+    #ipass = _args[0]
+    msg_queue, ipass, p2, passtime, stime = args[:5]
+    x_al, x_ac, tcycle, al_cycle, nhalfswath, lon, lat, timeshift = args[5:]
 
     p = mod_tools.fromdict(p2)
     npoints = 1
@@ -626,11 +586,11 @@ def _worker_method_grid(*args, **kwargs):
     return None
 
 
-def _worker_method_nadir(*args, **kwargs):
-    _args = list(args)# [0]
-    msg_queue = _args.pop()
-    ipass = _args[0]
-    p2, passtime, stime, x_al, tcycle, al_cycle, lon, lat, timeshift = _args[1:]
+def worker_method_nadir(*args, **kwargs):
+    # _args = list(args)# [0]
+    # msg_queue = _args.pop()
+    msg_queue, ipass, p2 = args[:3]
+    passtime, stime, x_al, tcycle, al_cycle, lon, lat, timeshift = args[3:]
 
     p = mod_tools.fromdict(p2)
     npoints = 1

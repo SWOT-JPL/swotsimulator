@@ -294,7 +294,7 @@ def update_progress_multiproc(status, info):
     sys.stdout.write(_term_move_up() * count)
     now = datetime.datetime.now().strftime('%H:%M:%S')
     for pid in status:
-        if grid_name in status[pid]['grids']:
+        if grid_name in status[pid]['jobs']:
             if cycle is None:
                 # Grid has been completely processed
                 status[pid]['done'] += 1
