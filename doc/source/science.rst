@@ -326,10 +326,10 @@ The inputs are SSH model outputs in netcdf (to read netcdf4 files, the python mo
 
 .. code-block:: python
 
-   Grid_model.nc  
-   SSHmodel_0001.nc
-   SSHmodel_0002.nc
-   SSHmodel_0003.nc 
+   Grid_model 
+   SSHmodel_0001
+   SSHmodel_0002
+   SSHmodel_0003
 
 FIG 19: Example of a list of files, a real example is located in the example directory.
 
