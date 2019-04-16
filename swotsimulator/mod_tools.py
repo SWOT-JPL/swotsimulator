@@ -64,6 +64,7 @@ def initialize_parameters(p):
     p.orbit_cycle = getattr(p, 'orbit_cycle', const.tcycle)
     p.progress_bar = getattr(p, 'progress_bar', True)
     p.dim_time = getattr(p, 'dim_time', True)
+    p.file_grid_model = getattr(p, 'file_grid_model', None)
     check_option(p)
     return None
 

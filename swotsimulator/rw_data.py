@@ -1278,7 +1278,19 @@ class MITgcm():
     '''
     def __init__(self, p, nfile=None, var='Eta', lon='XC', lat='YC', depth=0,
                  time=0):
-        self.nvar = var
+        if var is None:
+            self.nvar = p.var
+        else:
+            self.nvar = var
+        if (p.list_input_var is None) and (self.nvar is not None):
+            self.input_var_list = {'ssh_true': [self.nvar, '']}
+        else:
+            self.input_var_list = p.list_input_var
+        if 'ssh_true' not in self.input_var_list:
+            logger.error('Wrong parameter file: list_input_var must contain'
+                         'ssh_true key')
+            sys.exit(1)
+
         self.nlon = lon
         self.nlat = lat
         self.nfile = nfile
@@ -1289,12 +1301,22 @@ class MITgcm():
         p.SSH_factor = self.SSH_factor
         self.indir = p.indatadir
         self.shape = (p.Nx, p.Ny)
+        self.grid = p.grid
 
     def read_var(self, index=None):
         '''Read variables from binary file \n
         Argument is index=index to load part of the variable.'''
-        self.vvar = (numpy.fromfile(self.nfile, '>f4', shape=self.shape,
-                                    mode='r')[:] * self.SSH_factor)
+        for key, value in self.input_var_list.items():
+            nfile0 = self.nfile
+            if os.path.exists(self.nfile):
+                vvar = (numpy.fromfile(self.nfile, '>f4', shape=self.shape,
+                                       mode='r')[:] * self.SSH_factor)
+                self.input_var[key] = vvar
+            else:
+                logger.info('{} not found'.format(self.nfile))
+        self.input_var['ssh_true'] = self.input_var['ssh_true']*self.SSH_factor
+        # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
+
         return None
 
     def read_coordinates(self, index=None):
