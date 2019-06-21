@@ -22,6 +22,7 @@
 # - Dec 2015: Version 2.0
 # - Dec 2017: Version 3.0
 # - Apr 2018: Version 3.1
+# - Jun 2019: Version 3.2
 # Notes:
 # - Written for Python 3.4, tested with Python 2.7, Python 3.6
 #
@@ -39,7 +40,7 @@
 # - Set module version to package version:
 
 
-__version__ = '3.10'
+__version__ = '3.20'
 __author__  = 'Lucile Gaultier and Clement Ubelmann'
 __date__ = '2014-07-01'
 __email__ = 'lucile.gaultier@gmail.com'
