@@ -9,6 +9,7 @@ Contains file instrumentation class: file_instr \n
 '''
 version = '2.21'
 from netCDF4 import Dataset
+import netCDF4
 import numpy
 import sys, os
 import time as ti
@@ -225,6 +226,20 @@ def write_var(fid, dim, key, value):
         var.standard_name = vdic['standard_name']
     if 'calendar' in vdic.keys():
         var.calendar = vdic['calendar']
+
+
+def read_var_swh(p, time_start):
+    #month = 
+    i = 0
+    fid = netCDF4.Dataset(p.swh_file, 'r')
+    lon = fid.variables['longitude'][:]
+    lat = fid.variables['latitude'][:]
+    swh = fid.variables['hs'][i, :, :]
+    swh = numpy.ma.masked_invalid(swh)
+    swh[swh.mask] = numpy.nan
+
+    fid.close()
+    return lon, lat, swh
 
 
 class Sat_SWOT():
@@ -971,17 +986,33 @@ class file_karin():
         else:
             logger.info('Wrong dimension in SWH variable in Karin noise file')
             sys.exit(1)
-        i = numpy.argmin(abs(swh_tmp - swh))
-        if swh_tmp[i] > swh:
-            i += 1
-        if numpy.max(swh_tmp) <= swh:
-            self.hsdt = hsdt[-1, :]
-            logger.warn('WARNING: swh={} is greater than the maximum value in'
+        if isinstance(swh, (list, numpy.ndarray)):
+            self.hsdt = numpy.full((len(swh), len(self.x_ac)), numpy.nan)
+            for ial in range(len(swh)):
+                # TODO take into account across track variability
+                if not numpy.isfinite(swh[ial]):
+                    swh[ial] = 1
+                i = numpy.argmin(abs(swh_tmp - swh[ial]))
+                if swh_tmp[i] > swh[ial]:
+                    i += 1
+                if numpy.max(swh_tmp) <= swh[ial]:
+                    _hsdt = hsdt[-1, :]
+                else:
+                    rswh = swh[ial] - swh_tmp[i]
+                    _hsdt = hsdt[i, :] * (1 - rswh) + rswh * hsdt[i + 1, :]
+                self.hsdt[ial, :] = _hsdt
+        else:
+            i = numpy.argmin(abs(swh_tmp - swh))
+            if swh_tmp[i] > swh:
+                i += 1
+            if numpy.max(swh_tmp) <= swh:
+                self.hsdt = hsdt[-1, :]
+                logger.warn('WARNING: swh={} is greater than the maximum value in'
                         ' {}, therefore swh is set to the file maximum value:'
                         ' swh='.format(swh, self.file, numpy.max(swh_tmp)))
-        else:
-            rswh = swh - swh_tmp[i]
-            self.hsdt = hsdt[i, :] * (1 - rswh) + rswh * hsdt[i + 1, :]
+            else:
+                rswh = swh - swh_tmp[i]
+                self.hsdt = hsdt[i, :] * (1 - rswh) + rswh * hsdt[i + 1, :]
         fid.close()
         return None
 

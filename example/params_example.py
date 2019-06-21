@@ -128,6 +128,8 @@ karin_file = os.path.join(dir_setup, 'karin_noise.nc')
 # ------ SWH for the region:
 #        if swh greater than 7 m, swh is set to 7
 swh = 2.0
+# ------ SWH file to have a spatial and temporal variation:
+swh_file = os.path.join(dir_setup, 'swh_yearly.nc')
 # ------ Number of km of random coefficients for KaRIN noise (recommended nrandkarin=1000):
 nrandkarin = 1000
 

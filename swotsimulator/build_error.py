@@ -311,7 +311,7 @@ class error():
         fid.close()
         return None
 
-    def make_error(self, sgrid, cycle, SSH_true, p):
+    def make_error(self, sgrid, cycle, SSH_true, swh, p):
         ''' Build errors corresponding to each selected noise
         among the effect of the wet_tropo, the phase between the two signals,
         the timing error, the roll of the satellite, the sea surface bias,
@@ -324,16 +324,29 @@ class error():
             # - Formula of karin noise as a function of x_ac (smile shape)
             # - Load Karin noise from file:
             karin_data = rw_data.file_karin(file=p.karin_file)
-            karin_data.read_karin(p.swh)
-            sigma_karin = numpy.interp(numpy.abs(sgrid.x_ac),
-                                       karin_data.x_ac, karin_data.hsdt)
-            size_grid = sqrt(numpy.float64(p.delta_al * p.delta_ac))
-            sigma_karin = sigma_karin / size_grid
-            # - Compute random karin error
-            Ai = (((numpy.float64(sgrid.x_al) + float(cycle * sgrid.al_cycle))
-                  / p.delta_al) % self.nrand).astype('int')
-            for j in range(0, nac):
-                self.karin[:, j] = (sigma_karin[j]) * self.A_karin_r[Ai, j]
+            karin_data.read_karin(swh)
+            if isinstance(swh, (list, numpy.ndarray)):
+                for ial in range(nal):
+                    sigma_karin = numpy.interp(numpy.abs(sgrid.x_ac),
+                                               karin_data.x_ac, karin_data.hsdt[ial, :])
+                    size_grid = sqrt(numpy.float64(p.delta_al * p.delta_ac))
+                    sigma_karin = sigma_karin / size_grid
+                    # - Compute random karin error
+                    Ai = (((numpy.float64(sgrid.x_al[ial]) + float(cycle * sgrid.al_cycle))
+                          / p.delta_al) % self.nrand).astype('int')
+                    for j in range(0, nac):
+                        self.karin[ial, j] = (sigma_karin[j]) * self.A_karin_r[Ai, j]
+
+            else:
+                sigma_karin = numpy.interp(numpy.abs(sgrid.x_ac),
+                                           karin_data.x_ac, karin_data.hsdt)
+                size_grid = sqrt(numpy.float64(p.delta_al * p.delta_ac))
+                sigma_karin = sigma_karin / size_grid
+                # - Compute random karin error
+                Ai = (((numpy.float64(sgrid.x_al) + float(cycle * sgrid.al_cycle))
+                      / p.delta_al) % self.nrand).astype('int')
+                for j in range(0, nac):
+                    self.karin[:, j] = (sigma_karin[j]) * self.A_karin_r[Ai, j]
 
         if p.phase is True:
             # - Compute left and right phase angles using random

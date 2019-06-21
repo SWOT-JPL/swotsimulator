@@ -486,8 +486,27 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     del input_var, model_step, ind_nadir_time
                 else:
                     del ind_time, input_var, model_step
+            if p.swh_file is not None:
+                # SWH interpolation
+                lon_swh, lat_swh, swh = rw_data.read_var_swh(p,
+                                                             time_shift_start)
+                # Flatten satellite grid and select part of the track
+                # corresponding to the model time
+                interp = interpolate_regular_1D
+                lonswot = lon_grid[:, :].flatten()
+                latswot = sgrid.lat[:, :].flatten()
+                _swh, Teval = interp(p, lon_swh, lat_swh, swh, lonswot,
+                                     latswot, Teval=Teval)
+                nal, nac = numpy.shape(sgrid.lon)
+                out_var['swh'] = _swh.reshape(nal, nac)
+
+            time_shift_start
     if nadir_alone is False:
-        err.make_error(sgrid, cycle, out_var['ssh_true'], p)
+        if 'swh' in out_var.keys():
+            swh1d = numpy.mean(out_var['swh'], axis=1)
+            err.make_error(sgrid, cycle, out_var['ssh_true'], swh1d, p)
+        else:
+            err.make_error(sgrid, cycle, out_var['ssh_true'], p.swh, p)
         if p.save_variables != 'expert':
             err.reconstruct_2D(p, sgrid.x_ac)
             err.make_SSH_error(out_var['ssh_true'], p)
