@@ -1,5 +1,3 @@
-import sys
-
 # https://stackoverflow.com/a/51704613
 try:
     from pip import main as pipmain
