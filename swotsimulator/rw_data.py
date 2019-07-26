@@ -242,6 +242,27 @@ def read_var_swh(p, time_start):
     return lon, lat, swh
 
 
+class roll_phase():
+    def __init__(self, nfile=None):
+        self.nfile = nfile
+
+    def read_var(self):
+        if self.nfile is None:
+            return None
+        fid = netCDF4.Dataset(self.nfile, 'r')
+        self.time = fid.variables['time'][:]
+        self.time = self.time - numpy.min(self.time)
+        self.proll_err = fid.variables['proll_err'][:]
+        self.p1phase_err = fid.variables['p1phase_err'][:]
+        self.p2phase_err = fid.variables['p2phase_err'][:]
+        self.slope1_err = fid.variables['slope1_err'][:]
+        self.slope2_err = fid.variables['slope2_err'][:]
+        self.slope1_est = fid.variables['slope1_est'][:]
+        self.slope2_est = fid.variables['slope2_est'][:]
+        fid.close()
+        return None
+
+
 class Sat_SWOT():
     ''' Sat_SWOT class: to read and write data that has been
     created by SWOT simulator '''

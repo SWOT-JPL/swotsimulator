@@ -247,6 +247,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
         err.karin = numpy.zeros(shape_sgrid)
         err.roll = numpy.zeros(shape_sgrid)
         err.phase = numpy.zeros(shape_sgrid)
+        err.rollphase_est = numpy.zeros(shape_sgrid)
         err.baseline_dilation = numpy.zeros(shape_sgrid)
         err.timing = numpy.zeros(shape_sgrid)
         err.wet_tropo1 = numpy.zeros(shape_sgrid)
@@ -502,11 +503,15 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
 
             time_shift_start
     if nadir_alone is False:
+        roll_phase = rw_data.roll_phase(nfile=p.roll_phase_file)
+        roll_phase.read_var()
         if 'swh' in out_var.keys():
             swh1d = numpy.mean(out_var['swh'], axis=1)
-            err.make_error(sgrid, cycle, out_var['ssh_true'], swh1d, p)
+            err.make_error(sgrid, cycle, out_var['ssh_true'], swh1d, time,
+                           roll_phase, p)
         else:
-            err.make_error(sgrid, cycle, out_var['ssh_true'], p.swh, p)
+            err.make_error(sgrid, cycle, out_var['ssh_true'], p.swh, time,
+                           roll_phase, p)
         if p.save_variables != 'expert':
             err.reconstruct_2D(p, sgrid.x_ac)
             err.make_SSH_error(out_var['ssh_true'], p)
@@ -707,7 +712,8 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
                               ssb_err=err.ssb, karin_err=err.karin,
                               pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,
-                              timing_err_1d=err.timing1d)
+                              timing_err_1d=err.timing1d,
+                              rollphase_est_1d = err.rollphase_est1d)
     elif save_var == 'mockup':
         OutputSWOT.write_data(empty_var=all_var)
     else:
@@ -717,6 +723,7 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
                               karin_err=err.karin, pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,
                               timing_err=err.timing, ssh_obs=err.SSH,
+                              rollphase_est = err.rollphase_est
                               )
     return None
 

@@ -65,6 +65,7 @@ def initialize_parameters(p):
     p.progress_bar = getattr(p, 'progress_bar', True)
     p.dim_time = getattr(p, 'dim_time', True)
     p.swh_file = getattr(p, 'swh_file', None)
+    p.roll_phase_file = getattr(p, 'roll_phase_file', None)
     check_option(p)
     return None
 

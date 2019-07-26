@@ -187,6 +187,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
                          numpy.shape(sgrid.lon)[1]))
     SSH_true = numpy.zeros((numpy.shape(sgrid.lon)[0],
                            numpy.shape(sgrid.lon)[1]))
+    swh = numpy.zeros((numpy.shape(sgrid.lon)[0],
+                      numpy.shape(sgrid.lon)[1]))
     if p.nadir:
         err.wet_tropo1nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
         err.wet_tropo2nadir = numpy.zeros((numpy.shape(ngrid.lon)[0]))
@@ -239,6 +241,28 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
                 else:
                     model_step.read_var(index=model_data.model_index)
                     SSH_model = model_step.vvar
+                if p.swh_file is not None:
+                    lon_swh, lat_swh, var_shw = rw.read_var_swh(p, time[0])
+                    # Flatten satellite grid and select part of the track
+                    # corresponding to the model time
+                    lonswot = sgrid.lon[ind_time[0], :].flatten()
+                    lonnadir = ngrid.lon[ind_nadir_time[0]].flatten()
+                    latswot = sgrid.lat[ind_time[0], :].flatten()
+                    latnadir = ngrid.lat[ind_nadir_time[0]].flatten()
+                    interp = interpolate.RectBivariateSpline
+                    _Teval = interp(lat_swh, lon_swh,
+                                    numpy.isnan(var_swh), kx=1, ky=1, s=0)
+                    Teval = _Teval.ev(sgrid.lat[ind_time[0], :].ravel(),
+                                      sgrid.lon[ind_time[0], :].ravel())
+                    swh_mask = + var_swh
+                    swh_mask[numpy.isnan(swh_mask)] = 0.
+                    _swh = interp(lat_swh, lon_swh,
+                                  swh_mask, kx=1, ky=1, s=0)
+                    swh_ind_time = _swh.ev(sgrid.lat[ind_time[0], :].ravel(),
+                                                sgrid.lon[ind_time[0], :].ravel())
+                    swh_ind_time[Teval > 0] = numpy.nan
+                    nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
+                    swh[ind_time[0], :] = swh_ind_time.reshape(nal, nac)
                 # - Interpolate Model data on a SWOT grid and/or along the
                 # nadir track
                 # if grid is regular, use interpolate.RectBivariateSpline to
@@ -340,7 +364,8 @@ def create_SWOTlikedata(cycle, ntotfile, list_file, sgrid, ngrid, model_data,
         progress = mod_tools.update_progress(float(istep)/float(ntotfile*ntot),
                                              'pass: ' + str(sgrid.ipass),
                                              'no model file provided' + ', cycle: ' + str(cycle+1))
-    err.make_error(sgrid, cycle, SSH_true, p)
+    #err.make_error(sgrid, cycle, SSH_true, p)
+    err.make_error(sgrid, cycle, SSH_true, swh, time, p)
     err.make_SSH_error(SSH_true, p)
     if p.nadir:
         errnad.make_error(ngrid, cycle, SSH_true_nadir, p)

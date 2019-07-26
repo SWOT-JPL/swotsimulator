@@ -150,12 +150,15 @@ lambda_cut = 20000
 lambda_max = lambda_cut
 # ------ Save entire rando signal instead of random coefficients. Enables a better randomness
 savesignal = True
+# ------ Roll-phase simulation of correction file:
+roll_phase_file = os.path.join(dir_setup, "data_sim_slope_v0.nc")
 # ------ If savesignal is True, enter number of pseudo-period of superimposed
 #        signals and repeat length
 npseudoper = 30. # Number of pseudo period of superimposed signals.
 len_repeat = 40000*14*50.
 # ------ Roll error (True to compute it):
 roll = True
+
 # ------ Phase error (True to compute it):
 phase = True
 # ------ Baseline dilation error (True to compute it):

@@ -21,6 +21,12 @@ def reconstruct_2D_error(x_ac, err_out, dict_noise):
         phase1d = dict_noise['phase']
         err_out.phase[:, :int(nac / 2)] = numpy.mat(phase1d[:, 0]).T * ac_l
         err_out.phase[:, int(nac / 2):] = numpy.mat(phase1d[:, 1]).T * ac_r
+    if 'roll_phase_est' in dict_noise.keys():
+        ac_l = numpy.mat(x_ac[:int(nac / 2)])
+        ac_r = numpy.mat(x_ac[int(nac / 2):])
+        phase1d = dict_noise['roll_phase_est']
+        err_out.rollphase_est[:, :int(nac / 2)] = numpy.mat(phase1d[:, 0]).T * ac_l
+        err_out.rollphase_est[:, int(nac / 2):] = numpy.mat(phase1d[:, 1]).T * ac_r
     if 'roll' in dict_noise.keys():
         ac = numpy.mat(x_ac)
         roll1d = dict_noise['roll']
@@ -48,7 +54,7 @@ class error():
     make_error. '''
     def __init__(self, p, roll=None, ssb=None, wet_tropo=None, phase=None,
                  baseline_dilation=None, karin=None, timing=None, SSH=None,
-                 wt=None):
+                 wt=None, rollphase_est=None):
         self.roll = roll
         self.ssb = ssb
         self.wet_tropo = wet_tropo
@@ -58,6 +64,18 @@ class error():
         self.timing = timing
         self.SSH_error = SSH
         self.wt = wt
+        self.rollphase_est = rollphase_est
+        '''
+        self.roll1d = roll
+        self.ssb1d = ssb
+        self.wet_tropo1d = wet_tropo
+        self.phase1d = phase
+        self.baseline_dilation1d = baseline_dilation
+        self.karin1d = karin
+        self.timing1d = timing
+        self.SSH_error1d = SSH
+        '''
+        self.rollphase_est1d = rollphase_est
         self.ncomp1d = getattr(p, 'ncomp1d', 2000)
         p.ncomp1d = self.ncomp1d
         self.ncomp2d = getattr(p, 'ncomp2d', 2000)
@@ -311,7 +329,7 @@ class error():
         fid.close()
         return None
 
-    def make_error(self, sgrid, cycle, SSH_true, swh, p):
+    def make_error(self, sgrid, cycle, SSH_true, swh, time, roll_phase, p):
         ''' Build errors corresponding to each selected noise
         among the effect of the wet_tropo, the phase between the two signals,
         the timing error, the roll of the satellite, the sea surface bias,
@@ -349,65 +367,101 @@ class error():
                     self.karin[:, j] = (sigma_karin[j]) * self.A_karin_r[Ai, j]
 
         if p.phase is True:
-            # - Compute left and right phase angles using random
-            #   coefficients or signals previously initialized
-            if p.savesignal is True:
-                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
-                      * sgrid.al_cycle)) % (p.len_repeat)
-                theta_l = mod_tools.gen_signal1d(xx, self.A_phase_l,
-                                                 self.phi_phase_l,
-                                                 2 * p.delta_al,
-                                                 p.lambda_max, p.npseudoper)
-                theta_r = mod_tools.gen_signal1d(xx, self.A_phase_r,
-                                                 self.phi_phase_r,
-                                                 2 * p.delta_al,
-                                                 p.lambda_max, p.npseudoper)
-            else:
-                theta_l = numpy.zeros((nal))
-                theta_r = numpy.zeros((nal))
-                for comp in range(0, self.ncomp1d):
-                    phase_x_al = (2.*pi*float(self.fr_phase_l[comp])
-                                  * (numpy.float64(sgrid.x_al[:]) +
-                                  + float(cycle * sgrid.al_cycle))) % (2.*pi)
-                    theta_l[:] = (theta_l[:] + 2*self.A_phase_l[comp]
-                                  * numpy.cos(phase_x_al[:]
-                                  + self.phi_phase_l[comp]))
-                for comp in range(0, self.ncomp1d):
-                    phase_x_al = (2. * pi * float(self.fr_phase_r[comp])
-                                  * (numpy.float64(sgrid.x_al[:])
-                                  + float(cycle*sgrid.al_cycle))) % (2.*pi)
-                    theta_r[:] = (theta_r[:] + 2 * self.A_phase_r[comp]
-                                  * numpy.cos(phase_x_al[:]
-                                  + self.phi_phase_r[comp]))
-            # - Compute the associated phase error on the swath in m
-            _to_km = (1 / (const.Fka * 2*pi / const.C * const.B)
-                       * (1 + const.sat_elev / const.Rearth) *pi/180. * 10**3)
-            phase1d = numpy.concatenate(([_to_km * theta_l[:].T],
-                                        [_to_km * theta_r[:].T]),
+            if p.roll_phase_file is not None:
+                # - Compute the associated phase error on the swath in m
+                _to_km = (1 / (const.Fka * 2*pi / const.C * const.B)
+                          * (1 + const.sat_elev/const.Rearth)*pi/180. * 10**3)
+                _time = numpy.mod(time, numpy.max(roll_phase.time))
+                phase_l = numpy.interp(_time, roll_phase.time,
+                                       roll_phase.p1phase_err)
+                phase_r = numpy.interp(_time, roll_phase.time,
+                                       roll_phase.p2phase_err)
+                phase1d = numpy.concatenate(([_to_km * phase_l.T],
+                                             [_to_km * phase_r.T]),
                                              axis=0)
-            self.phase1d = phase1d.T
-            del theta_l, theta_r
+                self.phase1d = phase1d.T
+                phase_l = numpy.interp(_time, roll_phase.time,
+                                       roll_phase.slope1_est)
+                phase_r = numpy.interp(_time, roll_phase.time,
+                                       roll_phase.slope2_est)
+                theta2 = numpy.concatenate(([phase_l.T], [phase_r.T]),
+                                           axis=0)
+                self.rollphase_est1d = ((1 + const.sat_elev/const.Rearth)
+                                        * theta2.T*pi/180./3600. * 10**3)
+            else:
+                # - Compute left and right phase angles using random
+                #   coefficients or signals previously initialized
+                if p.savesignal is True:
+                    xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                          * sgrid.al_cycle)) % (p.len_repeat)
+                    theta_l = mod_tools.gen_signal1d(xx, self.A_phase_l,
+                                                     self.phi_phase_l,
+                                                     2 * p.delta_al,
+                                                     p.lambda_max, p.npseudoper)
+                    theta_r = mod_tools.gen_signal1d(xx, self.A_phase_r,
+                                                     self.phi_phase_r,
+                                                     2 * p.delta_al,
+                                                     p.lambda_max, p.npseudoper)
+                else:
+                    theta_l = numpy.zeros((nal))
+                    theta_r = numpy.zeros((nal))
+                    for comp in range(0, self.ncomp1d):
+                        phase_x_al = (2.*pi*float(self.fr_phase_l[comp])
+                                      * (numpy.float64(sgrid.x_al[:]) +
+                                      + float(cycle * sgrid.al_cycle))) % (2.*pi)
+                        theta_l[:] = (theta_l[:] + 2*self.A_phase_l[comp]
+                                      * numpy.cos(phase_x_al[:]
+                                      + self.phi_phase_l[comp]))
+                    for comp in range(0, self.ncomp1d):
+                        phase_x_al = (2. * pi * float(self.fr_phase_r[comp])
+                                      * (numpy.float64(sgrid.x_al[:])
+                                      + float(cycle*sgrid.al_cycle))) % (2.*pi)
+                        theta_r[:] = (theta_r[:] + 2 * self.A_phase_r[comp]
+                                      * numpy.cos(phase_x_al[:]
+                                      + self.phi_phase_r[comp]))
+                # - Compute the associated phase error on the swath in m
+                _to_km = (1 / (const.Fka * 2*pi / const.C * const.B)
+                           * (1 + const.sat_elev / const.Rearth) *pi/180. * 10**3)
+                phase1d = numpy.concatenate(([_to_km * theta_l[:].T],
+                                            [_to_km * theta_r[:].T]),
+                                                 axis=0)
+                self.phase1d = phase1d.T
+                del theta_l, theta_r
         if p.roll is True:
             # - Compute roll angle using random coefficients or signals
             # previously initialized with the power spectrum
-            if p.savesignal is True:
-                xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
-                      * sgrid.al_cycle)) % (p.len_repeat)
-                theta = mod_tools.gen_signal1d(xx, self.A_roll, self.phi_roll,
-                                               2 * p.delta_al, p.lambda_max,
-                                               p.npseudoper)
+            if p.roll_phase_file is not None:
+                _time = numpy.mod(time, numpy.max(roll_phase.time))
+                theta = numpy.interp(_time, roll_phase.time,
+                                     roll_phase.proll_err)
+                if p.phase is False:
+                    phase_l = numpy.interp(_time, roll_phase.time,
+                                           roll_phase.slope1_est)
+                    phase_r = numpy.interp(_time, roll_phase.time,
+                                           roll_phase.slope2_est)
+                    theta2 = numpy.concatenate(([phase_l.T], [phase_r.T]),
+                                               axis=0)
+                    self.rollphase_est1d = ((1 + const.sat_elev/const.Rearth)
+                                            * theta2*pi/180./3600. * 10**3)
             else:
-                theta = numpy.zeros((nal))
-                for comp in range(0, self.ncomp1d):
-                    phase_x_al = (2. * pi * float(self.fr_roll[comp])
-                                  * (numpy.float64(sgrid.x_al[:])
-                                  + float(cycle * sgrid.al_cycle))) % (2.*pi)
-                    theta[:] = (theta[:] + 2 * self.A_roll[comp]
-                                * numpy.cos(phase_x_al[:]
-                                + self.phi_roll[comp]))
+                if p.savesignal is True:
+                    xx = (numpy.float64(sgrid.x_al[:]) + float(cycle
+                          * sgrid.al_cycle)) % (p.len_repeat)
+                    theta = mod_tools.gen_signal1d(xx, self.A_roll, self.phi_roll,
+                                                   2 * p.delta_al, p.lambda_max,
+                                                   p.npseudoper)
+                else:
+                    theta = numpy.zeros((nal))
+                    for comp in range(0, self.ncomp1d):
+                        phase_x_al = (2. * pi * float(self.fr_roll[comp])
+                                      * (numpy.float64(sgrid.x_al[:])
+                                      + float(cycle * sgrid.al_cycle))) % (2.*pi)
+                        theta[:] = (theta[:] + 2 * self.A_roll[comp]
+                                    * numpy.cos(phase_x_al[:]
+                                    + self.phi_roll[comp]))
             # - Compute the associated roll  error on the swath in m
             self.roll1d = ((1 + const.sat_elev/const.Rearth)
-                          * theta[:]*pi/180./3600. * 10**3)
+                           * theta[:]*pi/180./3600. * 10**3)
             del theta
         if p.baseline_dilation is True:
             # - Compute baseline dilation using random coefficients or signals
@@ -628,6 +682,8 @@ class error():
             dict_noise['baseline_dilation'] = self.baseline_dilation1d
         if p.timing is True:
             dict_noise['timing'] = self.timing1d
+        if (p.roll_phase_file is not None) and (p.phase is True) and (p.roll is True):
+            dict_noise['roll_phase_est'] = self.rollphase_est1d
         reconstruct_2D_error(x_ac, self, dict_noise)
         return None
 
@@ -643,12 +699,14 @@ class error():
             self.SSH = self.SSH + self.karin
         if p.timing is True:
             self.SSH = self.SSH + self.timing
-        if p.roll is True:
+        if p.roll is True and p.roll_phase_file is None:
             self.SSH = self.SSH + self.roll
         if p.baseline_dilation is True:
             self.SSH = self.SSH + self.baseline_dilation
-        if p.phase is True:
+        if p.phase is True and p.roll_phase_file is None:
             self.SSH = self.SSH + self.phase
+        if p.roll_phase_file is not None:
+            self.SSH = self.SSH + self.rollphase_est
         if p.wet_tropo is True:
             if p.nbeam == 1 or p.nbeam == 'both':
                 self.SSH = self.SSH + self.wet_tropo1
