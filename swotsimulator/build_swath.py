@@ -4,7 +4,6 @@ from scipy import interpolate
 import swotsimulator.mod_tools as mod_tools
 import swotsimulator.const as const
 import swotsimulator.rw_data as rw_data
-import swotsimulator.run_simulator as run_simulator
 import swotsimulator.mod_parallel as parallel
 import os
 import multiprocessing
@@ -304,7 +303,7 @@ def orbit2nadir(modelbox, p, orb, die_on_error):
                      lon, lat, orb.timeshift])
     try:
         ok = make_nadir_grid(p.proc_count, jobs, die_on_error, p.progress_bar)
-    except run_simulator.DyingOnError:
+    except parallel.DyingOnError:
         logger.error('An error occurred and all errors are fatal')
         sys.exit(1)
     if p.progress_bar is True:
@@ -357,7 +356,7 @@ def orbit2swath(modelbox, p, orb, die_on_error):
                      nhalfswath, lon, lat, orb.timeshift])
     try:
         ok = make_swot_grid(p.proc_count, jobs, die_on_error, p.progress_bar)
-    except run_simulator.DyingOnError:
+    except parallel.DyingOnError:
         logger.error('An error occurred and all errors are fatal')
         sys.exit(1)
     if p.progress_bar is True:

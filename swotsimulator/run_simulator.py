@@ -185,7 +185,7 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
     # - Process list of jobs using multiprocessing
     try:
         ok = make_swot_data(p.proc_count, jobs, die_on_error, p.progress_bar)
-    except DyingOnError:
+    except parallel.DyingOnError:
         logger.error('An error occurred and all errors are fatal')
         sys.exit(1)
     # - Write Selected parameters in a txt file
