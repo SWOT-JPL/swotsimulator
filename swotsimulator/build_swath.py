@@ -541,10 +541,10 @@ def worker_method_grid(*args, **kwargs):
                 R = mod_tools.rotationmat3D(float((j*p.delta_ac+p.halfgap)
                                             / (const.Rearth*10**-3)),
                                             SatDir[int(i/npoints), :])
-                ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
+                ObsLoc = numpy.dot(-R, SatLoc[int(i/npoints)])
                 cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
                 sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
-                ObsLoc = numpy.dot(numpy.transpose(R),
+                ObsLoc = numpy.dot(-numpy.transpose(R),
                                    SatLoc[int(i/npoints)])
                 cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
                 sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
