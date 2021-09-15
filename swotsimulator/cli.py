@@ -1,5 +1,6 @@
 import sys
 import swotsimulator.mod_tools as mod_tools
+import swotsimulator.settings as settings
 import argparse
 import logging
 
@@ -34,7 +35,8 @@ def run_swot_script():
 
     file_param = args.params_file
 
-    p = mod_tools.load_python_file(file_param)
+    #p = mod_tools.load_python_file(file_param)
+    p = settings.Parameters(settings.eval_config_file(file_param))
     try:
         run_simulator.run_simulator(p, args.die_on_error)
     except KeyboardInterrupt:

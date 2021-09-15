@@ -138,6 +138,24 @@ phase_err_1d = {'varname': 'phase_err_1d',
              'type': 'i4',
              'scale': 1e-9
              }
+corrected_rollphase_err = {'varname': 'estimated_roll_phase_err',
+            'longname': 'Residual roll Phase error after crossover calibration',
+            'unit': 'm',
+            'fill_value': i4_nan,
+            'min_value': -1500000,
+            'max_value': 1500000,
+            'type': 'i4',
+            'scale': 1e-6
+            }
+corrected_rollphase_err_1d = {'varname': 'corrected_roll_phase_err1d',
+            'longname': 'Residual roll error in 1 dimension after crossover calibration',
+            'unit': 'm',
+            'fill_value': i4_nan,
+            'min_value': -1500000,
+            'max_value': 1500000,
+            'type': 'i4',
+            'scale': 1e-9
+            }
 timing_err = {'varname': 'timing_err',
               'longname': 'Timing error',
               'unit': 'm',

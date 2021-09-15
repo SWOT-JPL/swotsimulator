@@ -61,7 +61,7 @@ def load_error(p):
     err = build_error.error(p)
     if p.nadir:
         errnad = build_error.errornadir(p)
-    nhalfswath = int((p.halfswath - p.halfgap)/p.delta_ac) + 1
+    nhalfswath = int((p.half_swath - p.half_gap)/p.delta_ac) + 1
     if p.file_coeff:
         if os.path.isfile(p.file_coeff) and (not p.makesgrid):
             print('\n WARNING: Existing random coefficient file used')

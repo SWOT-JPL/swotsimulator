@@ -40,8 +40,11 @@ def write_params(params, pfile):
     """ Write parameters that have been selected to run swot_simulator. """
     with open(pfile, 'w') as f:
         for key in dir(params):
-            if not key[0:2] == '__':
-                f.write('{} = {}\n'.format(key, params.__dict__[key]))
+            if (not key[0:1] == '_') and (not key in ('CONFIG_VALUES', 'REQUIRED')):
+                try:
+                    f.write('{} = {}\n'.format(key, params.__dict__[key]))
+                except:
+                    f.write('{} = {}\n'.format(key, getattr(params, key))) #.__dict__[key]))
 
 
 def read_coordinates(ifile,  nlon, nlat, twoD=True):

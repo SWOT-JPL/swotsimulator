@@ -43,55 +43,28 @@ import multiprocessing
 logger = logging.getLogger(__name__)
 
 
-def load_error(p, nadir_alone=False):
+def load_error(p, nadir_alone=False, seed=0):
     '''Initialize random coefficients that are used to compute
     random errors following the specified spectrum. \n
     If a random coefficient file is specified, random coefficients
     are ldir_alone=Falseoaded from this file.
     '''
-    if (p.nadir is True) or (nadir_alone is True):
+    if ('Altimeter' in p.noise) or (nadir_alone is True):
         errnad = build_error.errornadir(p)
     else:
         errnad = None
     if nadir_alone is True:
         err = None
-        if p.file_coeff:
-            coeff_file = '{}_nadir.nc'.format(p.file_coeff[:-3])
-            if os.path.isfile(coeff_file) and (not p.makesgrid):
-                logger.warn('\nWARNING: Existing random nadir coefficient'
-                            'file used')
-                errnad.load_coeff(p)
-            else:
-                errnad.init_error(p)
-                errnad.save_coeff(p)
-        else:
-            errnad.init_error(p)
+        errnad.init_error(p, seed=seed, nadir_alone=True)
     else:
         err = build_error.error(p)
         try:
-            nhalfswath = int((p.halfswath - p.halfgap) / p.delta_ac) + 1
+            nhalfswath = int((p.half_swath - p.half_gap) / p.delta_ac) + 1
         except AttributeError:
             nhalfswath = 60.
-        if p.file_coeff:
-            if os.path.isfile(p.file_coeff) and (not p.makesgrid):
-                logger.warn('\nWARNING: Existing random coefficient file used')
-                err.load_coeff(p)
-            else:
-                err.init_error(p, 2*nhalfswath)
-                err.save_coeff(p, 2*nhalfswath)
-            if p.nadir is True:
-                if os.path.isfile(p.file_coeff[:-3] + '_nadir.nc') \
-                        and (not p.makesgrid):
-                    logger.warn('WARNING: Existing random nadir coefficient'
-                                'file used')
-                    errnad.load_coeff(p)
-                else:
-                    errnad.init_error(p)
-                    errnad.save_coeff(p)
-        else:
-            err.init_error(p, 2*nhalfswath)
-            if p.nadir is True:
-                errnad.init_error(p)
+        err.init_error(p, 2*nhalfswath, seed=seed)
+        if 'Altimeter' in p.noise:
+            errnad.init_error(p, seed=seed)
     return err, errnad
 
 
@@ -241,12 +214,13 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
         nadir_alone = True
     else:
         nadir_alone = False
-    compute_nadir = ((p.nadir is True) or (nadir_alone is True))
+    compute_nadir = (('Altimeter') in p.noise or (nadir_alone is True))
     if nadir_alone is False:
         shape_sgrid = (numpy.shape(sgrid.lon)[0], numpy.shape(sgrid.lon)[1])
         err.karin = numpy.zeros(shape_sgrid)
         err.roll = numpy.zeros(shape_sgrid)
         err.phase = numpy.zeros(shape_sgrid)
+        err.corrected_roll_phase = numpy.zeros(shape_sgrid)
         err.baseline_dilation = numpy.zeros(shape_sgrid)
         err.timing = numpy.zeros(shape_sgrid)
         err.wet_tropo1 = numpy.zeros(shape_sgrid)
@@ -488,7 +462,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     del ind_time, input_var, model_step
     if nadir_alone is False:
         err.make_error(sgrid, cycle, out_var['ssh_true'], p)
-        if p.save_variables != 'expert':
+        if p.product_type != 'expert':
             err.reconstruct_2D(p, sgrid.x_ac)
             err.make_SSH_error(out_var['ssh_true'], p)
     if compute_nadir is True:
@@ -666,7 +640,8 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
                                   lat_nadir=sgrid.lat_nadir)
     OutputSWOT.gridfile = sgrid.gridfile
     OutputSWOT.first_time = p.first_time
-    err.SSH2 = err.SSH
+    if p.product_type != 'expert':
+        err.SSH2 = err.SSH
     if save_var == 'mockup':
         all_var = make_empty_vars(sgrid)
         beam_pos = (12, 47)
@@ -684,6 +659,7 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
     if save_var == 'expert':
         OutputSWOT.write_data(out_var,
                               roll_err_1d=err.roll1d, phase_err_1d=err.phase1d,
+                              corrected_rollphase_err_1d = err.rollphase_est1d,
                               bd_err_1d=err.baseline_dilation1d,
                               ssb_err=err.ssb, karin_err=err.karin,
                               pd_err_1b=err.wet_tropo1,
@@ -694,6 +670,7 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
     else:
         OutputSWOT.write_data(out_var, roll_err=err.roll,
                               bd_err=err.baseline_dilation,
+                              corrected_rollphase_err=err.corrected_roll_phase,
                               phase_err=err.phase, ssb_err=err.ssb,
                               karin_err=err.karin, pd_err_1b=err.wet_tropo1,
                               pd_err_2b=err.wet_tropo2, pd=err.wt,

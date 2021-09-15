@@ -139,16 +139,16 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
     if p.makesgrid is True:
         logger.info('\n Force creation of SWOT grid')
         # make nadir orbit
-        orb = build_swath.makeorbit(modelbox, p, orbitfile=p.filesat)
+        orb = build_swath.makeorbit(modelbox, p, orbitfile=p.ephemeris)
         # build swath for this orbit
         if nadir_alone is True:
             build_swath.orbit2nadir(modelbox, p, orb, die_on_error)
             logger.info("\n Nadir tracks have been written in "
-                        "{}".format(p.outdatadir))
+                        "{}".format(p.working_directory))
         else:
             build_swath.orbit2swath(modelbox, p, orb, die_on_error)
             logger.info("\n SWOT Grids and nadir tracks have been written in "
-                        "{}".format(p.outdatadir))
+                        "{}".format(p.working_directory))
         logger.info("-----------------------------------------------")
 
     # - Initialize random coefficients that are used to compute
@@ -163,7 +163,7 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
     if not listsgridfile:
         logger.error('\n There is no SWOT grid file in {}, run simulator with'
                      ' option makesgrid set to true in your params'
-                     ' file'.format(p.outdatadir))
+                     ' file'.format(p.working_directory))
         sys.exit(1)
     # Build model time steps from parameter file
     modeltime = numpy.arange(0, p.nstep*p.timestep, p.timestep)
@@ -193,7 +193,7 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
     timestart = timestart.strftime('%Y%m%dT%H%M%SZ')
     op_file = 'swot_simulator_{}_{}.output'.format(timestart, timestop)
-    op_file = os.path.join(p.outdatadir, op_file)
+    op_file = os.path.join(p.working_directory, op_file)
     rw_data.write_params(p, op_file)
     if ok is True:
         if p.progress_bar is True:
@@ -202,7 +202,7 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
         else:
             __ = logger.info('All passes have been processed')
         logger.info("\n Simulated swot files have been written in {}".format(
-                     p.outdatadir))
+                     p.working_directory))
         logger.info(''.join(['-'] * 61))
         #"----------------------------------------------------------")
         sys.exit(0)
@@ -339,9 +339,9 @@ def run_nadir(p, die_on_error=False):
     ntot = 1
 
     #   Initialize list of satellites
-    if not isinstance(p.filesat, list):
-        p.filesat = [p.filesat]
-    for filesat in p.filesat:
+    if not isinstance(p.ephemeris, list):
+        p.ephemeris = [p.ephemeris]
+    for filesat in p.ephemeris:
         # Select satellite
         # ntmp, nfilesat = os.path.split(filesat[istring:-4])
         nfilesat = os.path.basename(os.path.splitext(filesat)[0])
@@ -391,7 +391,7 @@ def run_nadir(p, die_on_error=False):
             if p.file_input is None:
                 model_data = []
             logger.debug('compute SSH nadir')
-            nfile = numpy.shape(p.filesat)[0]*rcycle
+            nfile = numpy.shape(p.ephemeris)[0]*rcycle
             create = mod.create_Nadirlikedata(cycle, nfile, list_file,
                                               modelbox, ngrid, model_data,
                                               modeltime, errnad, p,
@@ -425,10 +425,10 @@ def run_nadir(p, die_on_error=False):
     timestop = timestop.strftime('%Y%m%dT%H%M%SZ')
     timestart = timestart.strftime('%Y%m%dT%H%M%SZ')
     op_file = 'nadir_simulator_{}_{}.output'.format(timestart, timestop)
-    op_file = os.path.join(p.outdatadir, op_file)
+    op_file = os.path.join(p.working_directory, op_file)
     rw_data.write_params(p, op_file)
     logger.info("\nSimulated orbit files have been written in {}".format(
-                p.outdatadir))
+                p.working_directory))
     logger.info("----------------------------------------------------------")
 
 
@@ -460,7 +460,7 @@ def worker_method_swot(*args, **kwargs):
         nadir_alone = True
     else:
         nadir_alone = False
-    compute_nadir = ((p.nadir is True) or (nadir_alone is True))
+    compute_nadir = (('Altimeter' in p.noise) or (nadir_alone is True))
     #   Load SWOT grid files (Swath and nadir)
     if compute_nadir is True:
         ngrid = mod.load_ngrid(sgridfile, p, nadir_alone=nadir_alone)
@@ -505,7 +505,7 @@ def worker_method_swot(*args, **kwargs):
         if (~numpy.isnan(out_var['vindice'])).any() or not p.file_input:
             if nadir_alone is False:
                 mod.save_SWOT(cycle, sgrid, err, p, out_var, time=time,
-                              save_var=p.save_variables)
+                              save_var=p.product_type)
             if compute_nadir is True:
                 mod.save_Nadir(cycle, ngrid, errnad, err, p, out_var,
                                time=time)

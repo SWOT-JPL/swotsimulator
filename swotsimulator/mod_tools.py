@@ -8,6 +8,8 @@ Contains the following functions:
 - cart2spher: convert cartesian to spherical coordinates \n
 - update_progress: Progress bar'''
 import numpy
+from typing import Optional, Tuple
+import collections
 import math
 import logging
 import multiprocessing
@@ -19,6 +21,33 @@ import swotsimulator.const as const
 
 # Define logger level for debug purposes
 logger = logging.getLogger(__name__)
+
+Point = collections.namedtuple('Point', ['lon', 'lat'])
+Point.__doc__ = """Defines a 2D Point"""
+
+class Box:
+    """Defines a box made of two describing points.
+    """
+    def __init__(self,
+                 min_corner: Optional[Point] = None,
+                 max_corner: Optional[Point] = None):
+        self.min_corner = min_corner or Point(-180, -90)
+        self.max_corner = max_corner or Point(180, 90)
+
+    def __repr__(self):
+        return "%s(%s, %s)" % (self.__class__.__name__, str(
+            self.min_corner), str(self.max_corner))
+
+    def within(self, lon: numpy.ndarray, lat: numpy.ndarray) -> numpy.ndarray:
+        """Returns true if the coordinates are located in the box."""
+        lon = normalize_longitude(lon, lon_min=self.min_corner.lon)
+        lon_is_in_range = (lon >= self.min_corner.lon) | (
+            lon <= self.max_corner.lon
+        ) if self.max_corner.lon < self.min_corner.lon else (
+            lon >= self.min_corner.lon) & (lon <= self.max_corner.lon)
+
+        return (lat >= self.min_corner.lat) & (
+            lat <= self.max_corner.lat) & lon_is_in_range
 
 
 def load_python_file(file_path):
@@ -78,17 +107,17 @@ def check_option(p):
 
 
 def check_path(p):
-    if os.path.isdir(p.dir_setup) is False:
-        logger.error('Data directory {} not found'.format(p.dir_setup))
-        sys.exit(1)
+    #if os.path.isdir(p.dir_setup) is False:
+    #    logger.error('Data directory {} not found'.format(p.dir_setup))
+    #    sys.exit(1)
     if os.path.isdir(p.indatadir) is False:
         logger.error('Input directory {} not found'.format(p.indatadir))
         sys.exit(1)
-    if os.path.isdir(p.outdatadir) is False:
+    if os.path.isdir(p.working_directory) is False:
         logger.warn('Output directory {} did not exist and was '
-                    'created'.format(p.outdatadir))
-        os.makedirs(p.outdatadir)
-    filesat_path = os.path.join(p.dir_setup, p.filesat)
+                    'created'.format(p.working_directory))
+        os.makedirs(p.working_directory)
+    filesat_path = p.ephemeris
     if os.path.isfile(filesat_path) is False:
         logger.error('Orbit file {} not found'.format(filesat_path))
         sys.exit(1)
@@ -218,9 +247,11 @@ def spher2cart(lon, lat):
     ''' Convert spherical coordinates to cartesian coordinates.\n
     Inputs are longitude, latitude. \n
     Return x, y, z'''
-    x = numpy.cos(lon*math.pi/180.) * numpy.cos(lat*math.pi/180.)
-    y = numpy.sin(lon*math.pi/180.) * numpy.cos(lat*math.pi/180.)
-    z = numpy.sin(lat*math.pi/180.)
+    rlon = numpy.radians(lon)
+    rlat = numpy.radians(lat)
+    x = numpy.cos(rlon) * numpy.cos(rlat)
+    y = numpy.sin(rlon) * numpy.cos(rlat)
+    z = numpy.sin(rlat)
     return x, y, z
 
 
@@ -229,12 +260,13 @@ def cart2sphervect(x, y, z):
     Inputs are cartiesian coordinates x, y, z. \n
     Return lon, lat. '''
     norm = numpy.sqrt(x*x + y*y + z*z)
-    lat = numpy.arcsin(z/norm) * 180./math.pi
+    lat = numpy.arcsin(z/norm)
     lon = numpy.arctan(y/x) % (2*math.pi)
     if (x < 0).any():
         lon[x < 0] = (numpy.arctan(y[x < 0]/x[x < 0]) % (2*math.pi)
                       + x[x < 0] / x[x < 0]*math.pi)
-    lon = lon * 180/math.pi
+    lon = numpy.degrees(lon)
+    lat = numpy.degrees(lat)
     return lon % 360, lat
 
 
@@ -260,8 +292,8 @@ def todict(p):
     for attr in dir(p):
         value = getattr(p, attr)
         if (isinstance(value, types.ModuleType)
-            or isinstance(value, types.MethodType)
-            or isinstance(value, types.FunctionType)
+            #or isinstance(value, types.MethodType)
+            #or isinstance(value, types.FunctionType)
             or attr.startswith('__')):
             continue
         result[attr] = value

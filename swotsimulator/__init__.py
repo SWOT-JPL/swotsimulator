@@ -39,7 +39,7 @@
 # - Set module version to package version:
 
 
-__version__ = '3.10'
+__version__ = '4.00'
 __author__  = 'Lucile Gaultier and Clement Ubelmann'
 __date__ = '2014-07-01'
 __email__ = 'lucile.gaultier@gmail.com'
@@ -47,6 +47,24 @@ __url__ = ''
 __description__ = ('SWOT Simulator')
 __author_email__ = ('lucile.gaultier@gmail.com')
 __keywords__ = ()
+
+# EARTH CONSTANTS
+
+#: Volumetric mean radius (km)
+VOLUMETRIC_MEAN_RADIUS: float = 6371.0
+
+#: Convert degree to km
+DEG_2_KM: float = 111.11
+
+#: CELERITY
+CELERITY: float = 299800000.0
+
+#: Baseline (m)
+BASELINE = 10
+
+#: KA frequency (in Hz)
+F_KA = 35750000000.0
+
 
 # - If you're importing this module in testing mode, or you're running
 #  pydoc on this module via the command line, import user-specific

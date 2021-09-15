@@ -21,7 +21,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
     added in the parameters file. \n
-    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Along track
+    Inputs are satellite orbit (p.ephemeris), subdomain (modelbox), Along track
     sampling, along track resolution). \n
     Outputs are Sat_Nadir object containing Nadir track (along track distance
     x_al, longitude lon and latitude lat,
@@ -30,12 +30,12 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # npoints = 1
     # - Load SWOT orbit ground track
     logger.info('Load data from orbit file')
-    if p.order_orbit_col is None:
+    if p.ephemeris_cols is None:
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=(1, 2, 0),
                                              comments='#', unpack=True)
 
     else:
-        ncols = p.order_orbit_col
+        ncols = p.ephemeris_cols
         volon, volat, votime = numpy.loadtxt(orbitfile, usecols=ncols,
                                              comments='#', unpack=True)
         votime *= const.secinday
@@ -53,8 +53,8 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
             else:
                 break
     if 'cycle' in dic_sat.keys() and 'elevation' in dic_sat.keys():
-        p.satcycle = dic_sat['cycle']
-        p.sat_elev = dic_sat['elevation']
+        p.cycle_duration = dic_sat['cycle']
+        p.height = dic_sat['elevation']
 
     # - If orbit is at low resolution, interpolate at 0.5 s resolution
     # nop = numpy.shape(votime)[0]
@@ -72,10 +72,10 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
         lat_hr = numpy.zeros(len(x_hr)) + numpy.nan
         lon_hr, lat_hr = mod_tools.cart2sphervect(x_hr, y_hr, z_hr)
         # Cut orbit if more than an orbit cycle
-        if p.satcycle is None:
-            p.satcycle = const.tcycle
+        if p.cycle_duration is None:
+            p.cycle_duration = const.tcycle
         time_hr = time_hr / const.secinday
-        ind = numpy.where((time_hr < p.satcycle))
+        ind = numpy.where((time_hr < p.cycle_duration))
         volon = lon_hr[ind]
         volat = lat_hr[ind]
         votime = time_hr[ind]
@@ -129,7 +129,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     # modelbox=[lonmin lonmax latmin latmax] add margin around the domain
     # plus one point to compute Satdir
     matnpbox = numpy.zeros((nop))
-    halfswath = getattr(p, 'halfswath', 1)
+    halfswath = getattr(p, 'half_swath', 60)
     if modelbox[0] > modelbox[1]:
         matnpbox[numpy.where((((modelbox[0] - halfswath / (const.deg2km
                  * math.cos(modelbox[2]*math.pi/180.))) <= volon)
@@ -266,7 +266,7 @@ def makeorbit(modelbox, p, orbitfile='orbit_292.txt', filealtimeter=None):
     orb.al_cycle = distance[-1]
     orb.passtime = numpy.sort(passtime)
     orb.timeshift = p.timeshift
-    orb.sat_elev = p.sat_elev
+    orb.sat_elev = p.height
     return orb
 
 def orbit2nadir(modelbox, p, orb, die_on_error):
@@ -274,7 +274,7 @@ def orbit2nadir(modelbox, p, orb, die_on_error):
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
     added in the parameters file. \n
-    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Nadir
+    Inputs are satellite orbit (p.ephemeris), subdomain (modelbox), Nadir
     parameters (along track resolution p.delta_al). \n
     Outputs are netcdf files containing SWOT tracks (along track distance x_al,
     longitude lon and latitude lat,
@@ -317,8 +317,8 @@ def orbit2swath(modelbox, p, orb, die_on_error):
     The path of the satellite is given by the orbit file and the subdomain
     corresponds to the one in the model. Note that a subdomain can be manually
     added in the parameters file. \n
-    Inputs are satellite orbit (p.filesat), subdomain (modelbox), Swath
-    parameters (half gap distance p.halfgap, half swath distance p.halfswath,
+    Inputs are satellite orbit (p.ephemeris), subdomain (modelbox), Swath
+    parameters (half gap distance p.half_gap, half swath distance p.half_swath,
     along track
     resolution p.delta_al, across track resolution p.delta_ac). \n
     Outputs are netcdf files containing SWOT grid (along track distance x_al,
@@ -336,12 +336,12 @@ def orbit2swath(modelbox, p, orb, die_on_error):
     passtime = orb.passtime
     # - Compute accross track distances from nadir
     # Number of points in half of the swath
-    nhalfswath = int((p.halfswath-p.halfgap)/p.delta_ac) + 1
+    nhalfswath = int((p.half_swath - p.half_gap)/p.delta_ac) + 1
     # Across track distance from nadir
     x_ac = numpy.zeros((2*nhalfswath))
     for i in range(0, int(nhalfswath)):
-        x_ac[i] = -(nhalfswath - i)*p.delta_ac - p.halfgap + p.delta_ac
-        x_ac[i + nhalfswath] = i * p.delta_ac + p.halfgap
+        x_ac[i] = -(nhalfswath - i)*p.delta_ac - p.half_gap + p.delta_ac
+        x_ac[i + nhalfswath] = i * p.delta_ac + p.half_gap
 
     # - Computation of SWOT grid and storage by passes
     logger.info('\n Compute SWOT grid')
@@ -480,7 +480,7 @@ def worker_method_grid(*args, **kwargs):
 
     p = mod_tools.fromdict(p2)
     npoints = 1
-    sat_elev= p.sat_elev
+    sat_elev= p.height
     if sat_elev is None:
         sat_elev = const.sat_elev
     # Detect indices corresponding to the pass
@@ -538,13 +538,13 @@ def worker_method_grid(*args, **kwargs):
         # and right swath
         for i in range(0, nind, npoints):
             for j in range(0, int(nhalfswath)):
-                R = mod_tools.rotationmat3D(float((j*p.delta_ac+p.halfgap)
+                R = mod_tools.rotationmat3D(-float((j*p.delta_ac+p.half_gap)
                                             / (const.Rearth*10**-3)),
                                             SatDir[int(i/npoints), :])
-                ObsLoc = numpy.dot(-R, SatLoc[int(i/npoints)])
+                ObsLoc = numpy.dot(R, SatLoc[int(i/npoints)])
                 cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
                 sgrid.lon[i, nhalfswath+j], sgrid.lat[i, nhalfswath+j] = cs
-                ObsLoc = numpy.dot(-numpy.transpose(R),
+                ObsLoc = numpy.dot(numpy.transpose(R),
                                    SatLoc[int(i/npoints)])
                 cs = mod_tools.cart2spher(ObsLoc[0], ObsLoc[1], ObsLoc[2])
                 sgrid.lon[i, nhalfswath-j-1], sgrid.lat[i, nhalfswath-j-1] = cs
@@ -593,7 +593,7 @@ def worker_method_nadir(*args, **kwargs):
 
     p = mod_tools.fromdict(p2)
     npoints = 1
-    sat_elev= p.sat_elev
+    sat_elev = p.height
     if sat_elev is None:
         sat_elev = const.sat_elev
     # Detect indices corresponding to the pass
