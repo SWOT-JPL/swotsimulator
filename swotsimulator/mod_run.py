@@ -280,12 +280,12 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     ind_nadir_time = numpy.where((time_shift >= model_tmin)
                                                  & (time_shift < model_tmax))
                 # Handle files with multiple time dimensions
-                nfile = int(ifile /p.dim_time)
-                filetime = ifile - nfile * p.dim_time
+                infile = int(ifile /p.dim_time)
+                filetime = ifile - infile * p.dim_time
 
                 # Load data from this model file
                 model_step_ctor = getattr(rw_data, model_data.model)
-                nfile = os.path.join(p.indatadir, list_file[ifile])
+                nfile = os.path.join(p.indatadir, list_file[infile])
                 model_step = model_step_ctor(p, nfile=nfile,
                                              time=filetime)
                 input_var = {}
