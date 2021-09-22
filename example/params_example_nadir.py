@@ -11,22 +11,21 @@ dir_setup = os.path.join(home, 'swotsimulator', 'data')
 indatadir = os.path.join(home, 'swotsimulator', 'example',
                          'input_fields')
 # ------ Directory that contains your outputs:
-outdatadir = os.path.join(home, 'swotsimulator', 'example',
+working_directory = os.path.join(home, 'swotsimulator', 'example',
                           'swot_output')
 # ------ Orbit file:
 # Order of columns (lon, lat, time) in the orbit file
 # (default is (1, 2, 0) with order_orbit_col = None)
-order_orbit_col = None
+ephemeris_cols = None
 # Name of the orbit file
 satname = "science"
-filesat = os.path.join(dir_setup, 'ephem_science_sept2015_ell.txt')
+ephemeris = os.path.join(dir_setup, 'ephem_science_sept2015_ell.txt')
 # ------ Number of days in one cycle
-satcycle = 20.86455
+cycle_duration = 20.86455
 # ------ Satellite elevation
-sat_elev = 891 * 10**3
-# , dir_setup+os.sep+'orbjason.txt', dir_setup+os.sep+'orbaltika.txt' ]
-# ------ Name of the configuration (to build output files names) 
-config="OREGON"
+height = 891 * 10**3
+# ------ Name of the configuration (to build output files names)
+config = "ww3_gs"
 #Number of processors to be used
 proc_number = 1
 # ------ Deactivate printing of progress bar to avoid huge log
@@ -37,13 +36,14 @@ progress_bar = True
 # -----------------------# 
 # ------ Satellite grid file root name:
 # 	 (Final file name is root_name_[numberofpass].nc)
-filesgrid = os.path.join(outdatadir, '{}_{}_grid'.format(config,satname))
+filesgrid = os.path.join(working_directory, '{}_{}_grid'.format(config,satname))
 # ------ Force the computation of the satellite grid:
 makesgrid = True
 # ------ Give a subdomain if only part of the model is needed:
 #	 (modelbox=[lon_min, lon_max, lat_min, lat_max])
 # 	 (If modelbox is None, the whole domain of the model is considered)
 modelbox = None  # [230.144,234.598,42.27,47.8283] 
+area = None
 # ------ Along track resolution (in km):
 delta_al = 6.
 # ------ Shift longitude of the orbit file if no pass is in the domain 
@@ -97,25 +97,28 @@ model_nan = 0.
 # -----------------------# 
 # ------ Output file root name:
 #	 (Final file name is root_name_c[cycle].nc
-file_output = os.path.join(outdatadir, '{}_{}'.format(config,satname))
+file_output = os.path.join(working_directory, '{}_{}'.format(config,satname))
 # ------ Interpolation of the SSH from the model (if grid is irregular and 
 #         pyresample is not installed:
 #        (either 'linear' or 'nearest', use 'nearest' for large region
 #        as it is faster and use less memory.)
 interpolation = 'nearest'
+# ------ Save variables with all mockup variables ('all'), only swotsimulator
+#        variables ('classic', default behaviour) or in expert mode ('expert')
+product_type = 'all'
 # -----------------------# 
 # NADIR error parameters 
 # -----------------------# 
-# ------ File containing random coefficients to compute and save 
-#	 random error coefficients so that runs are reproducible:
-#        If file_coeff is specified and does not exist, file is created
-#	 If you don't want runs to be reproducible, file_coeff is set to None
-file_coeff = None  # outdatadir+os.sep+'Random_coeff.nc'
-# ------ Number of random realisations for instrumental and geophysical error 
-#        (recommended ncomp=2000), ncomp1d is used for 1D spectrum, and ncomp2d
-#        is used for 2D spectrum (wet troposphere computation):
-ncomp1d = 3000
-ncomp2d = 2000
+noise = ["altimeter", "wet_troposphere"]
+# "Seed for RandomState. Must be convertible to 32 bit "
+nseed = 0
+# ------ Cut off frequency:
+#	 (Use lambda_cut=40000km for cross-calibration)
+lambda_cut = 20000
+lambda_max = lambda_cut
+# ------ If savesignal is True, enter number of pseudo-period of superimposed
+#        signals and repeat length
+len_repeat = 40000 #*14*50.
 
 ## -- Geophysical error
 ## ----------------------
@@ -124,6 +127,11 @@ wet_tropo = True
 # ------ Beam print size (in km):
 #        Gaussian footprint of sigma km
 sigma = 8.
+# ------ Number of beam used to correct wet_tropo signal (1, 2 or 'both'):
+nbeam = 1
+# ------ Beam position if there are 2 beams (in km from nadir):
+beam_position = [0,]
+
 # ------ Across track resolution of the beam for the correction of the 
 #        wet tropo (in km):
 delta_ac = 6.
