@@ -17,6 +17,7 @@ import logging
 import swotsimulator.const as const
 logger = logging.getLogger(__name__)
 
+DFORMAT = '%Y-%m-%dT%H:%M:%SZ'
 
 class IncompatibleGridError(Exception):
     """Raised"""
@@ -271,10 +272,11 @@ class Sat_SWOT():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = self.time[0]
-        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.time_coverage_end = self.time[-1]
-        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[0])
+        fid.time_coverage_start = _date.strftime(DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[-1])
+        fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
         fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
         fid.geospatial_lat_units = "degrees_north"
@@ -282,8 +284,8 @@ class Sat_SWOT():
         fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
         fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
-        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_created = ti.strftime(DFORMAT)
+        fid.date_modified = ti.strftime(DFORMAT)
         fid.keywords_vocabulary = "NASA"
         fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
                          'Challenge of Using Future SWOT Data for Oceanic '\
@@ -392,10 +394,11 @@ class Sat_SWOT():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = self.time[0]
-        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.time_coverage_end = self.time[-1]
-        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[0])
+        fid.time_coverage_start = _date.strftime(FORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[-1])
+        fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
         fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
         fid.geospatial_lat_units = "degrees_north"
@@ -403,8 +406,8 @@ class Sat_SWOT():
         fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
         fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
-        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_created = ti.strftime(DFORMAT)
+        fid.date_modified = ti.strftime(DFORMAT)
         fid.keywords_vocabulary = "NASA"
         fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
                          'Challenge of Using Future SWOT Data for Oceanic '\
@@ -448,8 +451,7 @@ class Sat_SWOT():
         vx_ac.long_name = "Across track distance from nadir"
         dim = [dim_tim, dim_ac, dim_rad]
         if 'empty_var' in kwargs:
-            dformat = '%Y-%m-%dT%H:%M:%SZ'
-            start_date = datetime.datetime.strptime(self.first_time, dformat)
+            start_date = datetime.datetime.strptime(self.first_time, DFORMAT)
             first_date = datetime.datetime(2000, 1, 1)
             if start_date < first_date:
                 logger.info('start_date has been replaced by 1 January 2000'
@@ -588,10 +590,11 @@ class Sat_SWOT():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = self.time[0]
-        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.time_coverage_end = self.time[-1]
-        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[0])
+        fid.time_coverage_start = _date.strftime(DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[-1])
+        fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
         fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
         fid.geospatial_lat_units = "degrees_north"
@@ -599,8 +602,8 @@ class Sat_SWOT():
         fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
         fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
-        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_created = ti.strftime(DFORMAT)
+        fid.date_modified = ti.strftime(DFORMAT)
         fid.keywords_vocabulary = "NASA"
         fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
                          'Challenge of Using Future SWOT Data for Oceanic '\
@@ -765,10 +768,11 @@ class Sat_nadir():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = self.time[0]
-        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.time_coverage_end = self.time[-1]
-        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[0])
+        fid.time_coverage_start = _date.strftime(DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[-1])
+        fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
         fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
         fid.geospatial_lat_units = "degrees_north"
@@ -776,8 +780,8 @@ class Sat_nadir():
         fid.geospatial_lon_min = "{:.2f}".format(numpy.min(self.lon))
         fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
-        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_created = ti.strftime(DFORMAT)
+        fid.date_modified = ti.strftime(DFORMAT)
         fid.keywords_vocabulary = "NASA"
         fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
                          'Challenge of Using Future SWOT Data for Oceanic ' \
@@ -853,10 +857,11 @@ class Sat_nadir():
         fid.creator_name = "Lucile Gaultier and Clement Ubelmann"
         fid.creator_email = "lucile.gaultier@gmail.com"
         fid.publisher_url = "github/SWOTSimulator/"
-        fid.time_coverage_start = self.time[0]
-        # p.date0+"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
-        fid.time_coverage_end = self.time[-1]
-        # p.date0 +"YYYY-MM-DDThh:mmZ"  #tim0 converted to format
+        _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[0])
+        fid.time_coverage_start = _date.strftime(DFORMAT)
+        _date = _first_date + datetime.timedelta(days=self.time[-1])
+        fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
         fid.geospatial_lat_max = "{:.2f}".format(numpy.max(self.lat))
         fid.geospatial_lat_units = "degrees_north"
@@ -864,8 +869,8 @@ class Sat_nadir():
         fid.geospatial_lon_min = "{0:.2f}".format(numpy.min(self.lon))
         fid.geospatial_lon_units = "degrees_east"
         fid.project = "SWOT"
-        fid.date_created = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
-        fid.date_modified = ti.strftime("%Y-%m-%dT%H:%M:%SZ")
+        fid.date_created = ti.strftime(DFORMAT)
+        fid.date_modified = ti.strftime(DFORMAT)
         fid.keywords_vocabulary = "NASA"
         fid.references = 'Gaultier, L., C. Ubelmann, and L.-L. Fu, 2016: The '\
                          'Challenge of Using Future SWOT Data for Oceanic '\

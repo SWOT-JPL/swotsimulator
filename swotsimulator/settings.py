@@ -20,7 +20,7 @@ import numpy as np
 import swotsimulator.mod_tools as math
 
 DEFAULT_WORKING_DIRECTORY = os.path.join(os.path.expanduser('~'),
-                                         "swot_simulator")
+                                         "swotsimulator")
 
 #: Module logger
 LOGGER = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ def eval_config_file(filename: str) -> Dict:
 
 def error_classes() -> Iterator[str]:
     """Get the list of classes implementing random error generation."""
-    module = importlib.import_module(".error", package="swot_simulator")
+    module = importlib.import_module(".error", package="swotsimulator")
     for item in dir(module):
         if isinstance(getattr(module, item), type):
             yield item
@@ -323,6 +323,7 @@ class Parameters:
         SSH_factor=(1., float, "Specify factor to convert SSH values in m"),
         lon=("lon", str, "Specify longitude variable"),
         lat=("lat", str, "Specify latitude variable"),
+        dim_time=(1, int, "Number of time step in a file"),
         timestep=(1., float, "Time step between two model outputs (in days)"),
         nstep=(21, float, "Number of outputs to consider:(timestep*nstep=total number of days)"),
         model_nan=(-32767, float, "Not a number value"),
@@ -336,7 +337,7 @@ class Parameters:
         )
 
     #: Arguments that must be defined by the user.
-    REQUIRED = ["ephemeris", "error_spectrum", "karin_noise"]
+    REQUIRED = ["ephemeris"] #, "error_spectrum", "karin_noise"]
 
     def __init__(self, overrides: Dict[str, Any]):
         for required in self.REQUIRED:

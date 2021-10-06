@@ -282,7 +282,7 @@ class errornadir():
         self.nbeam = 1
         self.nadir_alone = nadir_alone
 
-    def init_error(self, p, seed=0):
+    def init_error(self, p, seed=0, nadir_alone=False):
         '''Initialization of errors: Random realisation of errors are computed
         using a known power spectrum.
         The outputs are the amplitude, the phase and the frequency of each
@@ -353,4 +353,5 @@ class errornadir():
             dic_error = wt.generate(x_al, numpy.arange(-1, 2, 1))
             self.wet_tropo1 = dic_error["simulated_error_troposphere"]
             self.wet_tropo1 = dic_error["simulated_error_troposphere_nadir"]
+            self.wet_tropo1nadir = dic_error["simulated_error_troposphere_nadir"]
         return None

@@ -76,7 +76,8 @@ def run_nadir_script():
 
     file_param = args.params_file
 
-    p = mod_tools.load_python_file(file_param)
+    #p = mod_tools.load_python_file(file_param)
+    p = settings.Parameters(settings.eval_config_file(file_param))
     try:
         run_simulator.run_simulator(p, die_on_error=args.die_on_error,
                                     nadir_alone=True)
