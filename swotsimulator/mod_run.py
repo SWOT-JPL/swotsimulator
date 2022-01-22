@@ -257,49 +257,79 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
     # Look for satellite data that are beween step-p.timestep/2 and
     # step+p.step/2
     if p.file_input is not None:
+        lon2D = {}
+        lat2D = {}
+        # meshgrid in 2D for interpolation purposes
+        for key in model_data.vlon.keys():
+            if p.grid == 'irregular':
+                lon2D[key], lat2D[key] = numpy.meshgrid(model_data.vlon[key],
+                                                        model_data.vlat[key])
         time_shift_end = time[-1] - sgrid.timeshift
         time_shift_start = time[0] - sgrid.timeshift
-        model_tmin = modeltime - p.timestep/2.
-        model_tmax = modeltime + p.timestep/2.
+        model_tmin = modeltime - p.timestep #/2.
+        model_tmax = modeltime + p.timestep #/2.
         index_filemodel = numpy.where((time_shift_end >= model_tmin)
                                       & (time_shift_start < model_tmax))
+                                      
+        # local variable to find time record in file
+        nfile = 0
+        time_offset = 0
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
+            ifilenext = ifile + 1
+            if len(modeltime) < ifilenext:
+                ifilenext = ifile
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
                 # if numpy.shape(index)[1]>1:
                 # Select part of the track that corresponds to the time of the
                 # model (+-timestep/2)
-                model_tmin = modeltime[ifile] - p.timestep/2.
-                model_tmax = modeltime[ifile] + p.timestep/2.
+                model_tmin = modeltime[ifile] # - p.timestep/2.
+                model_tmax = modeltime[ifile  ] + p.timestep #/2.
                 if nadir_alone is False:
                     time_shift = time - sgrid.timeshift
                     ind_time = numpy.where((time_shift >= model_tmin)
                                            & (time_shift < model_tmax))
+                    if ifilenext == ifile:
+                        alpha = 1
+                    else:
+                        alpha = ((time_shift[ind_time] - modeltime[ifile])
+                                 / (modeltime[ifile + 1] - modeltime[ifile]))
                 if compute_nadir is True:
                     time_shift = time - ngrid.timeshift
                     ind_nadir_time = numpy.where((time_shift >= model_tmin)
                                                  & (time_shift < model_tmax))
-                # Handle files with multiple time dimensions
-                infile = int(ifile /p.dim_time)
-                filetime = ifile - infile * p.dim_time
+                    if ifilenext == ifile:
+                        alphan = 1
+                    else:
+                        alphan = ((time_shift[ind_time] - modeltime[ifile])
+                                 / (modeltime[ifile + 1] - modeltime[ifile]))
+                var_list = []
+                for iifile in (ifile, ifilenext):
+                    # Handle files with multiple time dimensions
+                    infile = int(iifile / p.dim_time)
+                    filetime = iifile - infile * p.dim_time
 
-                # Load data from this model file
-                model_step_ctor = getattr(rw_data, model_data.model)
-                nfile = os.path.join(p.indatadir, list_file[infile])
-                model_step = model_step_ctor(p, nfile=nfile,
-                                             time=filetime)
-                input_var = {}
-                if p.grid == 'regular' or model_data.len_coord ==1:
-                    model_step.read_var()
-                    for key in model_step.input_var.keys():
-                        _indlat = model_data.model_index_lat
-                        _tmp = model_step.input_var[key][_indlat, :]
-                        input_var[key] = +_tmp[:, model_data.model_index_lon]
-                else:
-                    model_step.read_var(index=model_data.model_index)
-                    for key in model_step.input_var.keys():
-                        input_var[key] = + model_step.input_var[key]
+                    # Load data from this model file
+                    model_step_ctor = getattr(rw_data, model_data.model)
+                    nfile = os.path.join(p.indatadir, list_file[infile])
+                    model_step = model_step_ctor(p, nfile=nfile,
+                                                 time=filetime)
+				    #		list_input_var=p.list_input_var,
+                    input_var = {}
+
+
+                    if p.grid == 'regular' or model_data.len_coord ==1:
+                        model_step.read_var()
+                        for key in model_step.input_var.keys():
+                            _indlat = model_data.model_index_lat
+                            _tmp = model_step.input_var[key][_indlat, :]
+                            input_var[key] = +_tmp[:, model_data.model_index_lon]
+                    else:
+                        model_step.read_var(index=model_data.model_index)
+                        for key in model_step.input_var.keys():
+                            input_var[key] = + model_step.input_var[key]
+                    var_list.append(input_var)
                 # - Interpolate Model data on a SWOT grid and/or along the
                 #   nadir track
                 # Handle Greenwich line
@@ -333,12 +363,16 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     if nadir_alone is False:
                         lonswot = lon_grid[ind_time[0], :].flatten()
                         latswot = sgrid.lat[ind_time[0], :].flatten()
+                        nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
                         for key in input_var.keys():
-                            _ssh, Teval = interp(p, lon_model, model_data.vlat,
-                                                 input_var[key], lonswot,
-                                                 latswot, Teval=Teval)
-                            nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
-                            out_var[key][ind_time[0], :] = _ssh.reshape(nal, nac)
+                            slist = []
+                            for iinput_var in var_list:
+                                _ssh, Teval = interp(p, lon_model, model_data.vlat,
+                                                     iinput_var[key], lonswot,
+                                                     latswot, Teval=Teval)
+                                slist.append(_ssh.reshape(nal, nac))
+                            _tmp = alpha * slist[0] + (1 - alpha) * slist[1]
+                            out_var[key][ind_time[0], :] = +_tmp
                             if key == 'ssh_true':
                                 _mask_land = numpy.zeros((nal, nac))
                                 Teval2d = Teval.reshape(nal, nac)
@@ -348,12 +382,16 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                         lonnadir = lon_ngrid[ind_nadir_time[0]].ravel()
                         latnadir = ngrid.lat[ind_nadir_time[0]].ravel()
                         for key in input_var.keys():
-                            _ssh, nTeval = interp(p, lon_model,
-                                                  model_data.vlat,
-                                                  input_var[key], lonnadir,
-                                                  latnadir, Teval=nTeval)
+                            nlist = []
+                            for iinput_var in var_list:
+                                _ssh, nTeval = interp(p, lon_model,
+                                                      model_data.vlat,
+                                                      iinput_var[key], lonnadir,
+                                                      latnadir, Teval=nTeval)
+                                nlist.append(_ssh)
+                            _tmp = alphan * nlist[0] + (1 - alphan) * nlist[1]
                             nkey = '{}_nadir'.format(key)
-                            out_var[nkey][ind_nadir_time[0]] = _ssh
+                            out_var[nkey][ind_nadir_time[0]] = + _tmp
                 else:
                     # Grid is irregular, interpolation can be done using
                     # pyresample module if it is installed or griddata
@@ -372,49 +410,66 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                         swath_def = geomdef(lons=lon_model,
                                             lats=model_data.vlat)
                         if nadir_alone is False:
-                           lon_grid = wrap_lon(lon_grid)
-                           grid_def = geomdef(lons=lon_grid[ind_time[0], :],
-                                              lats=sgrid.lat[ind_time[0], :])
-                           for key in input_var.keys():
-                                _ssh = interp(swath_def, input_var[key], grid_def,
-                                              max(p.delta_al, p.delta_ac),
-                                              interp_type=p.interpolation)
-                                out_var[key][ind_time[0], :] = _ssh
+                            lon_grid = wrap_lon(lon_grid)
+                            grid_def = geomdef(lons=lon_grid[ind_time[0], :],
+                                               lats=sgrid.lat[ind_time[0], :])
+                            for key in input_var.keys():
+                                slist = []
+                                for iinput_var in var_list:
+                                    _ssh = interp(swath_def, iinput_var[key],
+                                                  grid_def,
+                                                  max(p.delta_al, p.delta_ac),
+                                                  interp_type=p.interpolation)
+                                    slist.append(_ssh.reshape(nal, nac))
+                                _tmp = alpha * slist[0] + (1 - alpha) * slist[1]
+                                out_var[key][ind_time[0], :] = +_tmp
                                 if key == 'ssh_true':
-                                    out_var['mask_land'][numpy.isnan(_ssh)] = 3
+                                   out_var['mask_land'][numpy.isnan(_ssh)]=3
                         if compute_nadir is True:
                             lon_ngrid = wrap_lon(lon_ngrid)
                             ngrid_def = geomdef(lons=lon_ngrid[ind_nadir_time[0]],
                                                 lats=ngrid.lat[ind_nadir_time[0]])
                             for key in input_var.keys():
-                                _ssh = interp(swath_def, input_var[key],
-                                              ngrid_def,
-                                              p.delta_al,
-                                              interp_type=p.interpolation)
+                                nlist = []
+                                for iinput_var in var_list:
+                                    _ssh = interp(swath_def, iinput_var[key],
+                                                  ngrid_def, p.delta_al,
+                                                  interp_type=p.interpolation)
+                                    nlist.append(_ssh.reshape(nal, nac))
+                                _tmp = alphan * nlist[0] + (1-alphan)*nlist[1]
                                 nkey = '{}_nadir'.format(key)
-                                out_var[nkey][ind_nadir_time[0]] = _ssh
+                                out_var[nkey][ind_nadir_time[0]] = + _tmp
                     except ImportError:
                         interp = interpolate.griddata
                         model_ravel = (lon_model.ravel(),
                                        model_data.vlat.ravel())
                         if nadir_alone is False:
                             for key in input_var.keys():
-                                _ssh = interp(model_ravel, input_var[key].ravel(),
-                                              (lon_grid[ind_time[0], :],
-                                              sgrid.lat[ind_time[0], :]),
-                                              method=p.interpolation)
+                                slist = []
+                                for iinput_var in var_list:
+                                    _ssh = interp(model_ravel,
+                                                  iinput_var[key].ravel(),
+                                                  (lon_grid[ind_time[0], :],
+                                                  sgrid.lat[ind_time[0], :]),
+                                                  method=p.interpolation)
+                                    slist.append(_ssh.reshape(nal, nac))
+                                _tmp = alpha * slist[0] + (1 - alpha) * slist[1]
+                                out_var[key][ind_time[0], :] = + _tmp
                                 if key == 'ssh_true':
                                     out_var['mask_land'][numpy.isnan(_ssh)] = 3
-                                out_var[key][ind_time[0], :] = _ssh
                         if compute_nadir is True:
                             for key in input_var.keys():
-                                _ssh = interp(model_ravel,
-                                              input_var[key].ravel(),
-                                              (lon_ngrid[ind_nadir_time[0]],
-                                              ngrid.lat[ind_nadir_time[0]]),
-                                              method=p.interpolation)
+                                nlist = []
+                                for iinput_var in var_list:
+                                    _ssh = interp(model_ravel,
+                                                  iinput_var[key].ravel(),
+                                                  (lon_ngrid[ind_nadir_time[0]],
+                                                  ngrid.lat[ind_nadir_time[0]]),
+                                                  method=p.interpolation)
+                                    slist.append(_ssh.reshape(nal, nac))
+                                _tmp = alphan * nlist[0] + (1 - alphan) * nlist[1]
                                 nkey = '{}_nadir'.format(key)
-                                out_var[nkey][ind_nadir_time[0]] = _ssh
+                                out_var[nkey][ind_nadir_time[0]] = +  _tmp
                         if p.interpolation == 'nearest':
                             if modelbox[0] > modelbox[1]:
                                 if nadir_alone is False:
