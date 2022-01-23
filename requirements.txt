@@ -4,3 +4,6 @@
 Numpy
 Scipy
 netCDF4
+numba
+xarray
+pyresample
