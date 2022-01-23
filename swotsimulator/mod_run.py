@@ -133,18 +133,81 @@ def load_ngrid(sgridfile, p, nadir_alone=False):
 def interpolate_regular_1D(p, lon_in, lat_in, var, lon_out, lat_out,
                            Teval=None):
     ''' Interpolation of data when grid is regular and coordinate in 1D. '''
-    #lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
-    interp = interpolate.RectBivariateSpline
-    if Teval is None or p.ice_mask is True:
-        _Teval = interp(lat_in, lon_in, numpy.isnan(var), kx=1, ky=1, s=0)
-        Teval = _Teval.ev(lat_out, lon_out)
-    # Trick to avoid nan in interpolation
-    var_mask = + var
-    var_mask._sharedmask=False
-    var_mask[numpy.isnan(var_mask)] = 0.
-    # Interpolate variable
-    _var = interp(lat_in, lon_in, var_mask, kx=1, ky=1, s=0)
-    var_out = _var.ev(lat_out, lon_out)
+    # To correct for IDL issues
+    ind_sort = numpy.argsort(lon_in)
+    lon_in = lon_in[ind_sort]
+    var = var[:, ind_sort]
+    if numpy.max(lon_in) > 359 and numpy.min(lon_in) < 1:
+        ind_in1 = numpy.where(lon_in <= 180)
+        ind_in2 = numpy.where(lon_in > 180)
+        # lon_in[lon_in > 180] = lon_in[lon_in > 180] - 360
+        # lon_in = np.mod(lon_in - (lref - 180), 360) + (lref - 180)
+        # lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
+        ind_out1 = numpy.where(lon_out <= 180)
+        ind_out2 = numpy.where(lon_out > 180)
+        # lon_out[lon_out > 180] = lon_out[lon_out > 180] - 360
+        # lon_out = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_out)))
+        interp = interpolate.RectBivariateSpline
+        mask_teval = (numpy.isnan(var) | numpy.ma.getmaskarray(var))
+        if Teval is None:
+            Teval = numpy.zeros(numpy.shape(lon_out))
+            if ind_out1[0].any():
+                _tmp = interp(lat_in, lon_in[ind_in1],
+                              mask_teval[:, ind_in1[0]], kx=1, ky=1,
+                              s=0)
+                Teval[ind_out1] = _tmp.ev(lat_out[ind_out1], lon_out[ind_out1])
+            if ind_out2[0].any():
+                _tmp = interp(lat_in, lon_in[ind_in2],
+                              mask_teval[:, ind_in2[0]], kx=1, ky=1,
+                              s=0)
+                Teval[ind_out2] = _tmp.ev(lat_out[ind_out2], lon_out[ind_out2])
+        # Trick to avoid nan in interpolation
+        var_mask = + var
+        var_mask[numpy.isnan(var_mask) | numpy.ma.getmaskarray(var_mask)] = 0.
+        # Interpolate variable
+        var_out = numpy.full(numpy.shape(lon_out), numpy.nan)
+        if ind_out1[0].any():
+            _tmp = interp(lat_in, lon_in[ind_in1], var_mask[:, ind_in1[0]],
+                          kx=1, ky=1, s=0)
+            var_out[ind_out1] = _tmp.ev(lat_out[ind_out1], lon_out[ind_out1])
+        if ind_out2[0].any():
+            _tmp = interp(lat_in, lon_in[ind_in2], var_mask[:, ind_in2[0]],
+                          kx=1, ky=1, s=0)
+            var_out[ind_out2] = _tmp.ev(lat_out[ind_out2], lon_out[ind_out2])
+        print('bouh1', numpy.shape(var_out))
+    else:
+        mask_teval = (numpy.isnan(var) | numpy.ma.getmaskarray(var))
+        # Interpolate mask if it has not been done (Teval is None)
+        interp = interpolate.RectBivariateSpline
+        if Teval is None:
+            _Teval = interp(lat_in, lon_in, mask_teval, kx=1, ky=1, s=0)
+            Teval = _Teval.ev(lat_out, lon_out)
+        # Trick to avoid nan in interpolation
+        var_mask = + var
+        var_mask._sharedmask=False
+        var_mask[numpy.isnan(var_mask)] = 0.
+        #var_mask[numpy.isnan(var_mask) | numpy.ma.getmaskarray(var_mask)] = 0.
+        # Interpolate variable
+        _var_out = interp(lat_in, lon_in, var_mask, kx=1, ky=1, s=0)
+        var_out = _var_out.ev(lat_out, lon_out)
+        print('bouh2', numpy.shape(var_out), numpy.shape(Teval))
+
+    ## Mask variable with Teval
+    #var_out[Teval > 0] = numpy.nan
+    ##var_out[Teval > 0] = numpy.nan
+    ##var_out[abs(var_out) > 1000] = numpy.nan
+    ##lon_in = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_in)))
+    #interp = interpolate.RectBivariateSpline
+    #if Teval is None or p.ice_mask is True:
+    #    _Teval = interp(lat_in, lon_in, numpy.isnan(var), kx=1, ky=1, s=0)
+    #    Teval = _Teval.ev(lat_out, lon_out)
+    ## Trick to avoid nan in interpolation
+    #var_mask = + var
+    #var_mask._sharedmask=False
+    #var_mask[numpy.isnan(var_mask)] = 0.
+    ## Interpolate variable
+    #_var = interp(lat_in, lon_in, var_mask, kx=1, ky=1, s=0)
+    #var_out = _var.ev(lat_out, lon_out)
     # Mask variable with Teval
     var_out[Teval > 0] = numpy.nan
     return var_out, Teval
@@ -209,6 +272,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
     _data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
+    print(modelbox)
     #   Initialiaze errors and SSH
     if err is None:
         nadir_alone = True
@@ -260,24 +324,24 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
         lon2D = {}
         lat2D = {}
         # meshgrid in 2D for interpolation purposes
-        for key in model_data.vlon.keys():
-            if p.grid == 'irregular':
-                lon2D[key], lat2D[key] = numpy.meshgrid(model_data.vlon[key],
-                                                        model_data.vlat[key])
+        #for key in model_data.vlon.keys():
+        #    if p.grid == 'irregular':
+        #        lon2D[key], lat2D[key] = numpy.meshgrid(model_data.vlon[key],
+                                                        #model_data.vlat[key])
         time_shift_end = time[-1] - sgrid.timeshift
         time_shift_start = time[0] - sgrid.timeshift
         model_tmin = modeltime - p.timestep #/2.
         model_tmax = modeltime + p.timestep #/2.
         index_filemodel = numpy.where((time_shift_end >= model_tmin)
                                       & (time_shift_start < model_tmax))
-                                      
+
         # local variable to find time record in file
         nfile = 0
         time_offset = 0
         # At each step, look for the corresponding time in the satellite data
         for ifile in index_filemodel[0]:
             ifilenext = ifile + 1
-            if len(modeltime) < ifilenext:
+            if len(modeltime) <= ifilenext:
                 ifilenext = ifile
             # If there are satellite data, Get true SSH from model
             if numpy.shape(index_filemodel)[1] > 0:
@@ -294,7 +358,8 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                         alpha = 1
                     else:
                         alpha = ((time_shift[ind_time] - modeltime[ifile])
-                                 / (modeltime[ifile + 1] - modeltime[ifile]))
+                                 / (modeltime[ifilenext] - modeltime[ifile]))
+                        alpha = numpy.transpose([alpha,] * numpy.shape(sgrid.lon)[1])
                 if compute_nadir is True:
                     time_shift = time - ngrid.timeshift
                     ind_nadir_time = numpy.where((time_shift >= model_tmin)
@@ -303,7 +368,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                         alphan = 1
                     else:
                         alphan = ((time_shift[ind_time] - modeltime[ifile])
-                                 / (modeltime[ifile + 1] - modeltime[ifile]))
+                                 / (modeltime[ifilenext] - modeltime[ifile]))
                 var_list = []
                 for iifile in (ifile, ifilenext):
                     # Handle files with multiple time dimensions
@@ -349,6 +414,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     lon_model = numpy.mod(lon_model + 180., 360.) - 180.
                 # if grid is regular, use interpolate.RectBivariateSpline to
                 # interpolate
+                #print(model_data.vlon, sgrid.lon)
 
                 if p.grid == 'regular' or model_data.len_coord == 1:
                     # ########################TODO

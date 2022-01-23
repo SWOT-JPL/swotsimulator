@@ -396,7 +396,7 @@ class Sat_SWOT():
         fid.publisher_url = "github/SWOTSimulator/"
         _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
         _date = _first_date + datetime.timedelta(days=self.time[0])
-        fid.time_coverage_start = _date.strftime(FORMAT)
+        fid.time_coverage_start = _date.strftime(DFORMAT)
         _date = _first_date + datetime.timedelta(days=self.time[-1])
         fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
@@ -571,6 +571,7 @@ class Sat_SWOT():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
+        print(self.file)
         fid = Dataset(self.file, 'w') #, format='NC_NETCDF4')
         fid.description = "Ouptut from SWOT simulator"
         if hasattr(self, 'gridfile'):
@@ -749,6 +750,7 @@ class Sat_nadir():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
+        print('write', self.file)
         fid = Dataset(self.file, 'w')
         fid.description = "Orbit computed by SWOT simulator"
         if hasattr(self, 'gridfile'):
@@ -1185,6 +1187,7 @@ class NETCDF_MODEL():
             lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat)
         self.vlat = lat
         self.vlon = (lon + 360) % 360
+        print(self.vlon)
         return None
 
     def calc_box(self):
