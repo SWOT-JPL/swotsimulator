@@ -154,7 +154,8 @@ def interpolate_regular_1D(p, lon_in, lat_in, var, lon_out, lat_out,
         # lon_out = numpy.rad2deg(numpy.unwrap(numpy.deg2rad(lon_out)))
         interp = interpolate.RectBivariateSpline
         mask_teval = (numpy.isnan(var) | numpy.ma.getmaskarray(var))
-        if Teval is None:
+        #if Teval is None:
+        if True:
             Teval = numpy.zeros(numpy.shape(lon_out))
             if ind_out1[0].any():
                 _tmp = interp(lat_in, lon_in[ind_in1],
@@ -184,7 +185,8 @@ def interpolate_regular_1D(p, lon_in, lat_in, var, lon_out, lat_out,
         mask_teval = (numpy.isnan(var) | numpy.ma.getmaskarray(var))
         # Interpolate mask if it has not been done (Teval is None)
         interp = interpolate.RectBivariateSpline
-        if Teval is None:
+        if True:
+        #if Teval is None:
             _Teval = interp(lat_in, lon_in, mask_teval, kx=1, ky=1, s=0)
             Teval = _Teval.ev(lat_out, lon_out)
         # Trick to avoid nan in interpolation
