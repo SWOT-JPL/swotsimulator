@@ -283,7 +283,7 @@ def worker_method_swot(*args, **kwargs):
         # #TODO move this somwhere where we have ifile information
         #if ifile > (p.nstep/p.timestep + 1):
         #    break
-        ofile = '{}_c{:03d}_p{:04d}.nc'.format(p.file_output, cycle + 1,
+        ofile = '{}_c{:03d}_p{:05d}.nc'.format(p.file_output, cycle + 1,
                                                sgrid.ipass)
         if os.path.exists(ofile):
             continue

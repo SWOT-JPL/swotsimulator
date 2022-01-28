@@ -7,6 +7,7 @@ Contains the following functions:
 - spher2cart: convert spherical to cartesian coordinates \n
 - cart2spher: convert cartesian to spherical coordinates \n
 - update_progress: Progress bar'''
+import re
 import numpy
 from typing import Optional, Tuple
 import collections
@@ -314,9 +315,11 @@ def update_progress_multiproc(status, info):
     pid = info[0]
     grid_name = info[1]
     if isinstance(grid_name, str):
-        ipass = grid_name[-6:-3]
+        tmp = re.findall(r'\d+', grid_name)
+        res = list(map(int, tmp))
+        ipass = res[-1]
     else:
-        ipass = '{:03d}'.format(grid_name)
+        ipass = '{:05d}'.format(grid_name)
 
     cycle = info[2]
     if cycle is not None and cycle < 0:

@@ -26,6 +26,7 @@
 '''
 
 import os
+import re
 from scipy import interpolate
 import numpy
 import math
@@ -82,7 +83,9 @@ def load_sgrid(sgridfile, p):
                      timeshift=timeshift)
     sgrid.loncirc = numpy.rad2deg(numpy.unwrap(sgrid.lon))
     # Extract the pass number from the file name
-    ipass = int(sgridfile[-6: -3])
+    tmp = re.findall(r'\d+', sgridfile)
+    res = list(map(int, tmp))
+    ipass = res[-1]
     sgrid.ipass = ipass
     return sgrid
 
@@ -112,12 +115,14 @@ def load_coordinate_model(p):
 
 
 def load_ngrid(sgridfile, p, nadir_alone=False):
-    ipass = int(sgridfile[-6: -3])
+    tmp = re.findall(r'\d+', sgridfile)
+    res = list(map(int, tmp))
+    ipass = res[-1]
     # Load Nadir track file
     if nadir_alone is True:
-        nfile = '{:s}_p{:04d}.nc'.format((p.filesgrid).strip(), ipass)
+        nfile = '{:s}_p{:05d}.nc'.format((p.filesgrid).strip(), ipass)
     else:
-        nfile = '{:s}nadir_p{:04d}.nc'.format((p.filesgrid).strip(), ipass)
+        nfile = '{:s}nadir_p{:05d}.nc'.format((p.filesgrid).strip(), ipass)
     ngrid = rw_data.Sat_nadir(nfile=nfile)
     cycle = 0
     x_al = []
@@ -415,6 +420,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                 # if grid is regular, use interpolate.RectBivariateSpline to
                 # interpolate
                 #print(model_data.vlon, sgrid.lon)
+                nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
 
                 if p.grid == 'regular' or model_data.len_coord == 1:
                     # ########################TODO
@@ -429,7 +435,6 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     if nadir_alone is False:
                         lonswot = lon_grid[ind_time[0], :].flatten()
                         latswot = sgrid.lat[ind_time[0], :].flatten()
-                        nal, nac = numpy.shape(sgrid.lon[ind_time[0], :])
                         for key in input_var.keys():
                             slist = []
                             for iinput_var in var_list:
@@ -490,7 +495,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                                 _tmp = alpha * slist[0] + (1 - alpha) * slist[1]
                                 out_var[key][ind_time[0], :] = +_tmp
                                 if key == 'ssh_true':
-                                   out_var['mask_land'][numpy.isnan(_ssh)]=3
+                                   out_var['mask_land'][numpy.isnan(out_var[key])]=3
                         if compute_nadir is True:
                             lon_ngrid = wrap_lon(lon_ngrid)
                             ngrid_def = geomdef(lons=lon_ngrid[ind_nadir_time[0]],
@@ -501,7 +506,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                                     _ssh = interp(swath_def, iinput_var[key],
                                                   ngrid_def, p.delta_al,
                                                   interp_type=p.interpolation)
-                                    nlist.append(_ssh.reshape(nal, nac))
+                                    nlist.append(_ssh)
                                 _tmp = alphan * nlist[0] + (1-alphan)*nlist[1]
                                 nkey = '{}_nadir'.format(key)
                                 out_var[nkey][ind_nadir_time[0]] = + _tmp
@@ -522,7 +527,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                                 _tmp = alpha * slist[0] + (1 - alpha) * slist[1]
                                 out_var[key][ind_time[0], :] = + _tmp
                                 if key == 'ssh_true':
-                                    out_var['mask_land'][numpy.isnan(_ssh)] = 3
+                                    out_var['mask_land'][numpy.isnan(out_var[key])]=3
                         if compute_nadir is True:
                             for key in input_var.keys():
                                 nlist = []
@@ -532,7 +537,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                                                   (lon_ngrid[ind_nadir_time[0]],
                                                   ngrid.lat[ind_nadir_time[0]]),
                                                   method=p.interpolation)
-                                    slist.append(_ssh.reshape(nal, nac))
+                                    nlist.append(_ssh)
                                 _tmp = alphan * nlist[0] + (1 - alphan) * nlist[1]
                                 nkey = '{}_nadir'.format(key)
                                 out_var[nkey][ind_nadir_time[0]] = +  _tmp
@@ -623,7 +628,7 @@ def make_flags(var, sgrid, modelbox, beam_pos):
 
 def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
               save_var='all'):
-    ofile = '{}_c{:03d}_p{:04d}.nc'.format(p.file_output, cycle + 1,
+    ofile = '{}_c{:03d}_p{:05d}.nc'.format(p.file_output, cycle + 1,
                                            sgrid.ipass)
     OutputSWOT = rw_data.Sat_SWOT(nfile=ofile, lon=(sgrid.lon+360) % 360,
                                   lat=sgrid.lat, time=time, x_ac=sgrid.x_ac,
@@ -676,7 +681,7 @@ def save_Nadir(cycle, ngrid, errnad, err, p, out_var, time=[]):
         ofile = '{}nadir_c{:03d}_{}.nc'.format(p.file_output, cycle + 1,
                                                ngrid.ipass)
     else:
-        ofile = '{}nadir_c{:03d}_p{:04d}.nc'.format(p.file_output, cycle + 1,
+        ofile = '{}nadir_c{:03d}_p{:05d}.nc'.format(p.file_output, cycle + 1,
                                                     ngrid.ipass)
     OutputNadir = rw_data.Sat_nadir(nfile=ofile,
                                     lon=(ngrid.lon+360) % 360,

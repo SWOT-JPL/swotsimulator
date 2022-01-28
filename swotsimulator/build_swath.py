@@ -497,7 +497,7 @@ def worker_method_grid(*args, **kwargs):
         # mod_tools.update_progress(pstep, str1, None)
         # Initialize SWOT grid, grid variables and Satellite
         # direction and Location
-        filesgrid = '{}_p{:04d}.nc'.format(p.filesgrid, ipass + 1)
+        filesgrid = '{}_p{:05d}.nc'.format(p.filesgrid, ipass + 1)
         sgrid = rw_data.Sat_SWOT(nfile=filesgrid)
         sgrid.x_al = x_al[ind]
         sgrid.x_ac = x_ac
@@ -510,7 +510,7 @@ def worker_method_grid(*args, **kwargs):
         SatLoc = numpy.zeros((int((nind)/npoints), 3))
 
         # Initialize Nadir track, grid variables
-        filengrid = '{}nadir_p{:04d}.nc'.format(p.filesgrid,ipass + 1)
+        filengrid = '{}nadir_p{:05d}.nc'.format(p.filesgrid,ipass + 1)
         ngrid = rw_data.Sat_nadir(nfile=filengrid)
         ngrid.x_al = x_al[ind]
         ngrid.cycle = tcycle
@@ -612,7 +612,7 @@ def worker_method_nadir(*args, **kwargs):
         # direction and Location
 
         # Initialize Nadir track, grid variables
-        filengrid = '{}_p{:04d}.nc'.format(p.filesgrid,ipass + 1)
+        filengrid = '{}_p{:05d}.nc'.format(p.filesgrid,ipass + 1)
         ngrid = rw_data.Sat_nadir(nfile=filengrid)
         ngrid.x_al = x_al[ind]
         ngrid.cycle = tcycle
