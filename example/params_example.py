@@ -116,7 +116,7 @@ product_type = 'all'
 # -----------------------#
 # SWOT error parameters
 # -----------------------#
-noise = ["altimeter", "karin", "corrected_roll_phase", "baseline_dilation", "timing",
+noise = ["altimeter", "karin", "roll_phase", "baseline_dilation", "timing",
          "wet_troposphere"]
 # ------ KaRIN file containing spectrum for several SWH:
 karin_noise = os.path.join(dir_setup, 'karin_noise.nc')
