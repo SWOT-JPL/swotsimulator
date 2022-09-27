@@ -396,7 +396,7 @@ class Sat_SWOT():
         fid.publisher_url = "github/SWOTSimulator/"
         _first_date = datetime.datetime.strptime(self.first_time, DFORMAT)
         _date = _first_date + datetime.timedelta(days=self.time[0])
-        fid.time_coverage_start = _date.strftime(FORMAT)
+        fid.time_coverage_start = _date.strftime(DFORMAT)
         _date = _first_date + datetime.timedelta(days=self.time[-1])
         fid.time_coverage_end = _date.strftime(DFORMAT)
         fid.geospatial_lat_min = "{:.2f}".format(numpy.min(self.lat))
