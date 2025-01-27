@@ -441,8 +441,8 @@ class Sat_SWOT():
         vlat.units = "deg"
         vlat.long_name = "Latitude"
         vlat.scale_factor = scale
-        vlat.valid_min = -80000000
-        vlat.valid_max = 80000000
+        vlat.valid_min = -90000000
+        vlat.valid_max = 90000000
         vx_al[:] = self.x_al
         vx_al.units = "km"
         vx_al.long_name = "Along track distance from the beginning of the pass"
@@ -485,8 +485,8 @@ class Sat_SWOT():
             vlat_nadir[:] = numpy.rint(self.lat_nadir / scale)
             vlat_nadir.units = "deg"
             vlat_nadir.scale_factor = scale
-            vlat_nadir.valid_min = -80000000
-            vlat_nadir.valid_max = 80000000
+            vlat_nadir.valid_min = -90000000
+            vlat_nadir.valid_max = 90000000
 
             for key, value in out_var.items():
                 if 'nadir' not in key and value.any():
@@ -571,6 +571,7 @@ class Sat_SWOT():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
+        print(self.file)
         fid = Dataset(self.file, 'w') #, format='NC_NETCDF4')
         fid.description = "Ouptut from SWOT simulator"
         if hasattr(self, 'gridfile'):
@@ -749,6 +750,7 @@ class Sat_nadir():
         timing) and SSH with errors. \n
         '''
         # - Open netcdf file in write mode
+        print('write', self.file)
         fid = Dataset(self.file, 'w')
         fid.description = "Orbit computed by SWOT simulator"
         if hasattr(self, 'gridfile'):
@@ -1042,9 +1044,10 @@ class NEMO():
         Return minimum, maximum longitude and minimum, maximum latitude'''
         self.read_coordinates()
         if (numpy.min(self.vlon) < 1.) and (numpy.max(self.vlon) > 359.):
-            self.vlon[numpy.where(self.vlon > 180.)] -= 360
-            lon1 = (numpy.min(self.vlon) + 360) % 360
-            lon2 = (numpy.max(self.vlon) + 360) % 360
+            _lon = + self.vlon
+            _lon[numpy.where(_lon > 180.)] -= 360
+            lon1 = (numpy.min(_lon) + 360) % 360
+            lon2 = (numpy.max(_lon) + 360) % 360
             if lon1 == lon2:
                 lon1 = 0
                 lon2 = 360
@@ -1185,6 +1188,7 @@ class NETCDF_MODEL():
             lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat)
         self.vlat = lat
         self.vlon = (lon + 360) % 360
+        print(self.vlon)
         return None
 
     def calc_box(self):
@@ -1192,9 +1196,11 @@ class NETCDF_MODEL():
         Return minimum, maximum longitude and minimum, maximum latitude'''
         self.read_coordinates()
         if (numpy.min(self.vlon) < 1.) and (numpy.max(self.vlon) > 359.):
-            self.vlon[numpy.where(self.vlon > 180.)] -= 360
-            lon1 = (numpy.min(self.vlon) + 360) % 360
-            lon2 = (numpy.max(self.vlon) + 360) % 360
+            _lon = + self.vlon
+
+            _lon[numpy.where(_lon > 180.)] -= 360
+            lon1 = (numpy.min(_lon) + 360) % 360
+            lon2 = (numpy.max(_lon) + 360) % 360
         else:
             lon1 = numpy.min(self.vlon)
             lon2 = numpy.max(self.vlon)

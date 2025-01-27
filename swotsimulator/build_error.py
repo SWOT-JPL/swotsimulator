@@ -18,31 +18,31 @@ logger = logging.getLogger(__name__)
 def reconstruct_2D_error(x_ac, err_out, dict_noise):
     nac = numpy.shape(x_ac)[0]
     ncenter = int(nac / 2)
-    ac_l = numpy.mat(x_ac[:ncenter])
-    ac_r = numpy.mat(x_ac[ncenter:])
+    ac_l = numpy.asmatrix(x_ac[:ncenter])
+    ac_r = numpy.asmatrix(x_ac[ncenter:])
     if 'phase' in dict_noise.keys():
         phase1d = dict_noise['phase']
-        err_out.phase[:, :ncenter] = numpy.mat(phase1d[:, 0]).T * ac_l
-        err_out.phase[:, ncenter:] = numpy.mat(phase1d[:, 1]).T * ac_r
+        err_out.phase[:, :ncenter] = numpy.asmatrix(phase1d[:, 0]).T * ac_l
+        err_out.phase[:, ncenter:] = numpy.asmatrix(phase1d[:, 1]).T * ac_r
     if 'roll' in dict_noise.keys():
-        ac = numpy.mat(x_ac)
+        ac = numpy.asmatrix(x_ac)
         roll1d = dict_noise['roll']
-        err_out.roll[:, :] = numpy.mat(roll1d).T * ac
+        err_out.roll[:, :] = numpy.asmatrix(roll1d).T * ac
     if 'corrected_roll_phase' in dict_noise.keys():
         rollphase_est_1d = dict_noise['corrected_roll_phase']
         rollphase_est = numpy.full((rollphase_est_1d.shape[0], nac), numpy.nan)
-        rollphase_est[:, :ncenter] = numpy.mat(rollphase_est_1d[:,0]).T * ac_l
-        rollphase_est[:, ncenter:] = numpy.mat(rollphase_est_1d[:, 1]).T * ac_r
+        rollphase_est[:, :ncenter] = numpy.asmatrix(rollphase_est_1d[:,0]).T * ac_l
+        rollphase_est[:, ncenter:] = numpy.asmatrix(rollphase_est_1d[:, 1]).T * ac_r
         err_out.corrected_roll_phase[:, :] = rollphase_est
     if 'baseline_dilation' in dict_noise.keys():
-        ac2 = numpy.mat((x_ac)**2)
-        baseline_dilation1d = numpy.mat(dict_noise['baseline_dilation'])
+        ac2 = numpy.asmatrix((x_ac)**2)
+        baseline_dilation1d = numpy.asmatrix(dict_noise['baseline_dilation'])
         err_out.baseline_dilation[:, :] = baseline_dilation1d.T * ac2
     if 'timing' in dict_noise.keys():
         timing1d = dict_noise['timing']
-        ones_ac = numpy.mat(numpy.ones((int(nac/2))))
-        err_out.timing[:, :int(nac / 2)] = numpy.mat(timing1d[:, 0]).T*ones_ac
-        err_out.timing[:, int(nac / 2):] = numpy.mat(timing1d[:, 1]).T*ones_ac
+        ones_ac = numpy.asmatrix(numpy.ones((int(nac/2))))
+        err_out.timing[:, :int(nac / 2)] = numpy.asmatrix(timing1d[:, 0]).T*ones_ac
+        err_out.timing[:, int(nac / 2):] = numpy.asmatrix(timing1d[:, 1]).T*ones_ac
     return None
 
 
@@ -173,7 +173,7 @@ class error():
                 self.A_radio_l, self.phi_radio_l, self.fr_radio_l = gencoef
 
 
-    def make_error(self, sgrid, cycle, SSH_true, p):
+    def make_error(self, sgrid, cycle, SSH_true, p, swh=None):
         ''' Build errors corresponding to each selected noise
         among the effect of the wet_tropo, the phase between the two signals,
         the timing error, the roll of the satellite, the sea surface bias,
@@ -185,8 +185,8 @@ class error():
         # ind_al=numpy.arange(0,nal)
         if 'Karin' in p.noise:
             error_karin = comp_error.Karin(p)
-            # TODO tmp swh varying in space
-            swh = 0 * SSH_true + p.swh
+            if swh is None:
+                swh = 0 * SSH_true + p.swh
             seed = int(sgrid.x_al[0]+sgrid.al_cycle)
             dic_error = error_karin.generate(seed, sgrid.x_al, sgrid.x_ac,
                                               swh)
