@@ -27,7 +27,7 @@ def run_swot_script():
     args = parser.parse_args()
 
     if args.params_file is None:
-        logger.error('Please specify a parameter file')
+        main_logger.error('Please specify a parameter file')
         sys.exit(1)
 
     if args.debug is True:
@@ -40,7 +40,7 @@ def run_swot_script():
     try:
         run_simulator.run_simulator(p, args.die_on_error)
     except KeyboardInterrupt:
-        logger.error('\nInterrupted by user (Ctrl+C)')
+        main_logger.error('\nInterrupted by user (Ctrl+C)')
         sys.exit(1)
     sys.exit(0)
 
@@ -68,7 +68,7 @@ def run_nadir_script():
     args = parser.parse_args()
 
     if args.params_file is None:
-        logger.error('Please specify a parameter file')
+        main_logger.error('Please specify a parameter file')
         sys.exit(1)
 
     if args.debug is True:
@@ -82,6 +82,6 @@ def run_nadir_script():
         run_simulator.run_simulator(p, die_on_error=args.die_on_error,
                                     nadir_alone=True)
     except KeyboardInterrupt:
-        logger.error('\nInterrupted by user (Ctrl+C)')
+        main_logger.error('\nInterrupted by user (Ctrl+C)')
         sys.exit(1)
     sys.exit(0)

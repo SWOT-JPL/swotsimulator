@@ -58,6 +58,7 @@ class error():
     def __init__(self, p, roll=None, ssb=None, wet_tropo=None, phase=None,
                  baseline_dilation=None, karin=None, timing=None, SSH=None,
                  wt=None):
+        for key in p.noise: logger.info(key)
         self.roll = roll
         self.ssb = ssb
         self.wet_tropo = wet_tropo
@@ -67,6 +68,7 @@ class error():
         self.timing = timing
         self.SSH_error = SSH
         self.wt = wt
+        self.systematic_errors=None
         self.ncomp1d = getattr(p, 'ncomp1d', 2000)
         p.ncomp1d = self.ncomp1d
         self.ncomp2d = getattr(p, 'ncomp2d', 2000)
@@ -173,6 +175,21 @@ class error():
                 self.A_radio_l, self.phi_radio_l, self.fr_radio_l = gencoef
 
 
+    def init_error2(self, p):
+        if 'Karin' in p.noise:
+            self.error_karin = comp_error.Karin(p)
+        if 'Karins3ng' in p.noise:
+            self.error_karin = comp_error.Karins3ng(p)
+        if 'CorrectedRollPhase' in p.noise:
+            first_time = numpy.datetime64(p.first_time)
+            self.rollphase = comp_error.CorrectedRollPhase(p, first_time)
+        if 'SystematicErrors3ng' in p.noise:
+            first_time = numpy.datetime64(p.first_time)
+            self.systematic = comp_error.SystematicErrors3ng(p, first_time)
+        if 'WetTroposphere' in p.noise:
+            self.wt = comp_error.WetTroposphere(p)
+
+
     def make_error(self, sgrid, cycle, SSH_true, p, swh=None):
         ''' Build errors corresponding to each selected noise
         among the effect of the wet_tropo, the phase between the two signals,
@@ -183,19 +200,35 @@ class error():
         nal, nac = numpy.shape(SSH_true)
         x_al = sgrid.x_al + sgrid.al_cycle * cycle
         # ind_al=numpy.arange(0,nal)
+        logger.info('make error karin')
+        for key in p.noise: logger.info(key)
         if 'Karin' in p.noise:
-            error_karin = comp_error.Karin(p)
+            #error_karin = comp_error.Karin(p)
             if swh is None:
                 swh = 0 * SSH_true + p.swh
             seed = int(sgrid.x_al[0]+sgrid.al_cycle)
-            dic_error = error_karin.generate(seed, sgrid.x_al, sgrid.x_ac,
+            dic_error = self.error_karin.generate(seed, sgrid.x_al, sgrid.x_ac,
+                                              swh)
+            self.karin = dic_error["simulated_error_karin"]
+        if 'Karins3ng' in p.noise:
+            #self.error_karin = comp_error.Karins3ng(p)
+            if swh is None:
+                swh = 0 * SSH_true + p.swh
+            seed = int(sgrid.x_al[0]+sgrid.al_cycle)
+            dic_error = self.error_karin.generate(seed, sgrid.x_al, sgrid.x_ac,
                                               swh)
             self.karin = dic_error["simulated_error_karin"]
         if 'CorrectedRollPhase' in p.noise:
-            first_time = numpy.datetime64(p.first_time)
-            rollphase = comp_error.CorrectedRollPhase(p, first_time)
-            results = rollphase._generate_1d(sgrid.time)
+            #first_time = numpy.datetime64(p.first_time)
+            #rollphase = comp_error.CorrectedRollPhase(p, first_time)
+            results = self.rollphase._generate_1d(sgrid.time)
             self.roll1d, self.phase1d, self.rollphase_est1d = results
+        if 'SystematicErrors3ng' in p.noise:
+            # first_time = numpy.datetime64(p.first_time)
+            # systematic = comp_error.SystematicErrors3ng(p, first_time)
+            results = self.systematic.generate(sgrid.time, sgrid.x_ac)
+            self.systematic_errors = results
+            #self.roll1d, self.phase1d, self.rollphase_est1d = results
         if 'RollPhase' in p.noise:
             rollphase = comp_error.RollPhase(p, self.roll_psd, self.gyro_psd,
                                              self.phase_psd,
@@ -211,8 +244,8 @@ class error():
                                        self.spatial_frequency)
             self.timing1d = timing._generate_1d(x_al)
         if 'WetTroposphere' in p.noise:
-            wt = comp_error.WetTroposphere(p)
-            dic_error = wt.generate(x_al, sgrid.x_ac)
+            # wt = comp_error.WetTroposphere(p)
+            dic_error = self.wt.generate(x_al, sgrid.x_ac)
             self.wet_tropo2 = dic_error["simulated_error_troposphere"]
             self.wet_tropo2nadir = dic_error["simulated_error_troposphere_nadir"]
             # self.wtnadir
@@ -246,10 +279,15 @@ class error():
         self.SSH = SSH_true
         if 'Karin' in p.noise:
             self.SSH = self.SSH + self.karin
+        if 'Karins3ng' in p.noise:
+            self.SSH = self.SSH + self.karin
         if 'Timing' in p.noise:
             self.SSH = self.SSH + self.timing
         if 'CorrectedRollPhase' in p.noise:
             self.SSH = self.SSH + self.corrected_roll_phase
+        if 'SystematicErrors3ng' in p.noise:
+            for key, value in self.systematic_errors.items():
+                self.SSH = self.SSH + value
         elif 'RollPhase' in p.noise:
             self.SSH = self.SSH + self.roll
             self.SSH = self.SSH + self.phase
@@ -259,7 +297,6 @@ class error():
                 self.SSH = self.SSH + self.wet_tropo2
         if p.file_input is not None:
             self.SSH[numpy.where(SSH_true == p.model_nan)] = p.model_nan
-
 
 
 class errornadir():

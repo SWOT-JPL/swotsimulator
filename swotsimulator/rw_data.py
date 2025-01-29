@@ -1207,6 +1207,92 @@ class NETCDF_MODEL():
         return [lon1, lon2, numpy.min(self.vlat), numpy.max(self.vlat)]
 
 
+class SWOT_L3_REAL():
+    '''Class to read real SWOT netcdf data.\n
+    USAGE is SWOT_L3_REAL(nfile=name of file ,var= variable name,
+    lon=variable longitude, lat=variable latitude, units=).\n
+    Argument file is mandatory, arguments var, lon, lat
+    are specified in params file. \n
+    '''
+    def __init__(self, p, nfile=None, var='ssha_noiseless',
+                 lon='longitude', lat='latitude', depth=0,
+                 time=0):
+        if var is None:
+            self.nvar = p.var
+        else:
+            self.nvar = var
+        if (p.list_input_var is None) and (self.nvar is not None):
+            self.input_var_list = {'ssh_true': [self.nvar, '']}
+        else:
+            self.input_var_list = p.list_input_var
+        if 'ssh_true' not in self.input_var_list:
+            logger.error('Wrong parameter file: list_input_var must contain'
+                         'ssh_true key')
+            sys.exit(1)
+        if var is None:
+            self.nvar = p.var
+        else:
+            self.nvar = var
+        if lon is None:
+            self.nlon = p.lon
+        else:
+            self.nlon = lon
+        if lat is None:
+            self.nlat = p.lat
+        else:
+            self.nlat = lat
+        self.nfile = nfile
+        self.depth = depth
+        self.time = time
+        self.model_nan = getattr(p, 'model_nan', -2147483647.0)
+        p.model_nan = self.model_nan
+        self.SSH_factor = getattr(p, 'SSH_factor', 1.)
+        p.SSH_factor = self.SSH_factor
+        self.input_var = {}
+        logger.debug('Nan Values {}, {}'.format(p.model_nan, self.model_nan))
+
+    def read_var(self, index=None):
+        '''Read variables from netcdf file \n
+        Argument is index=index to load part of the variable.'''
+        for key, value in self.input_var_list.items():
+            nfile0 = self.nfile
+            _nfile = nfile0
+            if os.path.exists(_nfile):
+                self.input_var['mdt'] = read_var(_nfile, 'mdt', index=index, model_nan=self.model_nan)
+                self.input_var[key] = read_var(_nfile, value[0], index=index, model_nan=self.model_nan)
+
+            else:
+                logger.info('{} not found'.format(_nfile))
+
+        self.input_var['ssh_true'] = self.input_var['mdt'] + self.input_var['ssh_true'] * self.SSH_factor
+        self.input_var['time'] = read_var(_nfile, 'time')
+        # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
+        return None
+
+    def read_coordinates(self, index=None):
+        '''Read coordinates from netcdf file \n
+        Argument is index=index to load part of the variable.'''
+        lon, lat = read_coordinates(self.nfile, self.nlon, self.nlat)
+        self.vlat = lat
+        self.vlon = (lon + 360) % 360
+        return None
+
+    def calc_box(self):
+        '''Calculate subdomain coordinates from netcdf file
+        Return minimum, maximum longitude and minimum, maximum latitude'''
+        self.read_coordinates()
+        if (numpy.min(self.vlon) < 1.) and (numpy.max(self.vlon) > 359.):
+            _lon = + self.vlon
+
+            _lon[numpy.where(_lon > 180.)] -= 360
+            lon1 = (numpy.min(_lon) + 360) % 360
+            lon2 = (numpy.max(_lon) + 360) % 360
+        else:
+            lon1 = numpy.min(self.vlon)
+            lon2 = numpy.max(self.vlon)
+        return [lon1, lon2, numpy.min(self.vlat), numpy.max(self.vlat)]
+
+
 class CLS_MODEL():
     '''Class to read CLS data model type.\n
     USAGE is NETCDF_MODEL(nfile=name of file ,var= variable name,

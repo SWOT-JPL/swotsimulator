@@ -78,7 +78,7 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
     timestart = datetime.datetime.now()
     mod_tools.initialize_parameters(p)
     mod_tools.check_path(p)
-
+    #p.noise = ["Altimeter", "Karin"]
     # - Read list of user model files """
     model_data, list_file = mod.load_coordinate_model(p)
     ## - Read model input coordinates '''
@@ -153,6 +153,8 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
 
     # - Initialize random coefficients that are used to compute
     #   random errors following the specified spectrum
+    for key in p.noise:
+        logger.info(key)
     err, errnad = mod.load_error(p, nadir_alone=nadir_alone)
 
     # - Compute interpolated SSH and errors for each pass, at each

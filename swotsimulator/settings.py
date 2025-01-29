@@ -274,12 +274,13 @@ class Parameters:
                               "is read from the ephemeris file.")),
         karin_noise=(None, str,
                      "KaRIN file containing spectrum for several SWH"),
+        file_systematic=(None, str, 'Systematic error file for S3NG'),
         len_repeat=(20000.0, float, "Repeat length"),
         nadir=(False, bool, "True to generate Nadir products"),
         nbeam=(2, NumberOfBeams,
                ("Number of beam used to correct wet troposphere signal "
                 "(1, 2 or 'both')")),
-        noise=(None, [str, -1],
+        noise=(["karin", "wet_troposhphere"], [str, -1],
                ("The calculation of roll errors can be simulated, option "
                 "\"roll_phase\", or interpolated, option "
                 "\"corrected_roll_phase\", from the dataset specified by the "

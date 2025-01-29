@@ -68,6 +68,52 @@ def _calculate_path_delay_lr(beam_positions: List[float], sigma: float,
 
 
 @nb.njit(cache=True, nogil=True)
+def _calculate_path_delay_lcr(beam_positions: List[float], sigma: float,
+                             cradio_r: np.ndarray, radio_c: np.ndarray,
+                             radio_l: np.ndarray,
+                             x_al: np.ndarray, x_ac_large: np.ndarray,
+                             wt_large: np.ndarray):
+    beam_r = np.empty((x_al.shape[0], ))
+    beam_l = np.empty((x_al.shape[0], ))
+    beam_c = np.empty((x_al.shape[0], ))
+    # Find righ and leftacross track indices in the gaussian
+    # footprint of 2.*p.sigma
+    ind_r = x_ac_large + beam_positions[2]
+    indac_r = np.where((ind_r < 2 * sigma) & (ind_r > -2 * sigma))[0]
+    ind_l = x_ac_large + beam_positions[0]
+    indac_l = np.where((ind_l < 2 * sigma) & (ind_l > -2 * sigma))[0]
+    ind_c = x_ac_large + beam_positions[1]
+    indac_c = np.where((ind_c < 2 * sigma) & (ind_c > -2 * sigma))[0]
+
+    factor = 1 / (2 * np.pi * sigma**2)
+
+    for idx, xal in enumerate(x_al):
+        # Find along track indices in the gaussian footprint
+        # of 2.*p.sigma
+        delta_x_al = x_al - xal
+        indal = np.where((delta_x_al <= (2 * sigma))
+                         & (delta_x_al > (-2 * sigma)))[0]
+        slice_al = slice(indal[0], indal[-1] + 1)
+        slice_acr = slice(indac_r[0], indac_r[-1] + 1)
+        slice_acl = slice(indac_l[0], indac_l[-1] + 1)
+        slice_acc = slice(indac_c[0], indac_c[-1] + 1)
+        x, y = _meshgrid(x_ac_large[slice_acr], x_al[slice_al] - xal)
+        # Compute path delay on left and right gaussian footprint
+        g = factor * np.exp(-(x**2 + y**2) / (2 * sigma**2))
+        beam_r[idx] = np.sum(
+            g * wt_large[slice_al, slice_acr]) / np.sum(g) + radio_r[idx]
+        x, y = _meshgrid(x_ac_large[slice_acl], x_al[slice_al] - xal)
+        g = factor * np.exp(-(x**2 + y**2) / (2 * sigma**2))
+        beam_l[idx] = np.sum(
+            g * wt_large[slice_al, slice_acl]) / np.sum(g) + radio_l[idx]
+        x, y = _meshgrid(x_ac_large[slice_acc], x_al[slice_al] - xal)
+        g = factor * np.exp(-(x**2 + y**2) / (2 * sigma**2))
+        beam_l[idx] = np.sum(
+            g * wt_large[slice_al, slice_acc]) / np.sum(g) + radio_c[idx]
+    return beam_r, beam_c, beam_l
+
+
+@nb.njit(cache=True, nogil=True)
 def _calculate_path_delay(sigma: float, radio: np.ndarray, x_al: np.ndarray,
                           x_ac_large: np.ndarray, wt_large: np.ndarray):
     beam = np.empty((x_al.shape[0], ))
@@ -109,6 +155,7 @@ class WetTroposphere:
         self.rng = parameters.rng()
         self.rng_radio_l = parameters.rng()
         self.rng_radio_r = parameters.rng()
+        self.rng_radio_c = parameters.rng()
         self.sigma = parameters.sigma
         # TODO
         self.conversion_factor = (
@@ -168,7 +215,17 @@ class WetTroposphere:
                                            lf_extpl=True)
         radio_l = hrad * 1e-2
 
-        return radio_r, radio_l
+        hrad = random_signal.gen_signal_1d(self.freq,
+                                           psradio,
+                                           x_al,
+                                           fmin=1 / self.len_repeat,
+                                           fmax=1 / (2 * self.delta_al),
+                                           alpha=10,
+                                           rng=self.rng_radio_c,
+                                           hf_extpl=True,
+                                           lf_extpl=True)
+        radio_c = hrad * 1e-2
+        return radio_r, radio_l, radio_c
 
     def generate(self, x_al: np.array,
                  x_ac: np.array) -> Dict[str, np.ndarray]:
@@ -186,7 +243,7 @@ class WetTroposphere:
         num_pixels = x_ac.shape[0]
 
         # Initialization of radiometer error in right and left beam
-        radio_r, radio_l = self._radiometer_error(x_al)
+        radio_r, radio_l, radio_c = self._radiometer_error(x_al)
         # Initialization of swath matrices and large swath matrices (which
         # include wet tropo data around the nadir and outside the swath)
         start_x = -2 * self.sigma / self.delta_ac + x_ac[0]
@@ -249,6 +306,30 @@ class WetTroposphere:
             beam = (np.array(num_pixels * [pol[0]]).T +
                     np.array(num_lines * [x_ac]) *
                     np.array(num_pixels * [pol[1]]).T)
+            wet_tropo = wt - beam
+            wet_tropo_nadir = wt_large[:, naclarge //
+                                       2] - beam[:, num_pixels // 2]
+        elif self.nbeam == 3:
+            beam_r, beam_c, beam_l = _calculate_path_delay_lcr(
+                numba.typed.List(self.beam_positions), self.sigma, radio_r,
+                radio_c, radio_l, x_al, x_ac_large, wt_large)
+            # Filtering beam signal to cut frequencies higher than 125 km
+            beam_r = scipy.ndimage.filters.gaussian_filter(
+                beam_r, 30 / self.delta_al)
+            beam_l = scipy.ndimage.filters.gaussian_filter(
+                beam_l, 30 / self.delta_al)
+            beam_c = scipy.ndimage.filters.gaussian_filter(
+                beam_c, 30 / self.delta_al)
+            # Compute residual path delay (linear combination of left
+            # and right path delay)
+            polyfit = np.polynomial.polynomial.polyfit
+            pol = polyfit([self.beam_positions[0], self.beam_positions[1], self.beam_positions[2]],
+                          [beam_l, beam_c, beam_r], 1)
+            beam = (np.array(num_pixels * [pol[0]]).T
+                    + np.array(num_lines * [x_ac])
+                    * np.array(num_pixels * [pol[1]]).T
+                    + np.array(num_lines * [x_ac])**2
+                    * np.array(num_pixels * [pol[2]]).T)
             wet_tropo = wt - beam
             wet_tropo_nadir = wt_large[:, naclarge //
                                        2] - beam[:, num_pixels // 2]

@@ -63,7 +63,8 @@ def load_error(p, nadir_alone=False, seed=0):
             nhalfswath = int((p.half_swath - p.half_gap) / p.delta_ac) + 1
         except AttributeError:
             nhalfswath = 60.
-        err.init_error(p, 2*nhalfswath, seed=seed)
+        # err.init_error(p, 2*nhalfswath, seed=seed)
+        err.init_error2(p) #, 2*nhalfswath, seed=seed)
         if 'Altimeter' in p.noise:
             errnad.init_error(p, seed=seed)
     return err, errnad
@@ -279,7 +280,6 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
     '''Create SWOT and nadir errors err and errnad, interpolate model SSH model
     _data on swath and nadir track, compute SWOT-like and nadir-like data
     for cycle, SWOT grid sgrid and ngrid. '''
-    print(modelbox)
     #   Initialiaze errors and SSH
     if err is None:
         nadir_alone = True
@@ -592,14 +592,19 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     del input_var, model_step, ind_nadir_time
                 else:
                     del ind_time, input_var, model_step
+    for key in (p.noise):
+        print('print', key)
     if nadir_alone is False:
         if 'swh' in out_var.keys():
             swh = out_var['swh']
         else:
             swh = None
+        for key in (p.noise):
+            print('makeerr', key)
         err.make_error(sgrid, cycle, out_var['ssh_true'], p, swh=swh)
+        print(err.karin)
         if p.product_type != 'expert':
-            err.reconstruct_2D(p, sgrid.x_ac)
+            # TODO err.reconstruct_2D(p, sgrid.x_ac)
             err.make_SSH_error(out_var['ssh_true'], p)
     if compute_nadir is True:
         errnad.make_error(ngrid, cycle, out_var['ssh_true_nadir'], p)
@@ -672,14 +677,26 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
     elif save_var == 'mockup':
         OutputSWOT.write_data(empty_var=all_var)
     else:
-        OutputSWOT.write_data(out_var, roll_err=err.roll,
-                              bd_err=err.baseline_dilation,
-                              corrected_rollphase_err=err.corrected_roll_phase,
-                              phase_err=err.phase, ssb_err=err.ssb,
-                              karin_err=err.karin, pd_err_1b=err.wet_tropo1,
-                              pd_err_2b=err.wet_tropo2, pd=err.wt,
-                              timing_err=err.timing, ssh_obs=err.SSH,
-                              )
+        if err.systematic_errors is None:
+            OutputSWOT.write_data(out_var, roll_err=err.roll,
+                                  bd_err=err.baseline_dilation,
+                                  corrected_rollphase_err=err.corrected_roll_phase,
+                                  phase_err=err.phase, ssb_err=err.ssb,
+                                  karin_err=err.karin, pd_err_1b=err.wet_tropo1,
+                                  pd_err_2b=err.wet_tropo2, pd=err.wt,
+                                  timing_err=err.timing, ssh_obs=err.SSH,
+                                  )
+        else:
+            OutputSWOT.write_data(out_var, roll_gse_err=err.systematic_errors['roll_gse'],
+                                  roll_ted_err=err.systematic_errors['roll_ted'],
+                                  bd_err=err.systematic_errors['baseline_dilation'],
+                                  phase_relative_err=err.systematic_errors['phase_relative'],
+                                  phase_absolute_err=err.systematic_errors['phase_absolute'],
+                                  ssb_err=err.ssb,
+                                  karin_err=err.karin, pd_err_1b=err.wet_tropo1,
+                                  pd_err_2b=err.wet_tropo2, pd=err.wt,
+                                  timing_err=err.timing, ssh_obs=err.SSH,
+                                  )
     return None
 
 
