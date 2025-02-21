@@ -592,8 +592,6 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                     del input_var, model_step, ind_nadir_time
                 else:
                     del ind_time, input_var, model_step
-    for key in (p.noise):
-        print('print', key)
     if nadir_alone is False:
         if 'swh' in out_var.keys():
             swh = out_var['swh']
@@ -601,7 +599,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
             swh = None
         for key in (p.noise):
             print('makeerr', key)
-        err.make_error(sgrid, cycle, out_var['ssh_true'], p, swh=swh)
+        err.make_error(sgrid, cycle, out_var['ssh_true'], p, time, swh=swh)
         print(err.karin)
         if p.product_type != 'expert':
             # TODO err.reconstruct_2D(p, sgrid.x_ac)

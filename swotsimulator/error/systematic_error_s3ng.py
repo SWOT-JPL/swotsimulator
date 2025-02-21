@@ -25,7 +25,7 @@ class SystematicErrors3ng:
         else:
              self.listerror = list_error
         first_time = (first_date
-                 - numpy.datetime64( "2000-01-01 00:00:00")).astype("float")
+                 - np.datetime64( "2000-01-01 00:00:00")).astype("float")
         self.generate1d(parameters.file_systematic, first_time)
 
     def _read_data(self, filenc: str, first_time: float) -> None:
@@ -54,6 +54,7 @@ class SystematicErrors3ng:
                     * self.bd * 1e-6)  # in m / m**2
 
     def _interpolator(self, kind: Optional[str] = 'linear'):
+        print(self.time_syst)
         self.finterp_roll_gse = interp1d(self.time_syst, self.roll_gse,
                                          kind=kind, bounds_error=False)
         self.finterp_roll_ted = interp1d(self.time_syst, self.roll_ted,
@@ -76,21 +77,23 @@ class SystematicErrors3ng:
         # ac_l = x_ac[:swath_center]
         # ac_r = x_ac[swath_center:]
         ntime = time.shape[0]
+        print(time)
+        x_acm = x_ac * 10**3
         tmp = self.finterp_ephase(time)
         ephase = np.full((ntime, num_pixels), np.nan)
-        ephase[:, :] = 1e-6 * x_ac * tmp[:, np.newaxis]
+        ephase[:, :] = 1e-6 * x_acm * tmp[:, np.newaxis]
         tmp = self.finterp_ephased(time)
         ephased = np.full((ntime, num_pixels), np.nan)
-        ephased[:, :] = 1e-6 * x_ac * tmp[:, np.newaxis]
+        ephased[:, :] = 1e-6 * abs(x_acm) * tmp[:, np.newaxis]
         tmp = self.finterp_roll_gse(time)
         roll_gse = np.full((ntime, num_pixels), np.nan)
-        roll_gse = np.asmatrix(tmp).T * x_ac * 1e-6
+        roll_gse = np.asmatrix(tmp).T * x_acm * 1e-6
         tmp = self.finterp_roll_ted(time)
         roll_ted = np.full((ntime, num_pixels), np.nan)
-        roll_ted = np.asmatrix(tmp).T * x_ac * 1e-6
+        roll_ted = np.asmatrix(tmp).T * x_acm * 1e-6
         tmp = self.finterp_hbd(time)
         hbd = np.full((ntime, num_pixels), np.nan)
-        hbd = x_ac**2 * tmp[:, np.newaxis]
+        hbd = x_acm**2 * tmp[:, np.newaxis]
         return {"roll_gse": roll_gse,
                 "roll_ted": roll_ted,
                 "phase_relative": ephased,

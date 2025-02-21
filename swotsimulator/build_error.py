@@ -187,10 +187,10 @@ class error():
             first_time = numpy.datetime64(p.first_time)
             self.systematic = comp_error.SystematicErrors3ng(p, first_time)
         if 'WetTroposphere' in p.noise:
-            self.wt = comp_error.WetTroposphere(p)
+            self.wte = comp_error.WetTroposphere(p)
 
 
-    def make_error(self, sgrid, cycle, SSH_true, p, swh=None):
+    def make_error(self, sgrid, cycle, SSH_true, p, time, swh=None):
         ''' Build errors corresponding to each selected noise
         among the effect of the wet_tropo, the phase between the two signals,
         the timing error, the roll of the satellite, the sea surface bias,
@@ -201,7 +201,7 @@ class error():
         x_al = sgrid.x_al + sgrid.al_cycle * cycle
         # ind_al=numpy.arange(0,nal)
         logger.info('make error karin')
-        for key in p.noise: logger.info(key)
+        for key in p.noise: print(key)
         if 'Karin' in p.noise:
             #error_karin = comp_error.Karin(p)
             if swh is None:
@@ -226,7 +226,9 @@ class error():
         if 'SystematicErrors3ng' in p.noise:
             # first_time = numpy.datetime64(p.first_time)
             # systematic = comp_error.SystematicErrors3ng(p, first_time)
-            results = self.systematic.generate(sgrid.time, sgrid.x_ac)
+            time = (time * 86400 + (numpy.datetime64(p.first_time)
+                    - numpy.datetime64("2000-01-01 00:00:00")).astype("float"))
+            results = self.systematic.generate(time, sgrid.x_ac)
             self.systematic_errors = results
             #self.roll1d, self.phase1d, self.rollphase_est1d = results
         if 'RollPhase' in p.noise:
@@ -245,7 +247,9 @@ class error():
             self.timing1d = timing._generate_1d(x_al)
         if 'WetTroposphere' in p.noise:
             # wt = comp_error.WetTroposphere(p)
-            dic_error = self.wt.generate(x_al, sgrid.x_ac)
+            print(self.wte)
+            dic_error = self.wte.generate(x_al, sgrid.x_ac)
+            print('end compute wt')
             self.wet_tropo2 = dic_error["simulated_error_troposphere"]
             self.wet_tropo2nadir = dic_error["simulated_error_troposphere_nadir"]
             # self.wtnadir

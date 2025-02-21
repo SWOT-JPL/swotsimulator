@@ -153,8 +153,6 @@ def run_simulator(p, die_on_error=False, nadir_alone=False):
 
     # - Initialize random coefficients that are used to compute
     #   random errors following the specified spectrum
-    for key in p.noise:
-        logger.info(key)
     err, errnad = mod.load_error(p, nadir_alone=nadir_alone)
 
     # - Compute interpolated SSH and errors for each pass, at each

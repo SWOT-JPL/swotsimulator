@@ -459,7 +459,7 @@ class Sat_SWOT():
             time_day = []
             time_sec = []
             for itime in self.time:
-                td = datetime.timedelta(itime) + start_date - first_date
+                td = datetime.timedelta(days=itime) + start_date - first_date
                 time_day.append(td.days)
                 time_sec.append(td.seconds + td.microseconds * 10**(-6))
             write_var(fid, dim, 'time_sec', numpy.asarray(time_sec))
@@ -469,10 +469,16 @@ class Sat_SWOT():
                     if key != 'ssh_true' and key!= 'vindice':
                         write_var(fid, dim, key, value)
         else:
-            vtime = fid.createVariable('time', 'u8', (dim_tim,))
-            vtime[:] = numpy.rint(self.time * 86400 / scale)
+            vtime = fid.createVariable('time', 'f8', (dim_tim,))
+            time_sec = []
+            start_date = datetime.datetime.strptime(self.first_time, DFORMAT)
+            first_date = datetime.datetime(2000, 1, 1)
+            for itime in self.time:
+                td = datetime.timedelta(days=itime) + start_date - first_date
+                time_sec.append(td.total_seconds())
+            vtime[:] = time_sec  # numpy.rint(self.time * 86400 / scale)
             vtime.units = "seconds since {}".format(self.first_time)
-            vtime.scale_factor = scale
+            #vtime.scale_factor = scale
             vtime.valid_min = 0
             vtime.long_name = "Time from beginning of simulation (in s)"
             vlon_nadir = fid.createVariable('lon_nadir', 'i4', (dim_tim,))

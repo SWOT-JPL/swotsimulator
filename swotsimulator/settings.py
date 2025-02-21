@@ -192,8 +192,8 @@ def template(python: bool = False) -> Union[str, Dict[str, Any]]:
 class NumberOfBeams(int):
     """Handle the number of beams"""
     def __new__(cls, value, *args, **kwargs):
-        if value not in [1, 2]:
-            raise ValueError("nbeam must be in [1, 2]")
+        if value not in [1, 2, 3]:
+            raise ValueError("nbeam must be in [1, 2, 3]")
         return super().__new__(cls, value, *args, **kwargs)  # type: ignore
 
 
@@ -233,9 +233,9 @@ class Parameters:
                "maximum corner point :lon_min, lat_min, lon_max, lat_max. "
                "Default: -180, -90, 180, 90")),
         modelbox=(None, [float, 4], "modelbox"),
-        beam_position=([-20, 20], [float, 2],
+        beam_position=([-20, 20, 0], [float, 3],
                        ("Number of beam used to correct wet troposphere "
-                        "signal (1, 2 or 'both')")),
+                        "signal (1, 2, 3 or 'both')")),
         central_pixel=(False, bool,
                        ("If true, the swath, in the final dataset, will "
                         "contain a center pixel divided in half by the "
@@ -279,7 +279,7 @@ class Parameters:
         nadir=(False, bool, "True to generate Nadir products"),
         nbeam=(2, NumberOfBeams,
                ("Number of beam used to correct wet troposphere signal "
-                "(1, 2 or 'both')")),
+                "(1, 2, 3 or 'both')")),
         noise=(["karin", "wet_troposhphere"], [str, -1],
                ("The calculation of roll errors can be simulated, option "
                 "\"roll_phase\", or interpolated, option "

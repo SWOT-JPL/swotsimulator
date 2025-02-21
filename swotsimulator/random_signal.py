@@ -294,7 +294,7 @@ def gen_signal_2d_rectangle(ps2d: np.ndarray,
     xl = x - x[0]
     xl = xl[xl < xg.max()]
     rectangle = np.ascontiguousarray(
-        scipy.interpolate.interp2d(xg, yg, sg)(xl, yl))
+        scipy.interpolate.RectBivariateSpline(xg, yg, sg.T)(xl, yl).T)
     signal = _calculate_signal(rectangle, x, y, xgmax, ygmax)
 
     return signal.transpose() if revert else signal

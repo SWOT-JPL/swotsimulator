@@ -69,10 +69,10 @@ def _calculate_path_delay_lr(beam_positions: List[float], sigma: float,
 
 @nb.njit(cache=True, nogil=True)
 def _calculate_path_delay_lcr(beam_positions: List[float], sigma: float,
-                             cradio_r: np.ndarray, radio_c: np.ndarray,
-                             radio_l: np.ndarray,
-                             x_al: np.ndarray, x_ac_large: np.ndarray,
-                             wt_large: np.ndarray):
+                              radio_r: np.ndarray, radio_c: np.ndarray,
+                              radio_l: np.ndarray,
+                              x_al: np.ndarray, x_ac_large: np.ndarray,
+                              wt_large: np.ndarray):
     beam_r = np.empty((x_al.shape[0], ))
     beam_l = np.empty((x_al.shape[0], ))
     beam_c = np.empty((x_al.shape[0], ))
@@ -108,7 +108,7 @@ def _calculate_path_delay_lcr(beam_positions: List[float], sigma: float,
             g * wt_large[slice_al, slice_acl]) / np.sum(g) + radio_l[idx]
         x, y = _meshgrid(x_ac_large[slice_acc], x_al[slice_al] - xal)
         g = factor * np.exp(-(x**2 + y**2) / (2 * sigma**2))
-        beam_l[idx] = np.sum(
+        beam_c[idx] = np.sum(
             g * wt_large[slice_al, slice_acc]) / np.sum(g) + radio_c[idx]
     return beam_r, beam_c, beam_l
 
@@ -324,7 +324,7 @@ class WetTroposphere:
             # and right path delay)
             polyfit = np.polynomial.polynomial.polyfit
             pol = polyfit([self.beam_positions[0], self.beam_positions[1], self.beam_positions[2]],
-                          [beam_l, beam_c, beam_r], 1)
+                          [beam_l, beam_c, beam_r], 2)
             beam = (np.array(num_pixels * [pol[0]]).T
                     + np.array(num_lines * [x_ac])
                     * np.array(num_pixels * [pol[1]]).T
