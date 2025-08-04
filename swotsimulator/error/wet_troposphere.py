@@ -39,9 +39,9 @@ def _calculate_path_delay_lr(beam_positions: List[float], sigma: float,
     beam_l = np.empty((x_al.shape[0], ))
     # Find righ and leftacross track indices in the gaussian
     # footprint of 2.*p.sigma
-    ind_r = x_ac_large + beam_positions[1]
+    ind_r = x_ac_large - beam_positions[1]
     indac_r = np.where((ind_r < 2 * sigma) & (ind_r > -2 * sigma))[0]
-    ind_l = x_ac_large + beam_positions[0]
+    ind_l = x_ac_large - beam_positions[0]
     indac_l = np.where((ind_l < 2 * sigma) & (ind_l > -2 * sigma))[0]
 
     factor = 1 / (2 * np.pi * sigma**2)
@@ -78,11 +78,11 @@ def _calculate_path_delay_lcr(beam_positions: List[float], sigma: float,
     beam_c = np.empty((x_al.shape[0], ))
     # Find righ and leftacross track indices in the gaussian
     # footprint of 2.*p.sigma
-    ind_r = x_ac_large + beam_positions[2]
+    ind_r = x_ac_large - beam_positions[2]
     indac_r = np.where((ind_r < 2 * sigma) & (ind_r > -2 * sigma))[0]
-    ind_l = x_ac_large + beam_positions[0]
+    ind_l = x_ac_large - beam_positions[0]
     indac_l = np.where((ind_l < 2 * sigma) & (ind_l > -2 * sigma))[0]
-    ind_c = x_ac_large + beam_positions[1]
+    ind_c = x_ac_large - beam_positions[1]
     indac_c = np.where((ind_c < 2 * sigma) & (ind_c > -2 * sigma))[0]
 
     factor = 1 / (2 * np.pi * sigma**2)
@@ -251,19 +251,20 @@ class WetTroposphere:
         # x_ac_large and wt_large are necessary to compute the gaussian
         # footprint of a beam on the nadir or near the edge of the swath
         x_ac_large = np.arange(start_x, stop_x, self.delta_ac)
+        x_ac_large = x_ac_large - 1
         naclarge = np.shape(x_ac_large)[0]
         # Compute path delay error due to wet tropo and radiometer error
         # using random coefficient initialized with power spectrums
-        wt = random_signal.gen_signal_2d_rectangle(self.ps2d,
-                                                   self.f,
-                                                   x_al,
-                                                   x_ac,
-                                                   fminx=self.fminx,
-                                                   fminy=1 / self.LC_MAX,
-                                                   fmax=self.F_MAX,
-                                                   alpha=self.ALPHA,
-                                                   rng=self.rng)
-        wt = wt.T * 1e-2
+        # wt = random_signal.gen_signal_2d_rectangle(self.ps2d,
+        #                                            self.f,
+        #                                            x_al,
+        #                                            x_ac,
+        #                                            fminx=self.fminx,
+        #                                            fminy=1 / self.LC_MAX,
+        #                                            fmax=self.F_MAX,
+        #                                            alpha=self.ALPHA,
+        #                                            rng=self.rng)
+        # wt = wt.T * 1e-2
         wt_large = random_signal.gen_signal_2d_rectangle(self.ps2d,
                                                          self.f,
                                                          x_al,
@@ -274,6 +275,15 @@ class WetTroposphere:
                                                          alpha=self.ALPHA,
                                                          rng=self.rng)
         wt_large = wt_large.T * 1e-2
+        #todo automatize that
+        size_r = len(x_ac_large) - len(x_ac)
+        size_rh = size_r//2
+
+        if np.mod(size_r, 2) == 0:
+            wt = wt_large[:, size_rh:-size_rh]
+        else:
+            wt = wt_large[:, size_rh:-size_rh-1]
+
 
         # Compute Residual path delay error after a 1-beam radiometer
         # correction
@@ -334,11 +344,12 @@ class WetTroposphere:
             wet_tropo_nadir = wt_large[:, naclarge //
                                        2] - beam[:, num_pixels // 2]
         else:
-            raise ValueError("nbeam must be in [1, 2]")
+            raise ValueError("nbeam must be in [1, 2, 3]")
 
         # wt_nadir = wt_large[:, naclarge // 2]
 
         return {
+            "simulated_troposphere": wt,
             "simulated_error_troposphere": wet_tropo,
             "simulated_error_troposphere_nadir": wet_tropo_nadir
         }

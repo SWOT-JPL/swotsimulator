@@ -54,7 +54,6 @@ class SystematicErrors3ng:
                     * self.bd * 1e-6)  # in m / m**2
 
     def _interpolator(self, kind: Optional[str] = 'linear'):
-        print(self.time_syst)
         self.finterp_roll_gse = interp1d(self.time_syst, self.roll_gse,
                                          kind=kind, bounds_error=False)
         self.finterp_roll_ted = interp1d(self.time_syst, self.roll_ted,
@@ -77,7 +76,6 @@ class SystematicErrors3ng:
         # ac_l = x_ac[:swath_center]
         # ac_r = x_ac[swath_center:]
         ntime = time.shape[0]
-        print(time)
         x_acm = x_ac * 10**3
         tmp = self.finterp_ephase(time)
         ephase = np.full((ntime, num_pixels), np.nan)

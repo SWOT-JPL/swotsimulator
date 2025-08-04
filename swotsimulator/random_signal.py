@@ -271,7 +271,6 @@ def gen_signal_2d_rectangle(ps2d: np.ndarray,
     fx = np.concatenate(([0], f))
     fy = np.concatenate(([0], np.arange(fminy, fmaxr + fminy, fminy)))
     dfx, dfy = fmin, fminy
-
     phase = rng.random((2 * len(fy) - 1, len(fx))) * 2 * np.pi
     phase[0, 0] = 0.
     phase[-len(fy) + 1:, 0] = -phase[1:len(fy), 0][::-1]
@@ -296,5 +295,4 @@ def gen_signal_2d_rectangle(ps2d: np.ndarray,
     rectangle = np.ascontiguousarray(
         scipy.interpolate.RectBivariateSpline(xg, yg, sg.T)(xl, yl).T)
     signal = _calculate_signal(rectangle, x, y, xgmax, ygmax)
-
     return signal.transpose() if revert else signal

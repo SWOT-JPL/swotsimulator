@@ -493,17 +493,25 @@ class Sat_SWOT():
             vlat_nadir.scale_factor = scale
             vlat_nadir.valid_min = -90000000
             vlat_nadir.valid_max = 90000000
-
+            for key in ('xac', 'xal', 'lon', 'lat', 'time'):
+                _ = out_var.pop(key, None)
             for key, value in out_var.items():
+                if value is None:
+                    print(key)
+                    continue
                 if 'nadir' not in key and value.any():
                     write_var(fid, dim, key, value)
-
         for key, value in kwargs.items():
-            if key == 'empty_var'and value is not None:
-                for key2, value2 in value.items():
-                    write_var(fid, dim, key2, value2)
-            elif key != 'empty_var' and value.any():
-                write_var(fid, dim, key, value)
+            try:
+                if key == 'empty_var'and value is not None:
+                    for key2, value2 in value.items():
+                        write_var(fid, dim, key2, value2)
+
+                elif key != 'empty_var' and value.any():
+                    write_var(fid, dim, key, value)
+            except:
+                print(key)
+                continue
         fid.close()
         return None
 
@@ -1272,6 +1280,8 @@ class SWOT_L3_REAL():
 
         self.input_var['ssh_true'] = self.input_var['mdt'] + self.input_var['ssh_true'] * self.SSH_factor
         self.input_var['time'] = read_var(_nfile, 'time')
+        #self.input_var['time'] = datetime.timedelta(seconds=self.input_var['time'],
+
         # self.vvar[numpy.where(numpy.isnan(self.vvar))]=0
         return None
 

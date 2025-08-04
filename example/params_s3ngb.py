@@ -12,7 +12,7 @@ dir_setup = os.path.join(home,  's3ng', 'data')
 # ------ Directory that contains your own inputs:
 indatadir = '/mnt/data_12t/llc2160_daily_latlon_SSH_notides'
 # ------ Directory that contains your outputs:
-working_directory = os.path.join(home, 's3ng')
+working_directory = os.path.join(home, 's3ng', 'nf')
 # ------ Orbit file:
 # Order of columns (lon, lat, time) in the orbit file
 # (default is (1, 2, 0) with order_orbit_col = None)
@@ -78,10 +78,10 @@ file_grid_model = '/mnt/data/mitgcm/SSC/llc2160_2020-03-24T000000_SSU-SSV.nc'
 # ------ Type of grid:
 #        'regular' or 'irregular', if 'regular' only 1d coordinates
 #        are extracted from model
-grid = 'regular'
+grid = 'irregular'
 # ------ Specify list of variables, using the format: {key: [variable_name,
 #        file_suffix], ...}, should contain at least the key 'ssh_true':
-list_input_var = {'ssh_true': ['SSH_notides', 'SSH_notides']} # 'U': ['U', 'SSU-SSV'],
+list_input_var = {'ssh_true': ['SSH_notides', 'SSH_notides'], 'swh': ['hs', 'SWH']} # 'U': ['U', 'SSU-SSV'],
                   #'V': ['V', 'SSU-SSV']}
 # ------ Specify factor to convert SSH values in m:
 SSH_factor = 1.

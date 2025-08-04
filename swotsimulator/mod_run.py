@@ -419,6 +419,8 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                 lon_model = + model_data.vlon
                 if _greenwich is True:
                     lon_model = numpy.mod(lon_model + 180., 360.) - 180.
+                else:
+                    lon_model = numpy.mod(lon_model + 360, 360)
                 # if grid is regular, use interpolate.RectBivariateSpline to
                 # interpolate
                 #print(model_data.vlon, sgrid.lon)
@@ -476,7 +478,7 @@ def create_SWOTlikedata(cycle, list_file, modelbox, sgrid, ngrid,
                         geomdef = pr.geometry.SwathDefinition
                         interp = interpolate_irregular_pyresample
                         lon_model = wrap_lon(lon_model)
-                        sigm = 6.
+                        sigm = 1.
                         if model_data.len_coord <= 1:
                             logger.error('Model grid is irregular,'
                                          'coordinates should be in 2d')
@@ -670,7 +672,8 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
                               bd_err_1d=err.baseline_dilation1d,
                               ssb_err=err.ssb, karin_err=err.karin,
                               pd_err_1b=err.wet_tropo1,
-                              pd_err_2b=err.wet_tropo2, pd=err.wt,
+                              pd_err_2b=err.wet_tropo2,
+                              pd_err_3b=err.wet_tropo2, pd=err.wt,
                               timing_err_1d=err.timing1d)
     elif save_var == 'mockup':
         OutputSWOT.write_data(empty_var=all_var)
@@ -690,10 +693,11 @@ def save_SWOT(cycle, sgrid, err, p, out_var, time=[],
                                   bd_err=err.systematic_errors['baseline_dilation'],
                                   phase_relative_err=err.systematic_errors['phase_relative'],
                                   phase_absolute_err=err.systematic_errors['phase_absolute'],
-                                  ssb_err=err.ssb,
-                                  karin_err=err.karin, pd_err_1b=err.wet_tropo1,
-                                  pd_err_2b=err.wet_tropo2, pd=err.wt,
-                                  timing_err=err.timing, ssh_obs=err.SSH,
+                                  #ssb_err=err.ssb,
+                                  karin_err=err.karin, #pd_err_1b=err.wet_tropo1,
+                                  pd_err_3b=err.wet_tropo2, pd=err.wt,
+                                  #timing_err=err.timing,
+                                  ssh_obs=err.SSH,
                                   )
     return None
 

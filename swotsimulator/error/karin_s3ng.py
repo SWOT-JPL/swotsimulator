@@ -19,7 +19,7 @@ def read_file_karins3ng(nfile: str,
     swh = np.arange(0, 11, 1)
     dic = {}
     with netCDF4.Dataset(nfile) as fid:
-        xac = fid['ground_range_1km'][:].data
+        xac = fid['ground_range_1km'][:].data/1000
         for iswh in swh:
             key = f'{pattern}_{iswh:d}'
             dic[key] = fid[key][:].data

@@ -19,7 +19,7 @@ C = 2.998*10**8
 # # SWOT INSTRUMENT CARACTERISTICS ##
 # ###################################
 # - Satellite elevation (m)
-sat_elev = 891*10**3
+sat_elev = 814*10**3
 # - Baseline (m)
 B = 3
 # (in Hz)

@@ -247,9 +247,8 @@ class error():
             self.timing1d = timing._generate_1d(x_al)
         if 'WetTroposphere' in p.noise:
             # wt = comp_error.WetTroposphere(p)
-            print(self.wte)
             dic_error = self.wte.generate(x_al, sgrid.x_ac)
-            print('end compute wt')
+            self.wt = dic_error["simulated_troposphere"]
             self.wet_tropo2 = dic_error["simulated_error_troposphere"]
             self.wet_tropo2nadir = dic_error["simulated_error_troposphere_nadir"]
             # self.wtnadir
@@ -273,7 +272,7 @@ class error():
         reconstruct_2D_error(x_ac, self, dict_noise)
         return None
 
-    def make_SSH_error(self, SSH_true, p):
+    def make_SSH_error(self, SSH_true, p, systematic=True):
         '''Compute observed SSH adding all the computed error to the model SSH.
         If residual path delay errors after 2-beams and 1-beam radiometer
         correction are both computed (nbeam='both'), only the path delay error
@@ -289,7 +288,7 @@ class error():
             self.SSH = self.SSH + self.timing
         if 'CorrectedRollPhase' in p.noise:
             self.SSH = self.SSH + self.corrected_roll_phase
-        if 'SystematicErrors3ng' in p.noise:
+        if 'SystematicErrors3ng' in p.noise and p.add_systematic_error is True:
             for key, value in self.systematic_errors.items():
                 self.SSH = self.SSH + value
         elif 'RollPhase' in p.noise:
